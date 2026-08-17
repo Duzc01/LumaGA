@@ -16,6 +16,18 @@ android {
         versionName = "2.3.2"
     }
 
+    signingConfigs {
+        // Checked-in debug keystore (standard debug credentials) so CI builds
+        // are signature-compatible with local builds and can upgrade-install
+        // over them.
+        getByName("debug") {
+            storeFile = file("debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
