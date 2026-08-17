@@ -14,5 +14,10 @@ captures/
 # Local configuration
 local.properties
 
+# Prebuilt Rust logic library (liblogic.so for arm64-v8a / x86 / x86_64).
+# Built from the MNGA repo with `make logic-android-release`; see
+# MNGA/android/README.md. Regenerable, do not commit binaries.
+logic/src/main/jniLibs/
+
 # Log files
 *.log

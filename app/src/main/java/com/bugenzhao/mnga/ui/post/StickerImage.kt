@@ -1,0 +1,214 @@
+package com.bugenzhao.mnga.ui.post
+
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
+import com.bugenzhao.mnga.util.Stickers
+import com.bugenzhao.mnga.util.URLs
+
+/**
+ * Legacy open-source sticker whitelist, copied verbatim from
+ * `Utilities/OpenSourceStickers.swift` (600 attachment filenames). Membership is
+ * the license-compatibility check: these remote attachments render as fixed
+ * 50dp tiles without opening the image viewer.
+ */
+object OpenSourceStickers {
+    val names: Set<String> = setOf(
+    "-47218_5052bc4cc6331.png","-47218_5052bc4f51be7.png","-47218_5052bc521c04b.png","-47218_5052bc5579c24.png",
+    "-47218_5052bc587c6f9.png","-47218_5052bc7a0ee49.png","-47218_5052bc7d91913.png","-47218_5052bc80140e3.png",
+    "-47218_5052bc835856c.png","-47218_5052bc8638067.png","-47218_5052bca2a2f43.png","-47218_5052bca55cb6e.png",
+    "-47218_5052bca81a77f.png","-47218_5052bcaaacb45.png","-47218_5052bcad49530.png","-47218_5052bcb093870.png",
+    "-47218_5052bcb3b8944.png","-47218_5052bcb6e96d1.png","-47218_5052bcba15fcf.png","-47218_5052bcbe35760.png",
+    "-47218_5052bcdd279bc.png","-47218_5052bcdfd9c69.png","-47218_5052bce27ab4d.png","-47218_5052bce4f2963.png",
+    "-47218_5052bce7cf096.png","-47218_5052bceb823da.png","-47218_5052bcee3d6b3.png","-47218_5052bcf0ba2db.png",
+    "-47218_5052bcf37c4c9.png","-47218_5052bcf68ddc2.png","-47218_5052bd2497822.png","-47218_5052bd27520ef.png",
+    "-47218_5052bd2a0d49a.png","-47218_5052bd2d0a416.png","-47218_5052bd2fa0790.png","-47218_5052bd330dfad.png",
+    "-47218_5052bd35aec58.png","-47218_5052bd38bdf43.png","-47218_5052bd3b4b3bd.png","-47218_5052bd40397e2.png",
+    "-47218_5052c0f41d155.png","-47218_5052c0f6da079.png","-47218_5052c10182a21.png","-47218_5052c104b8e27.png",
+    "-47218_5052c1076f119.png","-47218_5052c10aa0303.png","-47218_5052c10d1f08c.png","-47218_5052c1101747c.png",
+    "-47218_5052c112b3b1b.png","-47218_5052c1156ec1c.png","-1324875_50c15374cd8f6.png","-1324875_50c1537cf22c8.png",
+    "-1324875_50c153963eb38.png","-1324875_50c153ad5bca3.png","-1324875_50d84199dbdb2.png",
+    "-1324875_50d8419e3e516.png","-1324875_50d841a1676ab.png","-1324875_50d841a63a673.png",
+    "-1324875_50d841a969837.png","-1324875_50d841ae691f0.png","-1324875_50d841b17b503.png",
+    "-1324875_50d841b488bcd.png","-1324875_50d841b7282dd.png","-1324875_50d841ba3efd0.png",
+    "-1324875_50e597c090c58.png","-1324875_50e597cedefb0.png","-1324875_50e597e217236.png",
+    "-1324875_50e597e645550.png","-1324875_50e597e9d6319.png","-1324875_50e597edf1a10.png",
+    "-1324875_50e597f190a11.png","-1324875_50e597f5ce78d.png","-1324875_50fe24fff3ca8.png",
+    "-1324875_50fe25031f595.png","-1324875_50fe2505d26ed.png","-1324875_50fe25088e9cb.png",
+    "-1324875_50fe250b9488c.png","-1324875_50fe250eca35e.png","-1324875_50fe2511c5254.png",
+    "-1324875_50fe2515354fd.png","-1324875_50fe25191c370.png","-1324875_510a32e14f324.png",
+    "-1324875_510a32e41a1c9.png","-1324875_510a32ea8cbd2.png","-1324875_510a32ed356aa.png",
+    "-1324875_510a32f1a0345.png","-1324875_510a32f4bdcab.png","-1324875_510a335b9300d.png",
+    "-1324875_513394f5c39c4.png","-1324875_513394f8d0005.png","-1324875_513394fbc54e1.gif",
+    "-1324875_513394ffb78e2.gif","-1324875_51339502d110b.gif","-1324875_51339506d9c37.png",
+    "-1324875_51339509ac4b4.png","-1324875_5133950d008f9.png","-1324875_514daeb78abaa.png",
+    "-1324875_51505df66692d.png","e7cbe91b6f1eb33c9573b65e660a11ed.png","c43e364354c25aa7bfb1514595cb3f6f.png",
+    "a430e1b233f764a3948e2ed9f9ec3e85.png","7bd47cb4a94402ec93fdf5399f5b059d.png",
+    "9637b6c30dc39eb1fc61edd449b3f0e8.png","8264ca9a59ef24968205041587d6b65f.png",
+    "7dd4662ce1f13b6f9c1ab5725cc91345.png","cfb1ef9f87e7cc8a212f0d0e13d40494.png",
+    "2dc6d5a7b2183db9daa8f9c5a9d141d2.png","b17f169d3d66be601e510ea401d647c1.png",
+    "ff7fa235da8c0ae968f11c7578a862e1.png","e832ad79a6832b19b54c3ce35581488f.png",
+    "c2c0012ae34286c93738562295a1506b.png","a9cd13d8e4aa596be8e026dd9e8cb9c8.png",
+    "53131ca521a198acda15eebf250d5625.png","3eaff7476307e5375411e69b4250bf6a.png",
+    "963a0caf275e1d43686743a49e64f0ad.png","959c3a5d0b333936de03f2648378cc70.png",
+    "90dcea390a89ef22354600f6cfd8b3dc.png","2a7e23a7686b25546bac561b58420fb4.png",
+    "82ae3e911ffabb108fe20a2bc03ccd9c.png","71c47a31eebb14be4291c15e41fbae78.png",
+    "d6fc87f52b1d26d6768bcc0d8a7ec608.png","729647a27267ac7853056f99f35ecac7.png",
+    "c498386a7a5242c710ead18c2bb3cc59.jpg","a6a581a8e4a61812ae123a837f4b0d88.png",
+    "a920ca541f5246a24bdaa85ee360477e.gif","c1ceadd1553e140c2bc0348720cbb2df.png",
+    "9ed86272ed53b89726874565be464927.jpg","2aa114ca0804d12f2178e0dc69d4bc8a.png",
+    "167e42963246c38b3e570995b10ce9b5.jpg","b9719388cc6390ccaf62f432b7f8e3f6.gif","a2_02.png","a2_05.png",
+    "a2_03.png","a2_04.png","a2_07.png","a2_08.png","a2_09.png","a2_10.png","a2_14.png","a2_16.png","a2_15.png",
+    "a2_17.png","a2_21.png","a2_23.png","a2_24.png","a2_25.png","a2_27.png","a2_28.png","a2_30.png","a2_31.png",
+    "a2_32.png","a2_33.png","a2_36.png","a2_51.png","a2_53.png","a2_54.png","a2_55.png","a2_47.png","a2_48.png",
+    "a2_45.png","a2_49.png","a2_18.png","a2_19.png","a2_52.png","a2_26.png","a2_11.png","a2_12.png","a2_13.png",
+    "a2_20.png","a2_22.png","a2_42.png","a2_37.png","a2_38.png","a2_39.png","a2_41.png","a2_40.png","pg01.png",
+    "pg02.png","pg03.png","pg04.png","pg05.png","pg06.png","pg07.png","pg08.png","pg09.png","pg10.png","pg11.png",
+    "pg12.png","pg13.png","pg14.png","pg15.png","pt00.png","pt01.png","pt02.png","pt03.png","pt04.png","pt05.png",
+    "pt06.png","pt07.png","pt08.png","pt09.png","pt10.png","pt11.png","pt12.png","pt13.png","pt14.png","pt15.png",
+    "pt16.png","pt17.png","pt18.png","pt19.png","pt20.png","pt21.png","pt22.png","pt23.png","pt24.png","pt25.png",
+    "pt26.png","pt27.png","pt28.png","pt29.png","pt30.png","pt31.png","pt32.png","pt33.png","pt34.png","pt35.png",
+    "pt36.png","pt37.png","pt38.png","pt39.png","pt40.png","pt41.png","pt42.png","pt43.png","pt44.png","pt45.png",
+    "pt46.png","pt47.png","pt48.png","pt49.png","pt50.png","pt51.png","pt52.png","pt53.png","pt54.png","pt55.png",
+    "pt56.png","pt57.png","pt58.png","pt59.png","pt60.png","pt61.png","pt62.png","pt63.png","pt64.png","dt01.png",
+    "dt02.png","dt03.png","dt04.png","dt05.png","dt06.png","dt07.png","dt08.png","dt09.png","dt10.png","dt11.png",
+    "dt12.png","dt13.png","dt14.png","dt15.png","dt16.png","dt17.png","dt18.png","dt19.png","dt20.png","dt21.png",
+    "dt22.png","dt23.png","dt24.png","dt25.png","dt26.png","dt27.png","dt28.png","dt29.png","dt30.png","dt31.png",
+    "dt32.png","dt33.png","-7_501659f095f86.jpg","-7_501659f46c92c.jpg","-7_501659f74f065.jpg",
+    "-7_501659fb92e28.jpg","-7_501659fef2d35.jpg","-7_50165a095609b.jpg","-7_50165a0c8f964.jpg",
+    "-7_5016817445bdb.jpg","-7_5016817c3f714.jpg","-7_501681825a85d.jpg","-7_501681873b6a9.jpg",
+    "-7_5016818c54525.jpg","-7_50168192b5000.jpg","-7_5016819980fbc.jpg","-7_5016819dcc612.jpg",
+    "-7_501681a579a75.jpg","-7_501681aa5d92a.jpg","-7_501686cde01cb.jpg","-447601_4f2d1e80ab343.jpg",
+    "-7_5016ae12ae284.jpg","-7_5016ae1989baf.jpg","-47218_5045aeafd7372.jpg","-47218_505017a342b27.jpg",
+    "-47218_505017a6ec30d.jpg","-47218_505017ad66045.jpg","-47218_505017b09a8c3.jpg","-47218_505017b484549.jpg",
+    "-47218_505017ef537ea.jpg","-47218_505017f2f26a0.jpg","-47218_505017f5b84d6.jpg","-47218_505017f85b1b1.jpg",
+    "-47218_505017fb0e250.jpg","2acb155e2a5b9422a94186316b1aef60.jpg","-7_5050972e61c94.jpg","-7_5050974c1df08.jpg",
+    "-7_50509738ceb3c.jpg","-7_50509743b31a9.png","-7_505097122174c.png","9f097ebcdede8616e69b8966328cf52a.jpg",
+    "64e25c177c3a3761f715a3893588a093.jpg","6531e88e4f1209a5b404cc0f4507fc37.jpg","-47218_5051537c6f0a7.jpg",
+    "-47218_5053040c1ff51.gif","-47218_50515376c354c.jpg","-47218_50515379d93e2.jpg",
+    "159086d6643b2dd47809ae5311321e48.jpg","f0bc17b405346eb419e15d9a4078cc1a.jpg",
+    "f523d833d988bd687d9205c8462cd69a.jpg","1205c1a4d4d2b19cc145c129cc97e126.jpg","-1324875_50d8593397258.jpg",
+    "3eecc7a0783180ad493869564f7dbcff.jpg","-7_5118d1cacbf75.jpg","1b82eab2748c69a301d176be0ab1d6d7.jpg",
+    "837b686eee1d1338fb9a1012e00cab80.jpg","-9lddQ5-et2gK0Sw-w.png","-9lddQ5-5tgxK0Sw-w.png",
+    "-9lddQ5-i3rnK0Sw-w.png","-9lddQ5-d13hK2Sw-w.gif","-9lddQ5-g8wpK0Sw-w.png","-9lddQ5-7eg2K0Sw-w.png",
+    "-9lddQ5-jun4K0Sw-w.png","-9lddQ5-ajnxK0Sw-w.png","-9lddQ5-4dyqK2S12-w.gif","-9lddQ5-1wp9K0Sw-w.png",
+    "-9lddQ5-ejpkK0Sw-w.png","-9lddQ5-5vgtK0Sw-w.png","-9lddQ5-j6o0K0Sw-w.png","-9lddQ5-af2rK0Sw-w.png",
+    "-9lddQ5-phcK0Sw-w.png","-9lddQ5-agrwK0Sw-w.png","-9lddQ5-124pK0Sw-w.png","-9lddQ5-dn1aK0Sw-w.png",
+    "-9lddQ5-4szfK0Sw-w.png","-9lddQ5-h0k7K0Sw-w.png","-9lddQ5-85ueK0Sw-w.png","-9lddQ5-koh5K0Sw-w.png",
+    "-9lddQ5-bzdpK0Sw-w.png","-9lddQ5-36g0K0Sw-w.png","-9lddQ5-grd7K0Sw-w.png","-9lddQ5-83smK0Sw-w.png",
+    "-9lddQ5-jmhaK0Sw-w.png","-9lddQ5-ab0dK0Sw-w.png","-9lddQ5-k79oK0Sw-w.png","-9lddQ5-a9exK0Sw-w.png",
+    "-9lddQ5-1b8sK0Sw-w.png","-9lddQ5-dv43K0Sw-w.png","-9lddQ5-4uopK0Sw-w.png","-9lddQ5-h826K0Sw-w.png",
+    "-9lddQ5-81nwK0Sw-w.png","-9lddQ5-l2e6K0Sw-w.png","-9lddQ5-btzvK0Sw-w.png","-9lddQ5-2gkkK0Sw-w.png",
+    "-9lddQ5-9rcoK0Sw-w.png","-9lddQ5-4ygK0Sw-w.png","-9lddQ5-a61kK0Sw-w.png","-9lddQ5-1158K0Sw-w.png",
+    "-9lddQ5-d2sdK0Sw-w.png","-9lddQ5-3w0fK0Sw-w.png","-9lddQ5-fddeK0Sw-w.png","-9lddQ5-4y9oK0Sw-w.png",
+    "-9lddQ5-h7i7K0Sw-w.png","-9lddQ5-832kK0Sw-w.png","-9lddQ5-k1ufK0Sw-w.png","-9lddQ5-awxiK0Sw-w.png",
+    "-9lddQ5-1gufK0Sw-w.png","-9lddQ5-cwe7K0Sw-w.png","-9lddQ5-e7ibK0Sw-w.png","-9lddQ5-59htK0Sw-w.png",
+    "-9lddQ5-g7jjK0Sw-w.png","-9lddQ5-3oj4K4T8Sw-w.gif","-9lddQ5-6xe2K0Sw-w.png","-9lddQ5-jm7bK0Sw-w.png",
+    "-9lddQ5-85e2K0S10-x.png","-9lddQ5-l15sK0Sw-w.png","-9lddQ5-3zvaK1S10-y.gif","-9lddQ5-7gaaK1S10-x.gif",
+    "-9lddQ5-c8x2K0Sw-w.png","-9lddQ5-47e3K0Sw-w.png","-9lddQ5-gev9K0Sw-w.png","-9lddQ5-73h8K0Sw-w.png",
+    "-9lddQ5-k8m4K0Sw-w.png","-9lddQ5-bdevK0Sw-w.png","-9lddQ5-1tpkK0Sw-w.png","-9lddQ5-enb4K0Sw-w.png",
+    "-9lddQ5-5moiK0Sw-w.png","-9lddQ5-epeeK0Sw-w.png","-9lddQ5-2ijdK0Sw-w.png","-9lddQ5-el5zK0Sw-w.png",
+    "-9lddQ5-3x8oK0Sw-w.png","-9lddQ5-gcryK0Sw-11.png","-9lddQ5-3xziK0Sw-w.png","-9lddQ5-3x3lK0Sw-w.png",
+    "-9lddQ5-3ihxK0Sw-w.png","-9lddQ5-6vl0K0Sw-w.png","-9lddQ5-40yfK0S14-10.png","-9lddQ5-460tK1S1j-1c.png",
+    "-9lddQ5-3ialK0Sw-w.png","-9lddQ5-4bhoK0Sw-w.png","-9lddQ5-40tuK0Sw-w.png","-9lddQ5-6dqcK0Sw-w.png",
+    "-9lddQ5-7gaaK1S10-x.gif","-9lddQ5-4bwxK0Sw-w.png","-9lddQ5-3e2hK0Sw-w.png","-9lddQ5-4cozK0Sw-w.png",
+    "-9lddQ5-41wcK0Sw-w.png","-9lddQ5-2xl5K0Sw-w.png","-9lddQ5-bnwiK0Sw-w.png","-9lddQ5-3wcrK0Sw-w.png",
+    "-9lddQ5-4cdlK0Sw-w.png","-9lddQ5-46pmK0Sw-14.png","-9lddQ5-3lsyK0Sw-14.png","-9lddQ5-e7dtK0Sw-w.png",
+    "-9lddQ5-2qnoK0Sw-w.png","-9lddQ5-4bqzK0Sw-w.png","-9lddQ5-cwddK0Sw-w.png","-9lddQ5-3zi2K0Sw-w.png",
+    "-9lddQ5-h96fK0Sw-w.png","-9lddQ5-7zglK0Sw-w.png","-9lddQ5-k5b9K0Sy-14.png","-9lddQ5-bffrK0Sw-w.png",
+    "-9lddQ5-2ddyK0Sw-w.png","-9lddQ5-egiuK0Sw-w.png","-9lddQ5-5tkoK0Sw-w.png","-9lddQ5-3yrbK0Sw-w.png",
+    "-9lddQ5-49qpK1Sw-w.png","-9lddQ5-a962K0Sw-w.png","-9lddQ5-jc2aK0Sw-w.png","-9lddQ5-aa4fK0Sw-w.png",
+    "-9lddQ5-51f3K2Sw-w.gif","-9lddQ5-10j4K0Sw-w.png","-9lddQ5-c1pgK0Sw-w.png","-9lddQ5-8yweK0Sw-w.png",
+    "-9lddQ5-iupoK0Sw-w.png","-9lddQ5-3tw9K0Sw-w.gif","-9lddQ5-a1adK0Sw-w.png","-9lddQ5-1ab0K0Sw-w.png",
+    "-9lddQ5-dv5zK0Sw-w.png","-9lddQ5-4z4pK0Sw-w.png","-9lddQ5-gvclK0Sw-w.png","-9lddQ5-86ijK0Sw-w.png",
+    "-9lddQ5-k6caK0Sw-w.png","-9lddQ5-bjgvK0Sw-w.png","-9lddQ5-2gdwK0Sw-w.png","-9lddQ5-eozcK0Sw-w.png",
+    "-9lddQ5-5mwfK0Sw-w.png","-9lddQ5-f5gzK0Sw-w.png","-9lddQ5-63sbK0Sw-w.png","-9lddQ5-ic6nK0Sw-w.png",
+    "-9lddQ5-96wnK0Sw-w.png","-9lddQ5-byoK0Sw-w.png","-9lddQ5-4lemK1Sw-w.gif","-9lddQ5-d230K0Sw-y.png",
+    "-9lddQ5-3tfyK0S18-w.png","-9lddQ5-g9tvK0S12-w.png","-9lddQ5-7k63K0Sw-w.png","-9lddQ5-jnenK0Sw-w.png",
+    "-9lddQ5-au3qK0Sw-w.png","-9lddQ5-1wi5K0Sw-w.png","-9lddQ5-ayw1K0Sw-12.png","-9lddQ5-19qjK0Sz-w.png",
+    "-9lddQ5-dwgsK0S12-w.png","-9lddQ5-4t1tK0S12-12.png","-9lddQ5-hqnbK0S12-w.png","-9lddQ5-898xK0S12-16.png",
+    "-9lddQ5-jzkdK0S12-w.png","-9lddQ5-b5eeK0S12-w.png","-9lddQ5-206nK0S12-w.png","-9lddQ5-dw91K0Sw-w.png",
+    "-9lddQ5-39szK0Sw-w.png","-9lddQ5-ehkjK0Sw-w.png","-9lddQ5-1q29K0Sw-w.png","-9lddQ5-egpkK0Sw-w.png",
+    "-9lddQ5-5bjmK0Sw-w.png","-9lddQ5-gz1xK0Sw-w.png","-9lddQ5-7lx6K0Sw-x.png","-9lddQ5-jidhK0Sw-w.png",
+    "-9lddQ5-brhlK0Sw-w.png","-9lddQ5-jx3tK0Sw-w.png","-9lddQ5-bc89K0Sw-w.png","-9lddQ5-32j1K0Sw-x.png",
+    "-9lddQ5-frfoK0S12-16.png","-9lddQ5-3z9oK0Sw-w.gif","-9lddQ5-6wg8K1Sw-w.gif","-9lddQ5-6gnpK0Sy-10.png",
+    "-9lddQ5-iyk6K0Sy-10.png","-9lddQ5-adxfK0Sw-w.png","-9lddQ5-1iedK0Sw-w.png","-9lddQ5-e5dfK0Sw-w.png",
+    "-9lddQ5-3tmpK1Sw-w.gif","-9lddQ5-4sumK0Sw-w.png","-9lddQ5-goi7K0Sw-w.png","-9lddQ5-7c9sK0Sw-w.png",
+    "-9lddQ5-hcjsK1S10-17.png","-9lddQ5-8r76K0Sw-w.png","-9lddQ5-l5bhK0Sw-w.png","-9lddQ5-cfq2K0Sw-w.png",
+    "-9lddQ5-2ka7K0Sw-w.png","-9lddQ5-f386K0Sw-z.png","-9lddQ5-6ft1K0Sw-w.png","-9lddQ5-ixriK0Sw-w.png",
+    "-9lddQ5-98e7K1S1c-10.png","-9lddQ5-kytuK0Sw-w.png","-9lddQ5-c8jnK0Sw-w.png","-9lddQ5-1qqrK0Sw-w.png",
+    "-9lddQ5-bkwdK0Sw-w.png","-9lddQ5-3gs9K0Sw-w.png","-9lddQ5-fmupK0Sw-w.png","-9lddQ5-5y99K0Sw-w.png",
+    "-9lddQ5-i9amK0Sw-w.png","-9lddQ5-89q1K0Sw-w.png","-9lddQ5-jol1K0Sw-w.png","-9lddQ5-a0rjK0Sw-w.png",
+    "-9lddQ5-lcexK0Sw-w.png","-9lddQ5-b89vK0Sw-w.png","-9lddQ5-1qdqK0Sw-w.png","-9lddQ5-dgl1K0Sw-w.png",
+    "-9lddQ5-15vrK0Sw-w.png","-9lddQ5-d4x1K0Sw-w.png","-9lddQ5-3ptpK0Sw-w.png","-9lddQ5-hx86KhT8S18-18.gif",
+    "-9lddQ5-fsdgK0Sw-w.png","-9lddQ5-6djeK1S10-14.png","-9lddQ5-4tipK6T8S16-t.gif","-9lddQ5-43mkK2S1f-1b.gif",
+    "-9lddQ5-6ym2K2S1f-1b.gif","-9lddQ5-ipozK0Sw-w.png","-9lddQ5-45jkK0Sw-w.gif","-9lddQ5-4g0xK2S1j-12.gif",
+    "-9lddQ5-3uucK1S1j-18.gif","-9lddQ5-94utK0Sq-w.png","-9lddQ5-44xzK5T8S16-u.gif","-9lddQ5-k0laK0Sw-w.png",
+    "-9lddQ5-9gd2K0Sw-w.png","-9lddQ5-l4nxK0Sw-w.png","-9lddQ5-c1tvK0Sw-w.png","-9lddQ5-2oi3K0Sw-w.png",
+    "-9lddQ5-dhqgK0Sw-w.png","-9lddQ5-4p2iK0Sw-w.png","-9lddQ5-gj4wK0Sw-w.png","-9lddQ5-6bzcK0Sw-w.png",
+    "-9lddQ5-45wxK3Sw-z.gif","-9lddQ5-7611K7T8Sw-w.gif","-9lddQ5-h85iKaT8Sw-w.gif","-9lddQ5-63v0K5T8Sw-w.gif",
+    "-9lddQ5-ifi3K7T8S1j-18.gif","-9lddQ5-7eslK5T8S1j-18.gif","-9lddQ5-hofxK0Sw-w.png","-9lddQ5-kfkjK1S11-14.gif",
+    "-9lddQ5-8luqK1Sx-10.png","-9lddQ5-kteoK0Sx-10.png","-9lddQ5-baqxK2Sw-11.gif","-9lddQ5-bs8tK0Sw-w.png",
+    "-9lddQ5-2kh7K0Sw-w.png","-9lddQ5-epzbK0Sw-w.png","-9lddQ5-l9kaK0Sw-w.png","-9lddQ5-1mpaK3S14-12.gif",
+    "-9lddQ5-dyf5K3Sw-14.gif","-9lddQ5-4qckK7T8Sw-z.gif","-9lddQ5-9ia4K0Sw-w.png","-9lddQ5-kuzK0Sw-z.png",
+    "-9lddQ5-cyp1K0Sw-w.png","-9lddQ5-3exhK0Sw-w.png","-9lddQ5-gfbwK1Sw-w.gif","-9lddQ5-fp2iK0Sw-w.png",
+    "-9lddQ5-6bqaK0Sw-y.png","-9lddQ5-is46K0Sw-w.png","-9lddQ5-9ct6K0Sw-w.png","-9lddQ5-s8zK0Sw-w.png",
+    "-9lddQ5-d9ndK0Sw-w.png","-9lddQ5-3y9pK0Sw-w.png","-9lddQ5-gi2yK0Sw-w.png"    )
+}
+
+/** Resolve sticker identifiers to display models. */
+object StickerImages {
+    const val assetBase = "file:///android_asset/stickers/"
+
+    /** `a2:doge` (proto) and `a2|doge` (asset) both normalize to `a2|doge`. */
+    fun normalize(name: String): String = name.replace(':', '|')
+
+    fun isBundled(name: String): Boolean = normalize(name) in Stickers.all
+
+    /** Bundled stickers load from assets; everything else is a remote attachment. */
+    fun model(name: String): String {
+        val normalized = normalize(name)
+        return if (normalized in Stickers.all) {
+            assetBase + normalized + ".png"
+        } else {
+            URLs.attachmentURL(normalized) ?: URLs.attachmentURL("$normalized.png") ?: normalized
+        }
+    }
+
+    /** `ac` / `a2` families are monochrome and tinted with the accent color. */
+    fun isTemplate(name: String): Boolean =
+        name.startsWith("ac") || name.startsWith("a2")
+
+    @Composable
+    fun templateColorFilter(): ColorFilter? =
+        ColorFilter.tint(MaterialTheme.colorScheme.primary)
+}
+
+/**
+ * A single sticker image, inline-sized by default. Bundled stickers come from
+ * the asset pack; non-bundled (open-source whitelist) names resolve to their
+ * remote attachment URL.
+ */
+@Composable
+fun StickerImage(
+    name: String,
+    size: Dp = 36.dp,
+    modifier: Modifier = Modifier,
+    contentDescription: String? = null,
+) {
+    val model = StickerImages.model(name)
+    val filter = if (StickerImages.isTemplate(name)) StickerImages.templateColorFilter() else null
+    AsyncImage(
+        model = model,
+        contentDescription = contentDescription,
+        contentScale = ContentScale.Fit,
+        colorFilter = filter,
+        modifier = modifier.size(size),
+    )
+}
