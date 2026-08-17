@@ -27,11 +27,12 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      # The runner image may not ship platform 36 yet; installing is idempotent.
-      - name: Install Android SDK components
+      # The runner image may not ship platform 36 yet; AGP downloads missing
+      # SDK components automatically when licenses are pre-accepted.
+      - name: Accept Android SDK licenses
         run: |
-          yes | sdkmanager --licenses > /dev/null || true
-          sdkmanager "platforms;android-36" > /dev/null
+          mkdir -p "$ANDROID_HOME/licenses"
+          printf "\n24333f8a63b6825ea9c5514f83c2829b004d1fee" > "$ANDROID_HOME/licenses/android-sdk-license"
 
       # The Rust `logic` library ships prebuilt in logic/src/main/jniLibs, so
       # the APK build itself needs no NDK / Rust toolchain on CI.
