@@ -59,7 +59,13 @@ fun MNGARoot(onNewIntent: (android.content.Intent) -> Unit) {
         val navigator = remember { Navigator(listOf(Route.ForumList)) }
         val editor = remember { com.bugenzhao.mnga.ui.editor.EditorController(appScope) }
 
-        NavigationHost(navigator, editor)
+        // Opaque theme background under the navigation stack: during the
+        // push/pop fade+slide transitions both pages are partially transparent,
+        // and without a solid layer beneath them the (always light) window
+        // background flashes white in dark mode.
+        Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+            NavigationHost(navigator, editor)
+        }
         GlobalOverlays(navigator, editor)
 
         // Clipboard deep-link affordance refresh on resume.
