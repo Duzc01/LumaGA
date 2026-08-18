@@ -641,8 +641,8 @@ private fun LabelledStat(label: String, value: String, color: Color) {
 
 /**
  * Footer action row. The reference layout keeps every control right-aligned,
- * with the overflow menu as its last item; the informational edit / attachment
- * markers stay on the left.
+ * with the overflow menu as its last item; the informational attachment marker
+ * stays on the left.
  */
 @Composable
 private fun PostRowFooter(
@@ -660,14 +660,6 @@ private fun PostRowFooter(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(6.dp),
         ) {
-            if (post.alterInfo.isNotEmpty()) {
-                Icon(
-                    Icons.Filled.Edit,
-                    contentDescription = null,
-                    modifier = Modifier.size(14.dp),
-                    tint = MaterialTheme.colorScheme.outline,
-                )
-            }
             if (post.attachmentsList.isNotEmpty()) {
                 Icon(
                     Icons.Filled.AttachFile,
