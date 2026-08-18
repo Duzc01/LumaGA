@@ -3,9 +3,11 @@ package com.bugenzhao.mnga.ui.screens.forumlist
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -13,9 +15,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.Close
@@ -27,19 +32,18 @@ import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.ExpandLess
 import androidx.compose.material.icons.outlined.ExpandMore
 import androidx.compose.material.icons.outlined.FilterList
-import androidx.compose.material.icons.outlined.KeyboardArrowDown
-import androidx.compose.material.icons.outlined.KeyboardArrowUp
+import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.OpenInBrowser
 import androidx.compose.material.icons.outlined.PlaylistAddCheck
 import androidx.compose.material.icons.outlined.Search
-import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Button
+import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -50,7 +54,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -68,6 +71,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.bugenzhao.mnga.App
@@ -169,20 +173,13 @@ fun ForumListScreen(
     val currentUser by App.currentUser.user.collectAsState()
     val unreadCount by App.notis.unreadCountAnimated.collectAsState()
     val debugBadge by App.prefs.debugAlwaysShowNotificationBadge.flow.collectAsState()
-    val showPlusInTitle by App.prefs.showPlusInTitle.flow.collectAsState()
     val hideMNGAMeta by App.prefs.hideMNGAMeta.flow.collectAsState()
     val plusStatus = rememberPlusStatus()
     val canPaste by App.schemes.canTryNavigateToPasteboardURL.collectAsState()
     var editMode by remember { mutableStateOf(false) }
-    var filterMenuExpanded by remember { mutableStateOf(false) }
+    var moreMenuExpanded by remember { mutableStateOf(false) }
     var filterSubmenuExpanded by remember { mutableStateOf(false) }
     var contextMenuForum by remember { mutableStateOf<Forum?>(null) }
-
-    val title = when {
-        plusStatus.isPaid && showPlusInTitle -> "MNGA 𝐏𝐥𝐮𝐬"
-        plusStatus.isUnlocked -> "MNGA"
-        else -> "MNGA Lite"
-    }
 
     val refresh: () -> Unit = {
         scope.launch {
@@ -193,8 +190,8 @@ fun ForumListScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text(title, fontWeight = FontWeight.Bold, maxLines = 1) },
+            CenterAlignedTopAppBar(
+                title = { Text("LumaGA", fontWeight = FontWeight.Bold, maxLines = 1) },
                 navigationIcon = {
                     // User menu avatar button with a 1dp accent ring.
                     IconButton(onClick = onShowUserMenu) {
@@ -247,55 +244,6 @@ fun ForumListScreen(
                         TextButton(onClick = { editMode = false }) {
                             Text(L.str(context, "Done"))
                         }
-                    } else {
-                        Box {
-                            IconButton(onClick = { filterMenuExpanded = true }) {
-                                Icon(
-                                    Icons.Outlined.FilterList,
-                                    contentDescription = L.str(context, "Filters"),
-                                    tint = if (filterMode == FilterMode.FAVORITES_ONLY) {
-                                        MaterialTheme.colorScheme.primary
-                                    } else {
-                                        MaterialTheme.colorScheme.onSurfaceVariant
-                                    },
-                                )
-                            }
-                            FilterMenu(
-                                expanded = filterMenuExpanded,
-                                onDismiss = { filterMenuExpanded = false },
-                                submenuExpanded = filterSubmenuExpanded,
-                                onSubmenuDismiss = { filterSubmenuExpanded = false },
-                                onSubmenuShow = { filterSubmenuExpanded = true },
-                                filterMode = filterMode,
-                                onFilterModeChange = { mode ->
-                                    App.favoriteForums.showAll.value = mode.raw
-                                },
-                                useRemote = useRemote,
-                                onUseRemoteChange = { next ->
-                                    if (PlusModel.withPlusCheck(PlusFeature.SYNC_FORUMS) {
-                                            App.favoriteForums.useRemote.value = next
-                                            true
-                                        }
-                                    ) {
-                                        scope.launch { App.favoriteForums.sync() }
-                                    }
-                                },
-                                onEditFavorites = { editMode = true },
-                                anyCollapsed = collapsedCategories.isNotEmpty(),
-                                onCollapseAll = {
-                                    collapsedCategories = categories.map { it.id }.toSet()
-                                    App.sharedPreferences.edit()
-                                        .putStringSet(CollapsedCategoriesKey, collapsedCategories)
-                                        .apply()
-                                },
-                                onExpandAll = {
-                                    collapsedCategories = emptySet()
-                                    App.sharedPreferences.edit()
-                                        .putStringSet(CollapsedCategoriesKey, collapsedCategories)
-                                        .apply()
-                                },
-                            )
-                        }
                     }
                     IconButton(onClick = { navigator.push(Route.GlobalSearch) }) {
                         Icon(
@@ -303,10 +251,48 @@ fun ForumListScreen(
                             contentDescription = L.str(context, "Search"),
                         )
                     }
-                    IconButton(onClick = { App.prefs.showing.value = true }) {
-                        Icon(
-                            Icons.Outlined.Settings,
-                            contentDescription = L.str(context, "Settings"),
+                    // "More" menu on the far right, holding the forum filters.
+                    Box {
+                        IconButton(onClick = { moreMenuExpanded = true }) {
+                            Icon(
+                                Icons.Outlined.MoreVert,
+                                contentDescription = L.str(context, "More"),
+                            )
+                        }
+                        MoreMenu(
+                            expanded = moreMenuExpanded,
+                            onDismiss = { moreMenuExpanded = false },
+                            submenuExpanded = filterSubmenuExpanded,
+                            onSubmenuDismiss = { filterSubmenuExpanded = false },
+                            onSubmenuShow = { filterSubmenuExpanded = true },
+                            filterMode = filterMode,
+                            onFilterModeChange = { mode ->
+                                App.favoriteForums.showAll.value = mode.raw
+                            },
+                            useRemote = useRemote,
+                            onUseRemoteChange = { next ->
+                                if (PlusModel.withPlusCheck(PlusFeature.SYNC_FORUMS) {
+                                        App.favoriteForums.useRemote.value = next
+                                        true
+                                    }
+                                ) {
+                                    scope.launch { App.favoriteForums.sync() }
+                                }
+                            },
+                            onEditFavorites = { editMode = true },
+                            anyCollapsed = collapsedCategories.isNotEmpty(),
+                            onCollapseAll = {
+                                collapsedCategories = categories.map { it.id }.toSet()
+                                App.sharedPreferences.edit()
+                                    .putStringSet(CollapsedCategoriesKey, collapsedCategories)
+                                    .apply()
+                            },
+                            onExpandAll = {
+                                collapsedCategories = emptySet()
+                                App.sharedPreferences.edit()
+                                    .putStringSet(CollapsedCategoriesKey, collapsedCategories)
+                                    .apply()
+                            },
                         )
                     }
                 },
@@ -338,16 +324,18 @@ fun ForumListScreen(
             onRefresh = refresh,
             modifier = Modifier.fillMaxSize().padding(padding),
         ) {
-            LazyColumn(
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(3),
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = androidx.compose.foundation.layout.PaddingValues(
-                    horizontal = 16.dp,
-                    vertical = 8.dp,
-                ),
-                verticalArrangement = Arrangement.spacedBy(2.dp),
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 // ---- Favorites section.
-                item(key = "favorites-header") {
+                item(
+                    key = "favorites-header",
+                    span = { GridItemSpan(maxLineSpan) },
+                ) {
                     SectionHeader(
                         title = L.str(context, "Favorites"),
                         expanded = FavoritesSectionID !in collapsedCategories,
@@ -366,30 +354,24 @@ fun ForumListScreen(
                 }
                 if (FavoritesSectionID !in collapsedCategories) {
                     if (favoriteForums.isEmpty()) {
-                        item(key = "favorites-empty") { FavoritesEmptyHint() }
+                        item(key = "favorites-empty", span = { GridItemSpan(maxLineSpan) }) {
+                            FavoritesEmptyHint()
+                        }
                     } else {
-                        itemsIndexed(
+                        items(
                             favoriteForums,
-                            key = { _, forum -> "fav-${forumIdKey(forum.id)}" },
-                        ) { index, forum ->
-                            ForumRowWithMenu(
+                            key = { forum -> "fav-${forumIdKey(forum.id)}" },
+                        ) { forum ->
+                            ForumGridCellWithMenu(
                                 forum = forum,
-                                index = index,
-                                showStar = false,
                                 isFavorite = true,
                                 editMode = editMode,
-                                isFirst = index == 0,
-                                isLast = index == favoriteForums.lastIndex,
                                 contextMenuForum = contextMenuForum,
                                 onContextMenu = { contextMenuForum = it },
                                 onDismissMenu = { contextMenuForum = null },
                                 onClick = { navigator.push(Route.TopicList(forumId = forum.id)) },
                                 onToggleFavorite = { toggleFavorite(forum) },
                                 onRemove = { toggleFavorite(forum) },
-                                onMove = { from, to ->
-                                    App.favoriteForums.move(from, to)
-                                    Haptics.lightImpact(view)
-                                },
                             )
                         }
                     }
@@ -398,12 +380,17 @@ fun ForumListScreen(
                 // ---- All forums, per collapsible category.
                 if (filterMode == FilterMode.ALL) {
                     if (categories.isEmpty()) {
-                        item(key = "categories-loading") { LoadingRow() }
+                        item(key = "categories-loading", span = { GridItemSpan(maxLineSpan) }) {
+                            LoadingRow()
+                        }
                     } else {
                         val visibleCategories =
                             categories.filterNot { hideMNGAMeta && it.id == "mnga" }
                         visibleCategories.forEach { category ->
-                            item(key = "cat-header-${category.id}") {
+                            item(
+                                key = "cat-header-${category.id}",
+                                span = { GridItemSpan(maxLineSpan) },
+                            ) {
                                 SectionHeader(
                                     title = category.name,
                                     expanded = category.id !in collapsedCategories,
@@ -411,27 +398,24 @@ fun ForumListScreen(
                                 )
                             }
                             if (category.id !in collapsedCategories) {
-                                itemsIndexed(
+                                items(
                                     category.forumsList,
-                                    key = { _, forum ->
+                                    key = { forum ->
                                         "cat-${category.id}-${forumIdKey(forum.id)}"
                                     },
-                                ) { _, forum ->
-                                    ForumRowWithMenu(
+                                ) { forum ->
+                                    ForumGridCellWithMenu(
                                         forum = forum,
-                                        index = 0,
-                                        showStar = true,
                                         isFavorite = App.favoriteForums.isFavorite(forum.id),
                                         editMode = false,
-                                        isFirst = true,
-                                        isLast = true,
                                         contextMenuForum = contextMenuForum,
                                         onContextMenu = { contextMenuForum = it },
                                         onDismissMenu = { contextMenuForum = null },
-                                        onClick = { navigator.push(Route.TopicList(forumId = forum.id)) },
+                                        onClick = {
+                                            navigator.push(Route.TopicList(forumId = forum.id))
+                                        },
                                         onToggleFavorite = { toggleFavorite(forum) },
                                         onRemove = {},
-                                        onMove = { _, _ -> },
                                     )
                                 }
                             }
@@ -521,123 +505,158 @@ private fun FavoritesEmptyHint() {
 }
 
 /**
- * A forum row with long-press context menu (favorite toggle, copy link,
- * share) and optional edit-mode controls (remove / move).
+ * A grid cell (icon + name) with a long-press context menu (favorite toggle,
+ * copy link, share) and an edit-mode remove badge.
  */
 @Composable
-private fun ForumRowWithMenu(
+private fun ForumGridCellWithMenu(
     forum: Forum,
-    index: Int,
-    showStar: Boolean,
     isFavorite: Boolean,
     editMode: Boolean,
-    isFirst: Boolean,
-    isLast: Boolean,
     contextMenuForum: Forum?,
     onContextMenu: (Forum?) -> Unit,
     onDismissMenu: () -> Unit,
     onClick: () -> Unit,
     onToggleFavorite: () -> Unit,
     onRemove: () -> Unit,
-    onMove: (Int, Int) -> Unit,
+) {
+    val navID = NavigationIdentifier.ForumID(forum.id)
+    Box {
+        ForumGridCell(
+            forum = forum,
+            editMode = editMode,
+            onClick = onClick,
+            onLongClick = { if (!editMode) onContextMenu(forum) },
+            onRemove = onRemove,
+        )
+        ForumContextMenu(
+            expanded = contextMenuForum == forum,
+            onDismiss = onDismissMenu,
+            isFavorite = isFavorite,
+            navID = navID,
+            onToggleFavorite = {
+                onToggleFavorite()
+                onDismissMenu()
+            },
+        )
+    }
+}
+
+/** Dense 3-per-row grid cell: forum icon on top, single-line name below. */
+@Composable
+private fun ForumGridCell(
+    forum: Forum,
+    editMode: Boolean,
+    onClick: () -> Unit,
+    onLongClick: () -> Unit,
+    onRemove: () -> Unit,
 ) {
     val context = LocalContext.current
-    val navID = NavigationIdentifier.ForumID(forum.id)
-
     Box {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            ForumRowCard(
-                forum = forum,
-                modifier = if (editMode) Modifier.weight(1f) else Modifier.fillMaxWidth(),
-                isFavorite = showStar && isFavorite,
-                onClick = { if (!editMode) onClick() },
-                onLongClick = { if (!editMode) onContextMenu(forum) },
-            )
-            if (editMode) {
-                IconButton(onClick = onRemove) {
-                    Icon(
-                        Icons.Outlined.Close,
-                        contentDescription = L.str(context, "Remove from Favorites"),
-                    )
-                }
-                Column {
-                    IconButton(
-                        onClick = { onMove(index, index - 1) },
-                        enabled = !isFirst,
-                    ) {
-                        Icon(Icons.Outlined.KeyboardArrowUp, contentDescription = null)
-                    }
-                    IconButton(
-                        onClick = { onMove(index, index + 1) },
-                        enabled = !isLast,
-                    ) {
-                        Icon(Icons.Outlined.KeyboardArrowDown, contentDescription = null)
-                    }
-                }
-            }
-        }
-
-        DropdownMenu(
-            expanded = contextMenuForum == forum,
-            onDismissRequest = onDismissMenu,
-        ) {
-            DropdownMenuItem(
-                text = {
-                    Text(
-                        L.str(
-                            context,
-                            if (isFavorite) "Remove from Favorites" else "Mark as Favorite",
-                        )
-                    )
-                },
-                leadingIcon = {
-                    Icon(
-                        if (isFavorite) Icons.Outlined.Star else Icons.Outlined.StarBorder,
-                        contentDescription = null,
-                    )
-                },
-                onClick = {
-                    onToggleFavorite()
-                    onDismissMenu()
-                },
-            )
-            navID.mngaURL?.let { url ->
-                DropdownMenuItem(
-                    text = { Text(L.str(context, "Copy Link")) },
-                    leadingIcon = { Icon(Icons.Outlined.ContentCopy, contentDescription = null) },
-                    onClick = {
-                        copyToClipboard(context, url)
-                        onDismissMenu()
-                    },
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .combinedClickable(
+                    enabled = true,
+                    onClick = { if (!editMode) onClick() },
+                    onLongClick = onLongClick,
                 )
-            }
-            DropdownMenuItem(
-                text = { Text(L.str(context, "Share")) },
-                leadingIcon = { Icon(Icons.Outlined.Share, contentDescription = null) },
-                onClick = {
-                    val url = navID.webpageURL ?: navID.mngaURL
-                    if (url != null) shareText(context, url)
-                    onDismissMenu()
-                },
+                .padding(horizontal = 4.dp, vertical = 12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            ForumIcon(iconUrl = forum.iconUrl, name = forum.name, size = 36.dp)
+            Text(
+                forum.name,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.Center,
             )
-            navID.webpageURL?.let { url ->
-                DropdownMenuItem(
-                    text = { Text(L.str(context, "Open in Browser")) },
-                    leadingIcon = { Icon(Icons.Outlined.OpenInBrowser, contentDescription = null) },
-                    onClick = {
-                        openInBrowser(context, url)
-                        onDismissMenu()
-                    },
+        }
+        if (editMode) {
+            IconButton(
+                onClick = onRemove,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .size(24.dp),
+            ) {
+                Icon(
+                    Icons.Outlined.Close,
+                    contentDescription = L.str(context, "Remove from Favorites"),
+                    modifier = Modifier.size(14.dp),
+                    tint = MaterialTheme.colorScheme.error,
                 )
             }
         }
     }
 }
 
-/** The trailing "..." filter menu of the forum list (SS1). */
+/** Shared long-press context menu for a forum (favorite / copy / share / open). */
+@Composable
+private fun ForumContextMenu(
+    expanded: Boolean,
+    onDismiss: () -> Unit,
+    isFavorite: Boolean,
+    navID: NavigationIdentifier,
+    onToggleFavorite: () -> Unit,
+) {
+    val context = LocalContext.current
+    DropdownMenu(expanded = expanded, onDismissRequest = onDismiss) {
+        DropdownMenuItem(
+            text = {
+                Text(
+                    L.str(
+                        context,
+                        if (isFavorite) "Remove from Favorites" else "Mark as Favorite",
+                    )
+                )
+            },
+            leadingIcon = {
+                Icon(
+                    if (isFavorite) Icons.Outlined.Star else Icons.Outlined.StarBorder,
+                    contentDescription = null,
+                )
+            },
+            onClick = onToggleFavorite,
+        )
+        navID.mngaURL?.let { url ->
+            DropdownMenuItem(
+                text = { Text(L.str(context, "Copy Link")) },
+                leadingIcon = { Icon(Icons.Outlined.ContentCopy, contentDescription = null) },
+                onClick = {
+                    copyToClipboard(context, url)
+                    onDismiss()
+                },
+            )
+        }
+        DropdownMenuItem(
+            text = { Text(L.str(context, "Share")) },
+            leadingIcon = { Icon(Icons.Outlined.Share, contentDescription = null) },
+            onClick = {
+                val url = navID.webpageURL ?: navID.mngaURL
+                if (url != null) shareText(context, url)
+                onDismiss()
+            },
+        )
+        navID.webpageURL?.let { url ->
+            DropdownMenuItem(
+                text = { Text(L.str(context, "Open in Browser")) },
+                leadingIcon = { Icon(Icons.Outlined.OpenInBrowser, contentDescription = null) },
+                onClick = {
+                    openInBrowser(context, url)
+                    onDismiss()
+                },
+            )
+        }
+    }
+}
+
+/** The trailing "More" menu of the forum list, holding the forum filters. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun FilterMenu(
+private fun MoreMenu(
     expanded: Boolean,
     onDismiss: () -> Unit,
     submenuExpanded: Boolean,

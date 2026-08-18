@@ -16,3 +16,6 @@ local.properties
 
 # Log files
 *.log
+
+# Editor / tooling
+.workbuddy/

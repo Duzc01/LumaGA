@@ -21,6 +21,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.bugenzhao.mnga.protos.datamodel.Forum
 import com.bugenzhao.mnga.protos.datamodel.ForumId
@@ -41,18 +42,24 @@ fun ForumId.idDescription(): String =
     if (hasFid()) "#$fid" else "st#$stid"
 
 /**
- * 28dp forum icon, a port of `ForumIconView`. Forums NGA gives no icon for (or
- * whose icon fails to load) get a generated [InitialAvatar] from [name]
- * instead of the bundled placeholder every such forum used to share; the
- * bundled icon is still the last resort for nameless forums.
+ * Forum icon, a port of `ForumIconView`. Forums NGA gives no icon for (or whose
+ * icon fails to load) get a generated [InitialAvatar] from [name] instead of
+ * the bundled placeholder every such forum used to share; the bundled icon is
+ * still the last resort for nameless forums. [size] defaults to the row size
+ * (28dp); grid cells may pass a larger one.
  */
 @Composable
-fun ForumIcon(iconUrl: String, name: String, modifier: Modifier = Modifier) {
+fun ForumIcon(
+    iconUrl: String,
+    name: String,
+    size: Dp = 28.dp,
+    modifier: Modifier = Modifier,
+) {
     val model = forumIconModel(iconUrl)
     val generated: (@Composable () -> Unit)? = if (name.isBlank()) {
         null
     } else {
-        { InitialAvatar(name = name, size = 28.dp, modifier = modifier) }
+        { InitialAvatar(name = name, size = size, modifier = modifier) }
     }
     if (generated != null && isDefaultAvatarUrl(model)) {
         generated()
@@ -61,7 +68,7 @@ fun ForumIcon(iconUrl: String, name: String, modifier: Modifier = Modifier) {
     AvatarImage(
         url = model ?: DefaultForumIconAsset,
         name = name,
-        size = 28.dp,
+        size = size,
         // Real icons keep their squarish frame; the generated one stays a disc.
         shape = RoundedCornerShape(6.dp),
         modifier = modifier,
