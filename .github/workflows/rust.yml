@@ -54,24 +54,34 @@ jobs:
           cargo test -p service --lib test_extract_error_shapes
           cargo test -p service --lib test_sanitize_control_chars_in_json_strings
 
+      # The runner ships several NDKs; pin the newest one for the steps below.
+      - name: Select NDK
+        run: echo "ANDROID_NDK_HOME=${ANDROID_NDK_LATEST_HOME:?no NDK on this runner}" >> "$GITHUB_ENV"
+
       - name: Build
         run: |
-          export ANDROID_NDK_HOME="${ANDROID_NDK_LATEST_HOME:?no NDK on this runner}"
           "$ANDROID_NDK_HOME/ndk-build" --version | head -1
           ./build-jni-libs.sh
 
       # A missing or renamed symbol only surfaces at System.loadLibrary time in
-      # the app, so assert the JNI entry points here.
+      # the app, so assert the JNI entry points here. This uses the NDK's
+      # llvm-readelf because GNU readelf clips symbol names to 25 characters
+      # unless given -W, and these names are 40 and 45 characters long.
       - name: Check JNI symbols
         run: |
+          readelf=("$ANDROID_NDK_HOME"/toolchains/llvm/prebuilt/*/bin/llvm-readelf)
+          [[ -x "${readelf[0]}" ]] || { echo "error: llvm-readelf not found under $ANDROID_NDK_HOME"; exit 1; }
           for abi in arm64-v8a x86_64 x86; do
             so="../logic/src/main/jniLibs/$abi/liblogic.so"
+            found=" $("${readelf[0]}" --dyn-syms "$so" \
+              | grep -oE 'Java_com_bugenzhao_mnga_LogicKt_rustCall(Async)?' | sort -u | tr '\n' ' ')"
             for sym in rustCall rustCallAsync; do
-              readelf --dyn-syms "$so" \
-                | grep -q "Java_com_bugenzhao_mnga_LogicKt_$sym" \
-                || { echo "error: $abi missing Java_com_bugenzhao_mnga_LogicKt_$sym"; exit 1; }
+              [[ "$found" == *" Java_com_bugenzhao_mnga_LogicKt_$sym "* ]] || {
+                echo "error: $abi missing Java_com_bugenzhao_mnga_LogicKt_$sym (exported:$found)"
+                exit 1
+              }
             done
-            echo "$abi ok"
+            echo "$abi ok:$found"
           done
 
       # For inspection only. The .so files committed under logic/src/main/jniLibs

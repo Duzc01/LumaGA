@@ -30,6 +30,7 @@ fun <Item : Any> PagedList(
     dataSource: PagingDataSource<*, Item>,
     key: ((Item) -> Any)? = null,
     showFooter: Boolean = true,
+    showInitialLoading: Boolean = true,
     emptyPlaceholder: String = "No Results",
     header: (@Composable () -> Unit)? = null,
     itemContent: @Composable (Int, Item) -> Unit,
@@ -56,9 +57,14 @@ fun <Item : Any> PagedList(
         modifier = Modifier.fillMaxSize(),
     ) {
         when {
-            dataSource.isInitialLoading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
-            }
+            dataSource.isInitialLoading && showInitialLoading ->
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
+                }
+            dataSource.isInitialLoading ->
+                // The host screen shows its own (e.g. toolbar) loading
+                // indicator; keep the content area blank until data arrives.
+                Box(Modifier.fillMaxSize())
             state.items.isEmpty() && state.latestError != null ->
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     val err = state.latestError

@@ -79,10 +79,23 @@ private fun NavigationHost(
     AnimatedContent(
         targetState = stack.lastOrNull() ?: Route.ForumList,
         transitionSpec = {
-            (slideInHorizontally(tween(280)) { it / 3 } + fadeIn(tween(280)))
-                .togetherWith(
-                    slideOutHorizontally(tween(280)) { -it / 4 } + fadeOut(tween(280))
-                )
+            // Forward (push): the new page slides in from the right while the
+            // old one exits to the left. Backward (pop): mirrored — the new
+            // page slides in from the left and the old one exits to the right.
+            val forward =
+                stack.indexOf(initialState) != -1 &&
+                    stack.indexOf(targetState) > stack.indexOf(initialState)
+            if (forward) {
+                (slideInHorizontally(tween(280)) { it / 3 } + fadeIn(tween(280)))
+                    .togetherWith(
+                        slideOutHorizontally(tween(280)) { -it / 4 } + fadeOut(tween(280))
+                    )
+            } else {
+                (slideInHorizontally(tween(280)) { -it / 3 } + fadeIn(tween(280)))
+                    .togetherWith(
+                        slideOutHorizontally(tween(280)) { it / 4 } + fadeOut(tween(280))
+                    )
+            }
         },
         label = "nav",
     ) { route ->

@@ -20,7 +20,6 @@ import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.Close
@@ -189,10 +188,23 @@ fun ForumListScreen(
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("LumaGA", fontWeight = FontWeight.Bold, maxLines = 1) },
+                title = {
+                    Text(
+                        "LumaGA",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onBackground,
+                        maxLines = 1,
+                    )
+                },
                 navigationIcon = {
-                    // User menu avatar button with a 1dp accent ring.
-                    IconButton(onClick = onShowUserMenu) {
+                    // User menu avatar button with a 1dp accent ring. The start
+                    // padding mirrors the visual gap of the trailing MoreVert
+                    // icon so the avatar and the "More" icon sit symmetrically.
+                    IconButton(
+                        onClick = onShowUserMenu,
+                        modifier = Modifier.padding(start = 14.dp),
+                    ) {
                         Box(
                             Modifier
                                 .size(30.dp)
@@ -217,6 +229,14 @@ fun ForumListScreen(
                     }
                 },
                 actions = {
+                    if (editMode) {
+                        // Edit-favorites mode: hide every other action and show
+                        // only "Done" on the far right.
+                        TextButton(onClick = { editMode = false }) {
+                            Text("完成")
+                        }
+                        return@CenterAlignedTopAppBar
+                    }
                     val showBell = unreadCount > 0 || debugBadge
                     if (showBell) {
                         IconButton(onClick = { App.notis.showingSheet.value = true }) {
@@ -237,11 +257,6 @@ fun ForumListScreen(
                             )
                         }
                         Spacer(Modifier.width(2.dp))
-                    }
-                    if (editMode) {
-                        TextButton(onClick = { editMode = false }) {
-                            Text(L.str(context, "Done"))
-                        }
                     }
                     IconButton(onClick = { navigator.push(Route.GlobalSearch) }) {
                         Icon(
