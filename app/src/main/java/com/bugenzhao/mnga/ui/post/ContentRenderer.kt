@@ -1111,11 +1111,19 @@ internal fun ParagraphText(paragraph: ContentNode.Paragraph) {
     }
     // A sticker is much taller than the text, and the typography's fixed
     // lineHeight clamps the line box, so it would spill onto the neighbouring
-    // lines. Leaving the line height unspecified lets only the line that
-    // actually holds a sticker grow to fit it.
+    // lines. The same happens to runs enlarged via [size=…]: their glyphs are
+    // taller than the fixed line box and overlap the next line. Leaving the
+    // line height unspecified lets only the line that actually holds the tall
+    // content grow to fit it (all other lines fall back to font-metric
+    // heights, which are visually equivalent at the base size).
     val baseStyle = MaterialTheme.typography.bodyMedium
     val style = remember(paragraph, baseStyle) {
-        if (paragraph.pieces.any { it is InlinePiece.Sticker }) {
+        val hasTallContent =
+            paragraph.pieces.any { it is InlinePiece.Sticker } ||
+                paragraph.pieces.any {
+                    it.spec.fontSize != TextUnit.Unspecified && it.spec.fontSize > 20.sp
+                }
+        if (hasTallContent) {
             baseStyle.copy(lineHeight = TextUnit.Unspecified)
         } else {
             baseStyle
