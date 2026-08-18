@@ -147,6 +147,9 @@ private val CALLOUT = 16.sp
 private val SUBHEADLINE = 15.sp
 private val FOOTNOTE = 13.sp
 
+/** Inline sticker edge, used for both the line box (sp) and the image (dp). */
+private const val STICKER_SIZE = 58
+
 /** Horizontal alignment, from `[align]` or the container default. */
 internal enum class HAlign { START, CENTER, END }
 
@@ -1080,8 +1083,12 @@ internal fun ParagraphText(paragraph: ContentNode.Paragraph) {
         paragraph.pieces.mapIndexedNotNull { index, piece ->
             when (piece) {
                 is InlinePiece.Sticker -> "stk-$index" to InlineTextContent(
-                    Placeholder(34.sp, 34.sp, PlaceholderVerticalAlign.TextCenter)
-                ) { StickerImage(piece.name, size = 34.dp) }
+                    Placeholder(
+                        STICKER_SIZE.sp,
+                        STICKER_SIZE.sp,
+                        PlaceholderVerticalAlign.TextCenter,
+                    )
+                ) { StickerImage(piece.name, size = STICKER_SIZE.dp) }
                 is InlinePiece.Icon -> "ico-$index" to InlineTextContent(
                     Placeholder(18.sp, 18.sp, PlaceholderVerticalAlign.TextCenter)
                 ) {
@@ -1103,11 +1110,23 @@ internal fun ParagraphText(paragraph: ContentNode.Paragraph) {
         HAlign.CENTER -> Alignment.CenterHorizontally
         HAlign.END -> Alignment.End
     }
+    // A sticker is much taller than the text, and the typography's fixed
+    // lineHeight clamps the line box, so it would spill onto the neighbouring
+    // lines. Leaving the line height unspecified lets only the line that
+    // actually holds a sticker grow to fit it.
+    val baseStyle = MaterialTheme.typography.bodyMedium
+    val style = remember(paragraph, baseStyle) {
+        if (paragraph.pieces.any { it is InlinePiece.Sticker }) {
+            baseStyle.copy(lineHeight = TextUnit.Unspecified)
+        } else {
+            baseStyle
+        }
+    }
     Column(horizontalAlignment = alignment) {
         Text(
             annotated,
             inlineContent = inlineContent,
-            style = MaterialTheme.typography.bodyMedium,
+            style = style,
             onTextLayout = { layoutResult = it },
             maxLines = paragraph.maxLines ?: Int.MAX_VALUE,
             overflow = if (paragraph.maxLines != null) TextOverflow.Ellipsis else TextOverflow.Clip,
