@@ -551,6 +551,9 @@ fun TopicListScreen(
             PagedList(
                 dataSource = dataSource,
                 key = { it.id },
+                // The toolbar already shows the loading spinner while the
+                // first page loads; skip the centered one.
+                showInitialLoading = false,
                 emptyPlaceholder = L.str(context, "No Results"),
                 header = header,
                 itemContent = { _, topic ->

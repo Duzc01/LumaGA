@@ -548,11 +548,9 @@ fun TopicDetailsScreen(
                     onRefresh = { dataSource.refresh(animated = true) },
                     onOpenInBrowser = { openInBrowser(context, topic) },
                 )
-            } else if (dataSource.isInitialLoading && items.isEmpty()) {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
-                }
             } else {
+                // While the first page loads, the toolbar spinner is the only
+                // loading indicator; render the (empty) list below it.
                 LazyColumn(
                     state = listState,
                     modifier = Modifier.fillMaxSize(),
