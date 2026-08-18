@@ -521,38 +521,30 @@ fun PostRowUserView(
 @Composable
 private fun UserDetailsLine(user: User, showRegDate: Boolean) {
     val context = LocalContext.current
+    val regDate = if (showRegDate && user.regDate > 0) {
+        DateFormatters.detailed(context, Date(user.regDate * 1000)).substringBefore(' ')
+    } else {
+        null
+    }
+    val ipLocation = user.ipLocation.takeIf { it.isNotEmpty() }
+    // Nothing left to show once both are absent; skip the row so it does not
+    // eat the header's vertical spacing.
+    if (regDate == null && ipLocation == null) return
+
     Row(
         horizontalArrangement = Arrangement.spacedBy(10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(
-            user.postNum.toString(),
-            style = MaterialTheme.typography.labelSmall,
-            color = if (user.postNum in 1 until 50) {
-                MaterialTheme.colorScheme.error
-            } else {
-                MaterialTheme.colorScheme.onSurfaceVariant
-            },
-        )
-        Text(
-            String.format("%.1f", user.fame / 10.0),
-            style = MaterialTheme.typography.labelSmall,
-            color = if (user.fame < 0) {
-                MaterialTheme.colorScheme.error
-            } else {
-                MaterialTheme.colorScheme.onSurfaceVariant
-            },
-        )
-        if (showRegDate && user.regDate > 0) {
+        if (regDate != null) {
             Text(
-                DateFormatters.detailed(context, Date(user.regDate * 1000)).substringBefore(' '),
+                regDate,
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-        if (user.ipLocation.isNotEmpty()) {
+        if (ipLocation != null) {
             Text(
-                user.ipLocation,
+                ipLocation,
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
