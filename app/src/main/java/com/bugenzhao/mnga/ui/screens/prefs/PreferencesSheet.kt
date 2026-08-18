@@ -913,7 +913,9 @@ private fun Section(
                 header,
                 style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(start = 28.dp, bottom = 6.dp),
+                // Left edge aligned with the grouped card below (the list's
+                // 16dp content padding applies to both).
+                modifier = Modifier.padding(bottom = 6.dp),
             )
         }
         GroupedList { Column { content() } }
@@ -922,7 +924,7 @@ private fun Section(
                 footer,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(start = 28.dp, top = 6.dp, end = 16.dp),
+                modifier = Modifier.padding(top = 6.dp, end = 16.dp),
             )
         }
     }
