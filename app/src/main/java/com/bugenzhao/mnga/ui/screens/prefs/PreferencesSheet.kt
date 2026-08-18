@@ -26,6 +26,7 @@ import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.CleaningServices
+import androidx.compose.material.icons.filled.CloudQueue
 import androidx.compose.material.icons.filled.Contrast
 import androidx.compose.material.icons.filled.Devices
 import androidx.compose.material.icons.filled.DarkMode
@@ -74,6 +75,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -110,6 +112,7 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
+import kotlinx.coroutines.launch
 
 /** The mock topic id that backs the about & acknowledgements page. */
 private const val ABOUT_TOPIC_ID = "mnga_about_feedback"
@@ -149,6 +152,9 @@ private data class PickerOption<T>(
 fun PreferencesSheet(onDismiss: () -> Unit, navigator: Navigator? = null) {
     val context = LocalContext.current
     val prefs = App.prefs
+    val scope = rememberCoroutineScope()
+
+    val useRemote by App.favoriteForums.useRemote.flow.collectAsState()
 
     val colorSchemeRaw by prefs.colorSchemeRaw.flow.collectAsState()
     val themeColorRaw by prefs.themeColorRaw.flow.collectAsState()
@@ -305,6 +311,20 @@ fun PreferencesSheet(onDismiss: () -> Unit, navigator: Navigator? = null) {
                                 onClick = {
                                     navigator?.push(Route.CacheSettings)
                                     dismiss()
+                                },
+                            )
+                            SwitchRow(
+                                icon = Icons.Filled.CloudQueue,
+                                title = L.str(context, "Sync Favorites"),
+                                checked = useRemote,
+                                onChange = { next ->
+                                    if (PlusModel.withPlusCheck(PlusFeature.SYNC_FORUMS) {
+                                            App.favoriteForums.useRemote.value = next
+                                            true
+                                        }
+                                    ) {
+                                        scope.launch { App.favoriteForums.sync() }
+                                    }
                                 },
                             )
                         }

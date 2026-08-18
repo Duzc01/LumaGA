@@ -75,8 +75,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.bugenzhao.mnga.App
-import com.bugenzhao.mnga.model.PlusFeature
-import com.bugenzhao.mnga.model.PlusModel
 import com.bugenzhao.mnga.model.NavigationIdentifier
 import com.bugenzhao.mnga.model.PagingDataSource
 import com.bugenzhao.mnga.protos.datamodel.Category
@@ -263,16 +261,6 @@ fun ForumListScreen(
                             filterMode = filterMode,
                             onFilterModeChange = { mode ->
                                 App.favoriteForums.showAll.value = mode.raw
-                            },
-                            useRemote = useRemote,
-                            onUseRemoteChange = { next ->
-                                if (PlusModel.withPlusCheck(PlusFeature.SYNC_FORUMS) {
-                                        App.favoriteForums.useRemote.value = next
-                                        true
-                                    }
-                                ) {
-                                    scope.launch { App.favoriteForums.sync() }
-                                }
                             },
                             onEditFavorites = { editMode = true },
                             anyCollapsed = collapsedCategories.isNotEmpty(),
@@ -659,8 +647,6 @@ private fun MoreMenu(
     onSubmenuDismiss: () -> Unit,
     filterMode: FilterMode,
     onFilterModeChange: (FilterMode) -> Unit,
-    useRemote: Boolean,
-    onUseRemoteChange: (Boolean) -> Unit,
     onEditFavorites: () -> Unit,
     anyCollapsed: Boolean,
     onCollapseAll: () -> Unit,
@@ -679,22 +665,8 @@ private fun MoreMenu(
             },
         )
         DropdownMenuItem(
-            text = { Text(L.str(context, "Sync Favorites")) },
-            leadingIcon = {
-                Icon(Icons.Outlined.CloudQueue, contentDescription = null)
-            },
-            trailingIcon = {
-                androidx.compose.material3.Switch(
-                    checked = useRemote,
-                    onCheckedChange = onUseRemoteChange,
-                )
-            },
-            onClick = { onUseRemoteChange(!useRemote) },
-        )
-        DropdownMenuItem(
             text = { Text(L.str(context, "Filters")) },
             leadingIcon = { Icon(Icons.Outlined.FilterList, contentDescription = null) },
-            trailingIcon = { Text(filterMode.raw) },
             onClick = onSubmenuShow,
         )
         DropdownMenu(
