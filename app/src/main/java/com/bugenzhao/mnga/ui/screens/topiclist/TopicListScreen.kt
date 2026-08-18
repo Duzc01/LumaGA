@@ -29,11 +29,9 @@ import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material.icons.outlined.ThumbUp
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -462,6 +460,14 @@ fun TopicListScreen(
                             }
                         }
                     } else {
+                        if (!mock && signedIn && editor != null) {
+                            IconButton(onClick = { newTopic() }) {
+                                Icon(
+                                    Icons.Outlined.Edit,
+                                    contentDescription = L.str(context, "New Topic"),
+                                )
+                            }
+                        }
                         Box {
                             IconButton(onClick = { moreMenuExpanded = true }) {
                                 Icon(
@@ -509,8 +515,6 @@ fun TopicListScreen(
                                 },
                                 onRefresh = { triggerRefresh() },
                                 signedIn = signedIn,
-                                canNewTopic = !mock && editor != null,
-                                onNewTopic = { newTopic() },
                                 isFavorite = isForumFavorite,
                                 onToggleFavorite = {
                                     App.favoriteForums.toggle(forum) {
@@ -525,55 +529,6 @@ fun TopicListScreen(
                     }
                 },
             )
-        },
-        bottomBar = {
-            if (mode == TopicListMode.NORMAL) {
-                Row(
-                    Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    if (subforums.isNotEmpty()) {
-                        IconButton(onClick = { navigator.push(Route.SubforumList(forumId = forumId)) }) {
-                            Icon(
-                                Icons.Outlined.Category,
-                                contentDescription = L.str(context, "Subforums"),
-                            )
-                        }
-                    }
-                    if (!mock) {
-                        IconButton(onClick = { navigator.push(Route.TopicSearch(forumId = forumId)) }) {
-                            Icon(
-                                Icons.Outlined.Search,
-                                contentDescription = L.str(context, "Search Topics"),
-                            )
-                        }
-                    }
-                    if (showRefreshButton) {
-                        IconButton(onClick = { triggerRefresh() }) {
-                            if (state.isRefreshing && !dataSource.notLoaded) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(20.dp),
-                                    strokeWidth = 2.dp,
-                                )
-                            } else {
-                                Icon(
-                                    Icons.Outlined.Refresh,
-                                    contentDescription = L.str(context, "Refresh"),
-                                )
-                            }
-                        }
-                    }
-                    Spacer(Modifier.weight(1f))
-                    if (!mock && signedIn && editor != null) {
-                        FilledIconButton(onClick = { newTopic() }) {
-                            Icon(
-                                Icons.Outlined.Edit,
-                                contentDescription = L.str(context, "New Topic"),
-                            )
-                        }
-                    }
-                }
-            }
         },
     ) { padding ->
         val headerLabel = when (mode) {
@@ -836,8 +791,6 @@ private fun TopicListMoreMenu(
     onTopicSearch: () -> Unit,
     onRefresh: () -> Unit,
     signedIn: Boolean,
-    canNewTopic: Boolean,
-    onNewTopic: () -> Unit,
     isFavorite: Boolean,
     onToggleFavorite: () -> Unit,
     shareTitle: String,
@@ -977,16 +930,6 @@ private fun TopicListMoreMenu(
                 onDismiss()
             },
         )
-        if (signedIn && canNewTopic) {
-            DropdownMenuItem(
-                text = { Text(L.str(context, "New Topic")) },
-                leadingIcon = { Icon(Icons.Outlined.Edit, contentDescription = null) },
-                onClick = {
-                    onNewTopic()
-                    onDismiss()
-                },
-            )
-        }
         DropdownMenuItem(
             text = {
                 Text(
