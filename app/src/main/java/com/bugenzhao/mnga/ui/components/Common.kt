@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -87,7 +88,14 @@ fun GroupedRow(
     subtitle: String? = null,
     trailing: (@Composable () -> Unit)? = null,
 ) {
-    var rowModifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp)
+    // Uniform 72dp row height so switch rows (Material switch carries a 48dp
+    // minimum interactive size) and picker/navigation rows keep the same
+    // vertical rhythm.
+    var rowModifier =
+        Modifier
+            .fillMaxWidth()
+            .heightIn(min = 72.dp)
+            .padding(horizontal = 16.dp, vertical = 12.dp)
     if (onClick != null) {
         rowModifier = rowModifier.then(Modifier.clickable { onClick() })
     }
