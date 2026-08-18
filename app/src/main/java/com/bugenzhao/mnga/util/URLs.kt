@@ -27,7 +27,10 @@ object URLs {
 
     /**
      * Resolve [value] (possibly relative) against [base] and rewrite legacy
-     * NGA image hosts (`img123.ngabbs.com` etc.) to their modern equivalents.
+     * NGA image hosts (`img.nga.178.com`, `img123.ngabbs.com`, …) to their
+     * modern equivalents. The legacy CDN domains no longer resolve, but the
+     * same files are served from `img.nga.cn` / `img4.nga.cn` under the
+     * original path.
      */
     fun resourceURL(value: String, base: String? = null): String? {
         val resolved = if (base != null && !value.contains("://")) {
@@ -38,11 +41,13 @@ object URLs {
         val uri = Uri.parse(resolved) ?: return null
         val host = uri.host?.lowercase() ?: return resolved
 
-        val parts = host.split(".")
-        if (parts.size == 2 && parts[0].take(3) == "img" &&
-            parts[0].drop(3).all { it.isDigit() } &&
-            host.substringAfter(".") in legacyHostSuffixes.map { it.drop(1) }
-        ) {
+        val legacyBase = legacyHostSuffixes.firstOrNull { host.endsWith(it) }
+        val prefix = legacyBase?.let { host.removeSuffix(it) }
+        val isLegacyImageHost =
+            legacyBase != null &&
+                (prefix == "img" ||
+                    (prefix?.startsWith("img") == true && prefix.drop(3).all { it.isDigit() }))
+        if (isLegacyImageHost) {
             val newHost =
                 if (uri.path?.startsWith("/ngabbs/") == true) "img4.nga.cn" else "img.nga.cn"
             val builder = uri.buildUpon().scheme("https").authority(newHost)
