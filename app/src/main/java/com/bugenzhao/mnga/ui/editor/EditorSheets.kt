@@ -184,6 +184,16 @@ private fun GenericEditorSheet(
         update { it.copy(content = newText) }
     }
 
+    // Only keystrokes go through the field's `onValueChange`; the sticker panel,
+    // the BBCode toolbar and the image upload all mutate the editor's text
+    // directly, so mirror every text change into the context. Without this a
+    // sticker inserted last shows up in the field but never gets sent.
+    LaunchedEffect(editor) {
+        editor.text.collect { newText ->
+            if (model.context.value?.content != newText) pushContent(newText)
+        }
+    }
+
     val canUpload =
         ctx?.task?.buildUploadAttachmentRequest(ByteArray(0)) != null
 
