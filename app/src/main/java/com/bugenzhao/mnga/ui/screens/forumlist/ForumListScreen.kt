@@ -4,7 +4,6 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,7 +20,6 @@ import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.Close
@@ -226,6 +224,14 @@ fun ForumListScreen(
                     }
                 },
                 actions = {
+                    if (editMode) {
+                        // Edit-favorites mode: hide every other action and show
+                        // only "Done" on the far right.
+                        TextButton(onClick = { editMode = false }) {
+                            Text("完成")
+                        }
+                        return@CenterAlignedTopAppBar
+                    }
                     val showBell = unreadCount > 0 || debugBadge
                     if (showBell) {
                         IconButton(onClick = { App.notis.showingSheet.value = true }) {
@@ -246,19 +252,6 @@ fun ForumListScreen(
                             )
                         }
                         Spacer(Modifier.width(2.dp))
-                    }
-                    if (editMode) {
-                        TextButton(onClick = { editMode = false }) {
-                            Text("完成")
-                        }
-                    } else {
-                        TextButton(onClick = { editMode = true }) {
-                            Text(
-                                "管理",
-                                color = MaterialTheme.colorScheme.primary,
-                                fontWeight = FontWeight.Bold,
-                            )
-                        }
                     }
                     IconButton(onClick = { navigator.push(Route.GlobalSearch) }) {
                         Icon(
@@ -324,20 +317,18 @@ fun ForumListScreen(
             }
         },
     ) { padding ->
-        Column(Modifier.fillMaxSize().padding(padding)) {
-            HomeSearchBar(onClick = { navigator.push(Route.GlobalSearch) })
-            PullToRefreshBox(
-                isRefreshing = state.isRefreshing,
-                onRefresh = refresh,
-                modifier = Modifier.fillMaxWidth().weight(1f),
+        PullToRefreshBox(
+            isRefreshing = state.isRefreshing,
+            onRefresh = refresh,
+            modifier = Modifier.fillMaxSize().padding(padding),
+        ) {
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(3),
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
-                LazyVerticalGrid(
-                    columns = GridCells.Fixed(3),
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp),
-                ) {
                 // ---- Favorites section.
                 item(
                     key = "favorites-header",
@@ -431,39 +422,6 @@ fun ForumListScreen(
                 }
             }
         }
-        }
-    }
-}
-
-/**
- * Inline search bar styled after the design draft: a rounded neutral pill with a
- * magnifier icon and a placeholder. Tapping it opens the global search screen.
- */
-@Composable
-private fun HomeSearchBar(onClick: () -> Unit) {
-    val context = LocalContext.current
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp)
-            .clip(RoundedCornerShape(21.dp))
-            .background(MaterialTheme.colorScheme.surfaceVariant)
-            .clickable(onClick = onClick)
-            .padding(horizontal = 14.dp, vertical = 11.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Icon(
-            Icons.Outlined.Search,
-            contentDescription = L.str(context, "Search"),
-            modifier = Modifier.size(20.dp),
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Spacer(Modifier.width(10.dp))
-        Text(
-            "搜索版块",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-        )
     }
 }
 
