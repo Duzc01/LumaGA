@@ -21,9 +21,10 @@ import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.OpenInBrowser
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.SubdirectoryArrowRight
 import androidx.compose.material.icons.filled.SwapVert
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
@@ -491,79 +492,53 @@ fun TopicDetailsScreen(
                             Icon(Icons.Filled.Notifications, contentDescription = null)
                         }
                     }
-                    if (onlyPostId == null) {
-                        TopicDetailsMoreMenu(
-                            topic = topic,
-                            enableAuthorOnly = enableAuthorOnly,
-                            localMode = localMode,
-                            atForum = atForum,
-                            onAuthorOnly = {
-                                if (PlusModel.checkPlus(PlusFeature.AUTHOR_ONLY)) {
-                                    val isAnonymous = topic.authorName.anonymous.isNotEmpty()
-                                    action.navigateToAuthorOnly.value =
-                                        if (isAnonymous) {
-                                            TopicDetailsActionModel.AuthorOnly.Anonymous(null)
-                                        } else {
-                                            TopicDetailsActionModel.AuthorOnly.ByUID(topic.authorId)
-                                        }
+                    TopicDetailsMoreMenu(
+                        topic = topic,
+                        enableAuthorOnly = enableAuthorOnly,
+                        localMode = localMode,
+                        atForum = atForum,
+                        onAuthorOnly = {
+                            if (PlusModel.checkPlus(PlusFeature.AUTHOR_ONLY)) {
+                                val isAnonymous = topic.authorName.anonymous.isNotEmpty()
+                                action.navigateToAuthorOnly.value =
+                                    if (isAnonymous) {
+                                        TopicDetailsActionModel.AuthorOnly.Anonymous(null)
+                                    } else {
+                                        TopicDetailsActionModel.AuthorOnly.ByUID(topic.authorId)
+                                    }
+                            }
+                        },
+                        onViewCached = { action.navigateToLocalMode.value = true },
+                        onGotoForum = { forum -> action.navigateToForum.value = forum },
+                        onJump = if (!mock && onlyPostId == null) {
+                            { if (PlusModel.checkPlus(PlusFeature.JUMP)) showJumpSelector = true }
+                        } else null,
+                        onLoadFirstPage = run {
+                            val firstLoaded = dataSource.firstLoadedPage
+                            if (firstLoaded != null && firstLoaded >= 2) {
+                                {
+                                    dataSource.loadFromPage = 1
+                                    floorToJump = 0
                                 }
-                            },
-                            onViewCached = { action.navigateToLocalMode.value = true },
-                            onGotoForum = { forum -> action.navigateToForum.value = forum },
-                        )
-                    }
+                            } else null
+                        },
+                        onReply = if (onlyPostId == null && !mock && first != null) {
+                            { onPostAction?.invoke(PostRowAction.REPLY, first) }
+                        } else null,
+                        onGotoTopic = if (onlyPostId != null && topic.id.isNotEmpty()) {
+                            {
+                                navigator.push(
+                                    Route.TopicDetails(
+                                        topicId = topic.id,
+                                        fav = route.fav,
+                                        postId = onlyPostId,
+                                    )
+                                )
+                            }
+                        } else null,
+                    )
                 },
             )
-        },
-        bottomBar = {
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 8.dp, vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                if (!mock && onlyPostId == null) {
-                    TextButton(onClick = {
-                        if (PlusModel.checkPlus(PlusFeature.JUMP)) showJumpSelector = true
-                    }) {
-                        Icon(Icons.Filled.SwapVert, null, Modifier.size(18.dp))
-                        Spacer(Modifier.size(4.dp))
-                        Text(L.str(context, "Jump to..."))
-                    }
-                }
-                val firstLoaded = dataSource.firstLoadedPage
-                if (firstLoaded != null && firstLoaded >= 2) {
-                    TextButton(onClick = {
-                        dataSource.loadFromPage = 1
-                        floorToJump = 0
-                    }) {
-                        Icon(Icons.Filled.ArrowUpward, null, Modifier.size(18.dp))
-                        Spacer(Modifier.size(4.dp))
-                        Text(L.str(context, "Load First Page"))
-                    }
-                }
-                Spacer(Modifier.weight(1f))
-                if (onlyPostId == null && !mock && first != null) {
-                    TextButton(onClick = {
-                        onPostAction?.invoke(PostRowAction.REPLY, first)
-                    }) {
-                        Icon(Icons.AutoMirrored.Filled.Reply, null, Modifier.size(18.dp))
-                        Spacer(Modifier.size(4.dp))
-                        Text(L.str(context, "Reply"))
-                    }
-                } else if (onlyPostId != null && topic.id.isNotEmpty()) {
-                    TextButton(onClick = {
-                        navigator.push(
-                            Route.TopicDetails(
-                                topicId = topic.id,
-                                fav = route.fav,
-                                postId = onlyPostId,
-                            )
-                        )
-                    }) { Text(L.str(context, "Goto Topic")) }
-                }
-            }
         },
     ) { padding ->
         PullToRefreshBox(
@@ -1061,6 +1036,10 @@ private fun TopicDetailsMoreMenu(
     onAuthorOnly: () -> Unit,
     onViewCached: () -> Unit,
     onGotoForum: (com.bugenzhao.mnga.protos.datamodel.Forum) -> Unit,
+    onJump: (() -> Unit)? = null,
+    onLoadFirstPage: (() -> Unit)? = null,
+    onReply: (() -> Unit)? = null,
+    onGotoTopic: (() -> Unit)? = null,
 ) {
     val context = LocalContext.current
     var open by remember { mutableStateOf(false) }
@@ -1077,6 +1056,37 @@ private fun TopicDetailsMoreMenu(
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
             )
             HorizontalDivider()
+            if (onJump != null) {
+                DropdownMenuItem(
+                    text = { Text(L.str(context, "Jump to...")) },
+                    leadingIcon = { Icon(Icons.Filled.SwapVert, null) },
+                    onClick = { open = false; onJump() },
+                )
+            }
+            if (onLoadFirstPage != null) {
+                DropdownMenuItem(
+                    text = { Text(L.str(context, "Load First Page")) },
+                    leadingIcon = { Icon(Icons.Filled.ArrowUpward, null) },
+                    onClick = { open = false; onLoadFirstPage() },
+                )
+            }
+            if (onReply != null) {
+                DropdownMenuItem(
+                    text = { Text(L.str(context, "Reply")) },
+                    leadingIcon = { Icon(Icons.AutoMirrored.Filled.Reply, null) },
+                    onClick = { open = false; onReply() },
+                )
+            }
+            if (onGotoTopic != null) {
+                DropdownMenuItem(
+                    text = { Text(L.str(context, "Goto Topic")) },
+                    leadingIcon = { Icon(Icons.Filled.SubdirectoryArrowRight, null) },
+                    onClick = { open = false; onGotoTopic() },
+                )
+            }
+            if (onJump != null || onLoadFirstPage != null || onReply != null || onGotoTopic != null) {
+                HorizontalDivider()
+            }
             if (enableAuthorOnly) {
                 DropdownMenuItem(
                     text = { Text(L.str(context, "Author Only")) },
