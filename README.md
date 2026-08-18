@@ -1,5 +1,7 @@
 # LumaGA
 
+**English** | [简体中文](README.zh-CN.md)
+
 Android port of [MNGA](https://github.com/BugenZhao/MNGA), an NGA (bbs.nga.cn)
 client. Built with Jetpack Compose, on top of the same Rust `logic` backend
 MNGA uses, linked in as `liblogic.so` over JNI.
