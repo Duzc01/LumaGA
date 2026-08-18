@@ -1,5 +1,6 @@
 package com.bugenzhao.mnga.ui.screens.topiclist
 
+import android.util.Base64
 import androidx.activity.compose.BackHandler
 
 import androidx.compose.foundation.layout.Box
@@ -28,11 +29,9 @@ import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material.icons.outlined.ThumbUp
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -51,6 +50,7 @@ import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -238,7 +238,52 @@ fun TopicListScreen(
     }
     val state by dataSource.state.collectAsState()
 
-    LaunchedEffect(dataSource) { dataSource.initialLoad() }
+    // -- Keep the loaded topic list across navigation: when this screen is
+    // pushed away (e.g. into a topic details page) and popped back, restore
+    // the previous items/page/scroll instead of refetching and jumping to top.
+    var savedItemsB64 by rememberSaveable(forumId, mode) { mutableStateOf<List<String>>(emptyList()) }
+    var savedLoadedPage by rememberSaveable(forumId, mode) { mutableStateOf(0) }
+    var savedTotalPages by rememberSaveable(forumId, mode) { mutableStateOf(1) }
+    var savedLastRefresh by rememberSaveable(forumId, mode) { mutableStateOf(0L) }
+    var savedResponseB64 by rememberSaveable(forumId, mode) { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(dataSource) {
+        if (savedItemsB64.isNotEmpty()) {
+            val parser =
+                when (dataSource) {
+                    hotDataSource -> HotTopicListResponse.parser()
+                    else -> TopicListResponse.parser()
+                }
+            dataSource.restoreItems(
+                items = savedItemsB64.map { Topic.parseFrom(Base64.decode(it, Base64.NO_WRAP)) },
+                loadedPage = savedLoadedPage,
+                totalPages = savedTotalPages,
+                lastRefreshTime = savedLastRefresh.takeIf { it > 0 }?.let { java.util.Date(it) },
+                latestResponse = savedResponseB64?.let {
+                    parser.parseFrom(Base64.decode(it, Base64.NO_WRAP))
+                },
+            )
+        } else {
+            dataSource.initialLoad()
+        }
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            if (dataSource.items.isNotEmpty()) {
+                savedItemsB64 = dataSource.items.map {
+                    Base64.encodeToString(it.toByteArray(), Base64.NO_WRAP)
+                }
+                savedLoadedPage = dataSource.loadedPage
+                savedTotalPages = dataSource.totalPages
+                savedLastRefresh = dataSource.lastRefreshTime?.time ?: 0L
+                savedResponseB64 =
+                    (dataSource.latestResponse as? com.google.protobuf.Message)
+                        ?.toByteArray()
+                        ?.let { Base64.encodeToString(it, Base64.NO_WRAP) }
+            }
+        }
+    }
 
     // -- Forum meta enrichment (SS5 updateForumMeta).
     var forum by remember(forumId) {
@@ -415,6 +460,14 @@ fun TopicListScreen(
                             }
                         }
                     } else {
+                        if (!mock && signedIn && editor != null) {
+                            IconButton(onClick = { newTopic() }) {
+                                Icon(
+                                    Icons.Outlined.Edit,
+                                    contentDescription = L.str(context, "New Topic"),
+                                )
+                            }
+                        }
                         Box {
                             IconButton(onClick = { moreMenuExpanded = true }) {
                                 Icon(
@@ -462,8 +515,6 @@ fun TopicListScreen(
                                 },
                                 onRefresh = { triggerRefresh() },
                                 signedIn = signedIn,
-                                canNewTopic = !mock && editor != null,
-                                onNewTopic = { newTopic() },
                                 isFavorite = isForumFavorite,
                                 onToggleFavorite = {
                                     App.favoriteForums.toggle(forum) {
@@ -478,55 +529,6 @@ fun TopicListScreen(
                     }
                 },
             )
-        },
-        bottomBar = {
-            if (mode == TopicListMode.NORMAL) {
-                Row(
-                    Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    if (subforums.isNotEmpty()) {
-                        IconButton(onClick = { navigator.push(Route.SubforumList(forumId = forumId)) }) {
-                            Icon(
-                                Icons.Outlined.Category,
-                                contentDescription = L.str(context, "Subforums"),
-                            )
-                        }
-                    }
-                    if (!mock) {
-                        IconButton(onClick = { navigator.push(Route.TopicSearch(forumId = forumId)) }) {
-                            Icon(
-                                Icons.Outlined.Search,
-                                contentDescription = L.str(context, "Search Topics"),
-                            )
-                        }
-                    }
-                    if (showRefreshButton) {
-                        IconButton(onClick = { triggerRefresh() }) {
-                            if (state.isRefreshing && !dataSource.notLoaded) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(20.dp),
-                                    strokeWidth = 2.dp,
-                                )
-                            } else {
-                                Icon(
-                                    Icons.Outlined.Refresh,
-                                    contentDescription = L.str(context, "Refresh"),
-                                )
-                            }
-                        }
-                    }
-                    Spacer(Modifier.weight(1f))
-                    if (!mock && signedIn && editor != null) {
-                        FilledIconButton(onClick = { newTopic() }) {
-                            Icon(
-                                Icons.Outlined.Edit,
-                                contentDescription = L.str(context, "New Topic"),
-                            )
-                        }
-                    }
-                }
-            }
         },
     ) { padding ->
         val headerLabel = when (mode) {
@@ -789,8 +791,6 @@ private fun TopicListMoreMenu(
     onTopicSearch: () -> Unit,
     onRefresh: () -> Unit,
     signedIn: Boolean,
-    canNewTopic: Boolean,
-    onNewTopic: () -> Unit,
     isFavorite: Boolean,
     onToggleFavorite: () -> Unit,
     shareTitle: String,
@@ -930,16 +930,6 @@ private fun TopicListMoreMenu(
                 onDismiss()
             },
         )
-        if (signedIn && canNewTopic) {
-            DropdownMenuItem(
-                text = { Text(L.str(context, "New Topic")) },
-                leadingIcon = { Icon(Icons.Outlined.Edit, contentDescription = null) },
-                onClick = {
-                    onNewTopic()
-                    onDismiss()
-                },
-            )
-        }
         DropdownMenuItem(
             text = {
                 Text(

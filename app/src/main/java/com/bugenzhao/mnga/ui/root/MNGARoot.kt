@@ -19,6 +19,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -76,6 +77,10 @@ private fun NavigationHost(
 ) {
     val stack by navigator.stack.collectAsState()
     BackHandler(enabled = navigator.size > 1) { navigator.pop() }
+    // Keeps each route's rememberSaveable state (list data, scroll position)
+    // alive while the route is off-screen, so popping back to a screen
+    // restores it instead of rebuilding and refetching.
+    val saveableStateHolder = rememberSaveableStateHolder()
     AnimatedContent(
         targetState = stack.lastOrNull() ?: Route.ForumList,
         transitionSpec = {
@@ -99,10 +104,35 @@ private fun NavigationHost(
         },
         label = "nav",
     ) { route ->
-        Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-            RouteDispatcher(navigator, route, editor)
+        saveableStateHolder.SaveableStateProvider(routeKey(route)) {
+            Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+                RouteDispatcher(navigator, route, editor)
+            }
         }
     }
+}
+
+/** Stable per-route key for [androidx.compose.runtime.saveable.rememberSaveableStateHolder]. */
+private fun routeKey(route: Route): String = when (route) {
+    Route.ForumList -> "forum-list"
+    is Route.TopicList ->
+        "topic-list-${if (route.forumId.hasFid()) "f${route.forumId.fid}" else "st${route.forumId.stid}"}-${route.mode}"
+    is Route.TopicDetails -> "topic-details-${route.topicId}"
+    is Route.UserProfile -> "user-profile-${route.userId ?: route.userName ?: "?"}"
+    Route.GlobalSearch -> "global-search"
+    is Route.TopicSearch ->
+        "topic-search-" + (route.forumId?.let { if (it.hasFid()) "f${it.fid}" else "st${it.stid}" } ?: "all")
+    Route.HotTopics -> "hot-topics"
+    Route.Favorites -> "favorites"
+    Route.History -> "history"
+    Route.ShortMessages -> "short-messages"
+    is Route.ShortMessageDetails -> "short-message-details-${route.id}"
+    Route.Subforums -> "subforums"
+    is Route.SubforumList ->
+        "subforum-list-${if (route.forumId.hasFid()) "f${route.forumId.fid}" else "st${route.forumId.stid}"}"
+    is Route.UnknownForum -> "unknown-forum"
+    Route.CacheSettings -> "cache-settings"
+    Route.BlockWords -> "block-words"
 }
 
 /** Maps a route to its screen. */

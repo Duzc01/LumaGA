@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -32,11 +34,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ColorMatrix
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImagePainter
 import coil.compose.SubcomposeAsyncImage
 import com.bugenzhao.mnga.App
 import com.bugenzhao.mnga.protos.datamodel.Attachment
@@ -104,18 +108,40 @@ fun ContentImageView(
         } else null
 
     Column(modifier) {
-        coil.compose.AsyncImage(
-            model = url,
-            contentDescription = alt,
-            contentScale = androidx.compose.ui.layout.ContentScale.Fit,
-            colorFilter = filter,
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .widthIn(max = maxWidth)
-                    .clip(RoundedCornerShape(8.dp))
-                    .clickable { onViewImage(listOf(url), url) },
-        )
+        val painter = coil.compose.rememberAsyncImagePainter(model = url)
+        // Reading the painter state subscribes to load progress so the box
+        // re-measures once the intrinsic size is known.
+        val painterState = painter.state
+        val intrinsic = painter.intrinsicSize
+        val aspect =
+            if (intrinsic.width > 0f && intrinsic.height > 0f) {
+                intrinsic.width / intrinsic.height
+            } else {
+                1f
+            }
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .widthIn(max = maxWidth)
+                .aspectRatio(aspect)
+                .clip(RoundedCornerShape(8.dp))
+                .clickable { onViewImage(listOf(url), url) },
+            contentAlignment = Alignment.Center,
+        ) {
+            androidx.compose.foundation.Image(
+                painter = painter,
+                contentDescription = alt,
+                contentScale = ContentScale.Fit,
+                colorFilter = filter,
+                modifier = Modifier.fillMaxSize(),
+            )
+            if (painterState is AsyncImagePainter.State.Loading) {
+                CircularProgressIndicator(
+                    Modifier.size(22.dp),
+                    strokeWidth = 2.dp,
+                )
+            }
+        }
         if (alt != null || sizeBytes != null) {
             Spacer(Modifier.height(2.dp))
             Text(

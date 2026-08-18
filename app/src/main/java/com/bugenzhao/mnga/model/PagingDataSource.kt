@@ -54,22 +54,58 @@ class PagingDataSource<Res : Message, Item : Any>(
 
     /** id -> (index in items, owning page) */
     private val itemToIndexAndPage = HashMap<String, Pair<Int, Int>>()
-    private var loadedPage = 0
-    private var totalPages = 1
+    private var loadedPageInternal = 0
+    private var totalPagesInternal = 1
     private val initialPageLocal = initialPage
 
     // Generation counter; refreshed responses rotate it, in-flight loadMore /
     // reload results that arrive with a stale generation are discarded.
     private var dataFlowId = UUID.randomUUID()
 
-    val hasMore: Boolean get() = loadedPage < totalPages
-    val nextPage: Int? get() = if (hasMore) loadedPage + 1 else null
+    val hasMore: Boolean get() = loadedPageInternal < totalPagesInternal
+    val nextPage: Int? get() = if (hasMore) loadedPageInternal + 1 else null
     val isInitialLoading: Boolean
-        get() = _state.value.isLoading && loadedPage == 0
+        get() = _state.value.isLoading && loadedPageInternal == 0
     val firstLoadedPage: Int?
         get() = itemToIndexAndPage.values.minOfOrNull { it.second }
     val notLoaded: Boolean
         get() = items.isEmpty() && _state.value.lastRefreshTime == null && latestError == null
+
+    /** The highest page whose items are present, for snapshot/restore. */
+    val loadedPage: Int get() = loadedPageInternal
+    /** Total pages reported by the server, for snapshot/restore. */
+    val totalPages: Int get() = totalPagesInternal
+    val lastRefreshTime: Date? get() = _state.value.lastRefreshTime
+
+    /**
+     * Restore a previously snapshotted screen without re-fetching: items,
+     * page bookkeeping and the latest response are put back so the list
+     * renders immediately in its previous state.
+     */
+    fun restoreItems(
+        items: List<Item>,
+        loadedPage: Int,
+        totalPages: Int,
+        lastRefreshTime: Date?,
+        latestResponse: Any? = null,
+    ) {
+        itemToIndexAndPage.clear()
+        items.forEachIndexed { index, item ->
+            itemToIndexAndPage[id(item)] = Pair(index, loadedPage)
+        }
+        loadedPageInternal = loadedPage
+        totalPagesInternal = totalPages
+        dataFlowId = UUID.randomUUID()
+        _state.value =
+            _state.value.copy(
+                items = items,
+                isLoading = false,
+                isRefreshing = false,
+                latestResponse = latestResponse,
+                latestError = null,
+                lastRefreshTime = lastRefreshTime,
+            )
+    }
 
     /** External trigger: set to refresh from a specific page. */
     private val _loadFromPage = MutableStateFlow<Int?>(null)
@@ -156,8 +192,8 @@ class PagingDataSource<Res : Message, Item : Any>(
                 isRefreshing = true,
                 latestError = null,
             )
-            loadedPage = fromPage - 1
-            totalPages = fromPage
+            loadedPageInternal = fromPage - 1
+            totalPagesInternal = fromPage
 
             val request = buildRequest(fromPage)
             val result = logicCallAsync(request, responseParser())
@@ -172,8 +208,8 @@ class PagingDataSource<Res : Message, Item : Any>(
                         latestError = null,
                         lastRefreshTime = Date(),
                     )
-                    totalPages = newTotalPages ?: totalPages
-                    loadedPage += 1
+                    totalPagesInternal = newTotalPages ?: totalPagesInternal
+                    loadedPageInternal += 1
                 },
                 onFailure = { e ->
                     _state.value = _state.value.copy(isLoading = false, isRefreshing = false)
@@ -199,7 +235,7 @@ class PagingDataSource<Res : Message, Item : Any>(
         }
 
     fun initialLoad(): Job? {
-        if (loadedPage == 0 && latestError == null) {
+        if (loadedPageInternal == 0 && latestError == null) {
             return refresh(animated = true, fromPage = initialPageLocal)
         }
         return null
@@ -223,9 +259,9 @@ class PagingDataSource<Res : Message, Item : Any>(
     }
 
     private suspend fun loadMoreInternal(background: Boolean, alwaysAnimation: Boolean) {
-        if (_state.value.isLoading || loadedPage >= totalPages) return
+        if (_state.value.isLoading || loadedPageInternal >= totalPagesInternal) return
         _state.value = _state.value.copy(isLoading = true)
-        val page = loadedPage + 1
+        val page = loadedPageInternal + 1
         val request = buildRequest(page)
         val capturedId = dataFlowId
         val result = logicCallAsync(request, responseParser())
@@ -241,10 +277,10 @@ class PagingDataSource<Res : Message, Item : Any>(
                 )
                 if (newItems.isEmpty()) {
                     // Server returned an empty page: treat as end.
-                    totalPages = loadedPage
+                    totalPagesInternal = loadedPageInternal
                 } else {
-                    totalPages = newTotalPages ?: totalPages
-                    loadedPage += 1
+                    totalPagesInternal = newTotalPages ?: totalPagesInternal
+                    loadedPageInternal += 1
                 }
             },
             onFailure = { e ->
@@ -272,7 +308,7 @@ class PagingDataSource<Res : Message, Item : Any>(
         after: (() -> Unit)? = null,
     ): Job =
         scope.launch {
-            if (!(page <= loadedPage || evenIfNotLoaded)) return@launch
+            if (!(page <= loadedPageInternal || evenIfNotLoaded)) return@launch
             if (_state.value.isLoading) return@launch
             _state.value = _state.value.copy(isLoading = true)
             val request = buildRequest(page)
@@ -288,7 +324,7 @@ class PagingDataSource<Res : Message, Item : Any>(
                         latestResponse = response,
                         latestError = null,
                     )
-                    totalPages = newTotalPages ?: totalPages
+                    totalPagesInternal = newTotalPages ?: totalPagesInternal
                     after?.invoke()
                 },
                 onFailure = { e ->
@@ -301,15 +337,15 @@ class PagingDataSource<Res : Message, Item : Any>(
 
     /** Post-send path: reload the last page, then pull in newly appeared pages. */
     fun reloadLastPage(evenIfNotLoaded: Boolean = true, animated: Boolean = true, after: (() -> Unit)? = null) {
-        val oldTotalPages = totalPages
-        val oldLoadedPage = loadedPage
+        val oldTotalPages = totalPagesInternal
+        val oldLoadedPage = loadedPageInternal
         reload(
             page = oldTotalPages,
             evenIfNotLoaded = evenIfNotLoaded,
             animated = animated,
         ) {
             after?.invoke()
-            if (totalPages > oldTotalPages && oldLoadedPage == oldTotalPages) {
+            if (totalPagesInternal > oldTotalPages && oldLoadedPage == oldTotalPages) {
                 scope.launch { loadMoreInternal(background = false, alwaysAnimation = animated) }
             }
         }
@@ -318,7 +354,7 @@ class PagingDataSource<Res : Message, Item : Any>(
     // endregion
 
     private fun onError(e: LogicException) {
-        if (finishOnError) totalPages = loadedPage
+        if (finishOnError) totalPagesInternal = loadedPageInternal
         _state.value = _state.value.copy(latestError = e)
     }
 }
