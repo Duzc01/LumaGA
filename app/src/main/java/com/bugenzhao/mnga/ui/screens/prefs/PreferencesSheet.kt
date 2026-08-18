@@ -158,11 +158,8 @@ fun PreferencesSheet(onDismiss: () -> Unit, navigator: Navigator? = null) {
 
     val dateTimeStrategyRaw by prefs.postRowDateTimeStrategyRaw.flow.collectAsState()
     val showSignature by prefs.showSignature.flow.collectAsState()
-    val showAvatar by prefs.showAvatar.flow.collectAsState()
     val showAuthorIndicator by prefs.postRowShowAuthorIndicator.flow.collectAsState()
-    val showUserDetails by prefs.postRowShowUserDetails.flow.collectAsState()
     val showUserRegDate by prefs.postRowShowUserRegDate.flow.collectAsState()
-    val largerFont by prefs.postRowLargerFont.flow.collectAsState()
     val imageScaleRaw by prefs.postRowImageScaleRaw.flow.collectAsState()
     val dimImages by prefs.postRowDimImagesInDarkMode.flow.collectAsState()
 
@@ -371,36 +368,16 @@ fun PreferencesSheet(onDismiss: () -> Unit, navigator: Navigator? = null) {
                                 onChange = { prefs.showSignature.value = it },
                             )
                             SwitchRow(
-                                icon = Icons.Outlined.AccountCircle,
-                                title = L.str(context, "Show Avatar"),
-                                checked = showAvatar,
-                                onChange = { prefs.showAvatar.value = it },
-                            )
-                            SwitchRow(
                                 icon = Icons.Filled.Person,
                                 title = L.str(context, "Show Author Indicator"),
                                 checked = showAuthorIndicator,
                                 onChange = { prefs.postRowShowAuthorIndicator.value = it },
                             )
                             SwitchRow(
-                                icon = Icons.Filled.Info,
-                                title = L.str(context, "Show User Details"),
-                                checked = showUserDetails,
-                                onChange = { prefs.postRowShowUserDetails.value = it },
-                            )
-                            if (showUserDetails) {
-                                SwitchRow(
-                                    icon = Icons.Filled.CalendarMonth,
-                                    title = L.str(context, "Show User Register Date"),
-                                    checked = showUserRegDate,
-                                    onChange = { prefs.postRowShowUserRegDate.value = it },
-                                )
-                            }
-                            SwitchRow(
-                                icon = Icons.Filled.TextFields,
-                                title = L.str(context, "Larger Font"),
-                                checked = largerFont,
-                                onChange = { prefs.postRowLargerFont.value = it },
+                                icon = Icons.Filled.CalendarMonth,
+                                title = L.str(context, "Show User Register Date"),
+                                checked = showUserRegDate,
+                                onChange = { prefs.postRowShowUserRegDate.value = it },
                             )
                             PickerRow(
                                 icon = Icons.Filled.Photo,

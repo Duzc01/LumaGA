@@ -1243,10 +1243,9 @@ fun PostContent(
     val accent = MaterialTheme.colorScheme.primary
     val onSurface = MaterialTheme.colorScheme.onSurface
     val secondary = MaterialTheme.colorScheme.onSurfaceVariant
-    val largerFont = App.prefs.postRowLargerFont.flow.collectAsState().value
     val baseSize = when (fontSize) {
-        PostFontSize.SMALL -> if (largerFont) 16f else 15f
-        PostFontSize.NORMAL -> if (largerFont) 17f else 16f
+        PostFontSize.SMALL -> 15f
+        PostFontSize.NORMAL -> 16f
     }.sp
     val effectiveSize = baseFontSize ?: baseSize
     val resolvedColor = if (defaultColor == Color.Unspecified) onSurface else defaultColor

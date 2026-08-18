@@ -156,7 +156,6 @@ class PreferencesStorage(private val prefs: SharedPreferences) {
             { e, k, v -> e.putString(k, v) })
 
     val showSignature = boolPref("showSignatureNew", false)
-    val showAvatar = boolPref("showAvatar", true)
     val usePaginatedDetails = boolPref("usePaginatedDetails", false)
     val useInAppSafari = boolPref("useInAppSafari", true)
     val topicListHideBlocked = boolPref("topicListHideBlocked", false)
@@ -164,10 +163,8 @@ class PreferencesStorage(private val prefs: SharedPreferences) {
     val topicListShowForumShortcut = boolPref("topicListShowForumShortcut", true)
     val topicListSubjectMulticolor = boolPref("topicListSubjectMulticolor", true)
     val alwaysPortraitOnPhone = boolPref("alwaysPortraitOnPhone", false)
-    val postRowShowUserDetails = boolPref("postRowShowUserDetails", true)
     val postRowShowUserRegDate = boolPref("postRowShowUserRegDate", false)
     val postRowShowAuthorIndicator = boolPref("postRowShowAuthorIndicator", true)
-    val postRowLargerFont = boolPref("postRowLargerFont", false)
     val postRowDimImagesInDarkMode = boolPref("postRowDimImagesInDarkMode", false)
     val autoOpenInBrowserWhenBanned = boolPref("autoOpenInBrowserWhenBannedNew", false)
     val alwaysShareImageAsFile = boolPref("alwaysShareImageAsFile", false)

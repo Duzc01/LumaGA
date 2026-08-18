@@ -422,8 +422,6 @@ private fun PostRowHeader(
     isAuthor: Boolean,
     action: TopicDetailsActionModel?,
 ) {
-    val showAvatar = App.prefs.showAvatar.flow.collectAsState().value
-    val showDetails = App.prefs.postRowShowUserDetails.flow.collectAsState().value
     val showRegDate = App.prefs.postRowShowUserRegDate.flow.collectAsState().value
 
     Row(
@@ -431,9 +429,7 @@ private fun PostRowHeader(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        if (showAvatar) {
-            PostRowAvatar(post = post, user = user)
-        }
+        PostRowAvatar(post = post, user = user)
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 PostRowUserName(
@@ -448,7 +444,7 @@ private fun PostRowHeader(
                 DateTimeText(timestampSeconds = post.postDate)
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
-                if (showDetails && user != null && user.name.anonymous.isEmpty()) {
+                if (user != null && user.name.anonymous.isEmpty()) {
                     UserDetailsLine(user = user, showRegDate = showRegDate)
                 }
                 Spacer(Modifier.weight(1f))
@@ -564,14 +560,11 @@ fun PostRowUserView(
     isAuthor: Boolean,
     action: TopicDetailsActionModel? = null,
 ) {
-    val showAvatar = App.prefs.showAvatar.flow.collectAsState().value
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        if (showAvatar) {
-            PostRowAvatar(post = post, user = user)
-        }
+        PostRowAvatar(post = post, user = user)
         PostRowUserName(
             post = post,
             user = user,

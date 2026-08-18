@@ -40,8 +40,7 @@ import com.bugenzhao.mnga.util.L
 fun DiceView(result: DiceRoller.Result, unresolved: Boolean = false, modifier: Modifier = Modifier) {
     val context = LocalContext.current
     var showingExpanded by remember(result.originalExpression) { mutableStateOf(false) }
-    val largerFont = App.prefs.postRowLargerFont.flow.collectAsState().value
-    val fontSize = if (largerFont) 16.sp else 15.sp
+    val fontSize = 15.sp
 
     val total = when {
         unresolved -> "???"

@@ -192,9 +192,7 @@ private fun UserViewImpl(
     var user by remember(id) { mutableStateOf(initialUser) }
     var showId by remember(id) { mutableStateOf(false) }
 
-    val showAvatar = pref(App.prefs.showAvatar).value
     val showAuthorIndicator = pref(App.prefs.postRowShowAuthorIndicator).value
-    val showDetailsPref = pref(App.prefs.postRowShowUserDetails).value
     val showRegDatePref = pref(App.prefs.postRowShowUserRegDate).value
 
     // Resolve from the local cache (sync bridge, off the main thread).
@@ -251,34 +249,26 @@ private fun UserViewImpl(
                     tint = MaterialTheme.colorScheme.primary,
                 )
             }
-            if (showAvatar) {
-                AvatarImage(
-                    url = avatarURL,
-                    name = name,
-                    size = size,
-                    contentDescription = name,
-                    // Anonymous names are server-generated noise, so their
-                    // initial would mean nothing — keep the masks glyph.
-                    fallback = if (anonymous) {
-                        { placeholderIcon(Icons.Outlined.TheaterComedy) }
-                    } else {
-                        null
-                    },
-                )
-            } else {
-                placeholderIcon(
-                    if (anonymous) Icons.Outlined.TheaterComedy
-                    else Icons.Filled.AccountCircle
-                )
-            }
+            AvatarImage(
+                url = avatarURL,
+                name = name,
+                size = size,
+                contentDescription = name,
+                // Anonymous names are server-generated noise, so their
+                // initial would mean nothing — keep the masks glyph.
+                fallback = if (anonymous) {
+                    { placeholderIcon(Icons.Outlined.TheaterComedy) }
+                } else {
+                    null
+                },
+            )
         }
     }
 
     val nameStyle = when (style) {
         UserViewStyle.COMPACT -> MaterialTheme.typography.bodyMedium
         UserViewStyle.NORMAL ->
-            if (showDetailsPref) MaterialTheme.typography.bodyMedium
-            else MaterialTheme.typography.bodyLarge
+            MaterialTheme.typography.bodyMedium
         UserViewStyle.HUGE -> MaterialTheme.typography.headlineMedium
         UserViewStyle.VERTICAL -> MaterialTheme.typography.bodySmall
     }
@@ -322,7 +312,7 @@ private fun UserViewImpl(
     }
 
     val showDetails = style == UserViewStyle.HUGE ||
-        (style == UserViewStyle.NORMAL && showDetailsPref)
+        (style == UserViewStyle.NORMAL)
     val showRegDate = style == UserViewStyle.HUGE ||
         (style == UserViewStyle.NORMAL && showRegDatePref)
     val showIpLocation = style == UserViewStyle.HUGE && !resolved?.ipLocation.isNullOrEmpty()
