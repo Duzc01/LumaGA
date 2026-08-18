@@ -933,7 +933,7 @@ private fun PostRowContextMenu(
                 NavigationIdentifier.PostID(post.id.pid)
             }
         DropdownMenuItem(
-            text = { Text(L.str(context, "MNGA Link")) },
+            text = { Text(L.str(context, "LumaGA Link")) },
             leadingIcon = { Icon(Icons.Filled.Link, null) },
             onClick = {
                 navID.mngaURL?.let { clipboard.setText(AnnotatedString(it)) }

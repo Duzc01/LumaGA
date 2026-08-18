@@ -10,7 +10,7 @@ import org.json.JSONObject
 
 /** Catalog of Plus-gated features; case order = display order. */
 enum class PlusFeature(val label: String, val description: String) {
-    CUSTOM_APPEARANCE("Custom Appearance", "Full access to customizing the appearance of MNGA."),
+    CUSTOM_APPEARANCE("Custom Appearance", "Full access to customizing the appearance of LumaGA."),
     MULTI_ACCOUNT("Multiple Accounts", "Log in and switch between multiple accounts."),
     TOPIC_HISTORY("History", "View your footprint of topics you have explored."),
     MULTI_FAVORITE("Multiple Favorite Folders", "Organize favorite topics into multiple folders."),

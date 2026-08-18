@@ -393,7 +393,7 @@ fun LoginSheet(onDismiss: () -> Unit) {
             },
             title = { Text(L.str(context, "From NGA")) },
             text = {
-                Text(message + "\n\n" + L.str(context, "MNGA Login Notice"))
+                Text(message + "\n\n" + L.str(context, "LumaGA Login Notice"))
             },
             confirmButton = {
                 TextButton(

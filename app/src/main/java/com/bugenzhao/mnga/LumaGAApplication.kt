@@ -36,7 +36,7 @@ object App {
         get() = ::prefs.isInitialized
 }
 
-class MNGAApplication : Application() {
+class LumaGAApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()

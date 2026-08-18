@@ -339,7 +339,7 @@ private fun AuthorNames(topic: Topic) {
 /** Copy [text] onto the system clipboard. */
 fun copyToClipboard(context: Context, text: String) {
     val manager = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager ?: return
-    manager.setPrimaryClip(ClipData.newPlainText("MNGA", text))
+    manager.setPrimaryClip(ClipData.newPlainText("LumaGA", text))
 }
 
 /** Share plain text through the Android share sheet. */

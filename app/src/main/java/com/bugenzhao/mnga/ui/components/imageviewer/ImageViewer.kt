@@ -341,7 +341,7 @@ private fun lastPathComponent(url: String): String =
     Uri.parse(url).lastPathSegment?.takeIf { it.isNotEmpty() } ?: "image"
 
 private fun shareNameFor(url: String): String =
-    "MNGA_${md5Hex(url)}_${lastPathComponent(url)}"
+    "LumaGA_${md5Hex(url)}_${lastPathComponent(url)}"
 
 /**
  * Builds an `ACTION_SEND` intent for the image at [url], mirroring the iOS

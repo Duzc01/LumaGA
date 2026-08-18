@@ -24,7 +24,7 @@ enum class TopicListOrder(val raw: Int) {
 }
 
 enum class ThemeColor(val raw: Int, val label: String, val lightColor: Long, val darkColor: Long) {
-    MNGA(0, "MNGA", 0xFFC09D73, 0xFFE4BD88),
+    LUMAGA(0, "LumaGA", 0xFFC09D73, 0xFFE4BD88),
     RED(1, "Red", 0xFFFF3B30, 0xFFFF453A),
     ORANGE(2, "Orange", 0xFFFF9500, 0xFFFF9F0A),
     YELLOW(3, "Yellow", 0xFFFFCC00, 0xFFFFD60A),
@@ -40,7 +40,7 @@ enum class ThemeColor(val raw: Int, val label: String, val lightColor: Long, val
     GRAY(13, "Gray", 0xFF8E8E93, 0xFF8E8E93);
 
     companion object {
-        fun fromRaw(raw: Int): ThemeColor = entries.firstOrNull { it.raw == raw } ?: MNGA
+        fun fromRaw(raw: Int): ThemeColor = entries.firstOrNull { it.raw == raw } ?: LUMAGA
     }
 }
 
@@ -136,7 +136,7 @@ fun <T : Any> pref(p: Pref<T>): State<T> = p.flow.collectAsState()
 class PreferencesStorage(private val prefs: SharedPreferences) {
 
     companion object {
-        /** Set in [com.bugenzhao.mnga.MNGAApplication]; null before that. */
+        /** Set in [com.bugenzhao.mnga.LumaGAApplication]; null before that. */
         var shared: PreferencesStorage? = null
     }
 
@@ -166,7 +166,6 @@ class PreferencesStorage(private val prefs: SharedPreferences) {
     val topicListSubjectMulticolor = boolPref("topicListSubjectMulticolor", true)
     val hideNotificationToolbarShortcut = boolPref("hideNotificationToolbarShortcut", false)
     val useInsetGroupedModern = boolPref("useInsetGroupedModern", true)
-    val hideMNGAMeta = boolPref("hideMNGAMeta", false)
     val alwaysPortraitOnPhone = boolPref("alwaysPortraitOnPhone", false)
     val postRowSwipeActionLeading = boolPref("postRowSwipeActionLeading", false)
     val postRowSwipeVoteFirst = boolPref("postRowSwipeVoteFirst", false)
@@ -177,7 +176,6 @@ class PreferencesStorage(private val prefs: SharedPreferences) {
     val postRowDimImagesInDarkMode = boolPref("postRowDimImagesInDarkMode", false)
     val autoOpenInBrowserWhenBanned = boolPref("autoOpenInBrowserWhenBannedNew", false)
     val alwaysShareImageAsFile = boolPref("alwaysShareImageAsFile", false)
-    val debugResetWhatsNew = boolPref("debugResetWhatsNew", false)
     val debugAlwaysShowNotificationBadge = boolPref("debugAlwaysShowNotificationBadge", false)
 
     val defaultTopicListOrderRaw = intPref("defaultTopicListOrder", 0)

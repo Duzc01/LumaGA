@@ -8,9 +8,9 @@ import androidx.compose.ui.unit.sp
 
 /**
  * Typography approximating the iOS default (SF system) text styles used
- * throughout MNGA: largeTitle/title/headline/body/subheadline/footnote.
+ * throughout LumaGA: largeTitle/title/headline/body/subheadline/footnote.
  */
-val MNGATypography =
+val LumaGATypography =
     Typography(
         displayLarge = TextStyle(fontSize = 34.sp, fontWeight = FontWeight.Bold, lineHeight = 41.sp),
         displayMedium = TextStyle(fontSize = 28.sp, fontWeight = FontWeight.Bold, lineHeight = 34.sp),

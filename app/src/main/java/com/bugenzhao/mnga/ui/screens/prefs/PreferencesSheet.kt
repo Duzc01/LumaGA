@@ -19,7 +19,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Article
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Check
@@ -100,7 +99,6 @@ import com.bugenzhao.mnga.ui.components.GroupedList
 import com.bugenzhao.mnga.ui.components.GroupedRow
 import com.bugenzhao.mnga.ui.nav.Navigator
 import com.bugenzhao.mnga.ui.nav.Route
-import com.bugenzhao.mnga.ui.screens.misc.AllWhatsNewContent
 import com.bugenzhao.mnga.util.L
 import kotlinx.coroutines.launch
 
@@ -151,7 +149,6 @@ fun PreferencesSheet(onDismiss: () -> Unit, navigator: Navigator? = null) {
     val useInAppSafari by prefs.useInAppSafari.flow.collectAsState()
     val hideNotificationShortcut by prefs.hideNotificationToolbarShortcut.flow.collectAsState()
     val useInsetGroupedModern by prefs.useInsetGroupedModern.flow.collectAsState()
-    val hideMNGAMeta by prefs.hideMNGAMeta.flow.collectAsState()
     val alwaysShareImageAsFile by prefs.alwaysShareImageAsFile.flow.collectAsState()
 
     val defaultOrderRaw by prefs.defaultTopicListOrderRaw.flow.collectAsState()
@@ -179,14 +176,12 @@ fun PreferencesSheet(onDismiss: () -> Unit, navigator: Navigator? = null) {
     val dimImages by prefs.postRowDimImagesInDarkMode.flow.collectAsState()
 
     val debugBadge by prefs.debugAlwaysShowNotificationBadge.flow.collectAsState()
-    val debugResetWhatsNew by prefs.debugResetWhatsNew.flow.collectAsState()
 
     val requestOption by prefs.requestOption.collectAsState()
     val device = requestOption.device
 
 
     var picker by remember { mutableStateOf<PickerKind?>(null) }
-    var showingWhatsNew by remember { mutableStateOf(false) }
     var baseURLText by remember(requestOption.baseUrlV2) {
         mutableStateOf(requestOption.baseUrlV2)
     }
@@ -482,12 +477,6 @@ fun PreferencesSheet(onDismiss: () -> Unit, navigator: Navigator? = null) {
                                 onClick = { picker = PickerKind.LIST_STYLE },
                             )
                             SwitchRow(
-                                icon = Icons.Filled.VisibilityOff,
-                                title = L.str(context, "Hide MNGA Meta"),
-                                checked = hideMNGAMeta,
-                                onChange = { prefs.hideMNGAMeta.value = it },
-                            )
-                            SwitchRow(
                                 icon = Icons.Filled.Share,
                                 title = L.str(context, "Always Share Image as File"),
                                 checked = alwaysShareImageAsFile,
@@ -504,7 +493,7 @@ fun PreferencesSheet(onDismiss: () -> Unit, navigator: Navigator? = null) {
                                 OutlinedTextField(
                                     value = baseURLText,
                                     onValueChange = { baseURLText = it },
-                                    label = { Text(L.str(context, "MNGA Backend")) },
+                                    label = { Text(L.str(context, "LumaGA Backend")) },
                                     singleLine = true,
                                     modifier = Modifier.fillMaxWidth(),
                                 )
@@ -547,12 +536,6 @@ fun PreferencesSheet(onDismiss: () -> Unit, navigator: Navigator? = null) {
                                 checked = debugBadge,
                                 onChange = { prefs.debugAlwaysShowNotificationBadge.value = it },
                             )
-                            SwitchRow(
-                                icon = Icons.Filled.Article,
-                                title = L.str(context, "Reset WhatsNew on Next Launch"),
-                                checked = debugResetWhatsNew,
-                                onChange = { prefs.debugResetWhatsNew.value = it },
-                            )
                         }
                     }
                     // endregion
@@ -560,7 +543,7 @@ fun PreferencesSheet(onDismiss: () -> Unit, navigator: Navigator? = null) {
                     // region About
                     item(key = "about") {
                         Section(
-                            header = "MNGA ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
+                            header = "LumaGA ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
                         ) {
                             NavigationRow(
                                 icon = Icons.Filled.AutoAwesome,
@@ -571,11 +554,6 @@ fun PreferencesSheet(onDismiss: () -> Unit, navigator: Navigator? = null) {
                                 icon = Icons.Filled.Check,
                                 title = L.str(context, "Acknowledgements"),
                                 onClick = { pushAboutTopic() },
-                            )
-                            NavigationRow(
-                                icon = Icons.Filled.Article,
-                                title = L.str(context, "What's New"),
-                                onClick = { showingWhatsNew = true },
                             )
                         }
                     }
@@ -729,22 +707,6 @@ fun PreferencesSheet(onDismiss: () -> Unit, navigator: Navigator? = null) {
         null -> {}
     }
     // endregion
-
-    if (showingWhatsNew) {
-        Dialog(
-            onDismissRequest = { showingWhatsNew = false },
-            properties = DialogProperties(usePlatformDefaultWidth = false),
-        ) {
-            Surface(
-                Modifier.fillMaxSize(),
-                color = MaterialTheme.colorScheme.background,
-            ) {
-                Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
-                    AllWhatsNewContent(onBack = { showingWhatsNew = false })
-                }
-            }
-        }
-    }
 }
 
 // region row components

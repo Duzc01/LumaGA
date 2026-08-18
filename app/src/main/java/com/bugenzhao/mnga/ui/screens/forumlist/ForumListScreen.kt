@@ -95,7 +95,7 @@ import com.bugenzhao.mnga.util.L
 import kotlinx.coroutines.launch
 
 private const val CollapsedCategoriesKey = "collapsedCategories"
-private const val FavoritesSectionID = "MNGA-Favorites"
+private const val FavoritesSectionID = "LumaGA-Favorites"
 
 /**
  * The root forum sidebar, a port of `ForumListView`: favorite forums on top,

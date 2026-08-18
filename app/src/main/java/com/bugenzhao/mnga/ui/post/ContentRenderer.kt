@@ -970,7 +970,6 @@ internal class ContentCombiner(
     private fun visitMnga(tagged: Span.Tagged) {
         val fn = tagged.attributesList.firstOrNull() ?: return
         if (fn != "version") return
-        if (App.prefs.hideMNGAMeta.value) return
         appendPlainText(host.appVersion)
     }
 

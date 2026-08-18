@@ -711,7 +711,7 @@ private fun TopicListItem(
     }
 }
 
-/** The three share entries (MNGA link / NGA link / open in browser). */
+/** The three share entries (LumaGA link / NGA link / open in browser). */
 @Composable
 private fun ShareLinksMenuItems(
     shareTitle: String,
@@ -722,7 +722,7 @@ private fun ShareLinksMenuItems(
     val context = LocalContext.current
     mngaURL?.let { url ->
         DropdownMenuItem(
-            text = { Text(L.str(context, "MNGA Link")) },
+            text = { Text(L.str(context, "LumaGA Link")) },
             leadingIcon = { Icon(Icons.Outlined.Share, contentDescription = null) },
             onClick = {
                 shareText(context, "$shareTitle $url".trim())

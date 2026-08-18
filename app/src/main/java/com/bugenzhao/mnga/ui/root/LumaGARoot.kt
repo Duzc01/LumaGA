@@ -20,7 +20,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.LifecycleResumeEffect
@@ -42,17 +41,17 @@ import com.bugenzhao.mnga.ui.screens.subforums.SubforumListScreen
 import com.bugenzhao.mnga.ui.screens.topicdetails.TopicDetailsScreen
 import com.bugenzhao.mnga.ui.screens.topiclist.TopicListScreen
 import com.bugenzhao.mnga.ui.screens.user.UserProfileScreen
-import com.bugenzhao.mnga.ui.theme.MNGATheme
+import com.bugenzhao.mnga.ui.theme.LumaGATheme
 import com.bugenzhao.mnga.model.appScope
 
 /** Root composable: theme, navigation stack and global overlays. */
 @Composable
-fun MNGARoot(onNewIntent: (android.content.Intent) -> Unit) {
+fun LumaGARoot(onNewIntent: (android.content.Intent) -> Unit) {
     val prefs = App.prefs
     val themeColor by prefs.themeColorRaw.flow.collectAsState()
     val colorScheme by prefs.colorSchemeRaw.flow.collectAsState()
 
-    MNGATheme(
+    LumaGATheme(
         themeColor = com.bugenzhao.mnga.storage.ThemeColor.fromRaw(themeColor),
         colorSchemeMode = com.bugenzhao.mnga.storage.ColorSchemeMode.fromRaw(colorScheme),
     ) {
@@ -261,18 +260,6 @@ private fun GlobalSheets(
             navigator = navigator,
             onDismiss = { App.notis.showingSheet.value = false },
         )
-    }
-
-    // "What's New" on version upgrades.
-    var showWhatsNew by remember { mutableStateOf(false) }
-    LaunchedEffect(Unit) {
-        showWhatsNew = com.bugenzhao.mnga.ui.screens.misc.shouldShowWhatsNew()
-    }
-    if (showWhatsNew) {
-        com.bugenzhao.mnga.ui.screens.misc.WhatsNewSheet(onDismiss = {
-            com.bugenzhao.mnga.ui.screens.misc.markWhatsNewShown()
-            showWhatsNew = false
-        })
     }
 }
 

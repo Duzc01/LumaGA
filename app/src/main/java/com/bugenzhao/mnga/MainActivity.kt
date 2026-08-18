@@ -10,7 +10,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import com.bugenzhao.mnga.model.SchemesModel
 import com.bugenzhao.mnga.storage.PreferencesStorage
-import com.bugenzhao.mnga.ui.root.MNGARoot
+import com.bugenzhao.mnga.ui.root.LumaGARoot
 
 class MainActivity : ComponentActivity() {
 
@@ -26,7 +26,7 @@ class MainActivity : ComponentActivity() {
                     if (portrait) ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
                     else ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
             }
-            MNGARoot(onNewIntent = { handleIntent(it) })
+            LumaGARoot(onNewIntent = { handleIntent(it) })
         }
     }
 

@@ -12,8 +12,8 @@ android {
         applicationId = "com.bugenzhao.mnga"
         minSdk = 26
         targetSdk = 36
-        versionCode = 232
-        versionName = "2.3.2"
+        versionCode = 100
+        versionName = "1.0.0"
     }
 
     signingConfigs {

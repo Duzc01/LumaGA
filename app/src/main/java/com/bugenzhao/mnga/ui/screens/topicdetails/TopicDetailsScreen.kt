@@ -1094,14 +1094,14 @@ private fun TopicDetailsMoreMenu(
             HorizontalDivider()
             val navID = NavigationIdentifier.TopicID(topic.id, topic.fav.takeIf { it.isNotEmpty() })
             DropdownMenuItem(
-                text = { Text(L.str(context, "MNGA Link")) },
+                text = { Text(L.str(context, "LumaGA Link")) },
                 leadingIcon = { Icon(Icons.Filled.Bookmark, null) },
                 onClick = {
                     navID.mngaURL?.let {
                         val cm = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE)
                             as? android.content.ClipboardManager
                         cm?.setPrimaryClip(
-                            android.content.ClipData.newPlainText("MNGA", it)
+                            android.content.ClipData.newPlainText("LumaGA", it)
                         )
                     }
                     open = false

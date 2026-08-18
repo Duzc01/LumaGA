@@ -20,6 +20,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "MNGA"
+rootProject.name = "LumaGA"
 include(":app")
 include(":logic")

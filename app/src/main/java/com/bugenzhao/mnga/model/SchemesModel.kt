@@ -175,7 +175,7 @@ class SchemesModel(
         val uri = clip?.uri ?: text?.let { runCatching { Uri.parse(it) }.getOrNull() }
         if (uri == null || !canNavigateTo(uri)) {
             ToastModel.showAuto(
-                ToastModel.Message.Error("Not a valid NGA or MNGA link in the pasteboard.")
+                ToastModel.Message.Error("Not a valid NGA or LumaGA link in the pasteboard.")
             )
         } else {
             navigateTo(uri)

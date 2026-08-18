@@ -27,6 +27,21 @@ object L {
         }
 }
 
+/**
+ * Localized format helper: like [L.str] but tolerant of resources that keep
+ * the iOS-style specifiers (`%@`, `%lld`) in their English fallback values.
+ */
+fun fmtL(context: Context, key: String, vararg args: Any): String =
+    try {
+        L.str(context, key, *args)
+    } catch (e: Exception) {
+        var text = L.str(context, key)
+        args.forEach { arg ->
+            text = text.replaceFirst(Regex("%(\\d+\\$)?(?:ll?d|d|s|@)"), arg.toString())
+        }
+        text
+    }
+
 /** `String.errorLocalized`: split "Category|detail" and localize the category. */
 fun Context.errorLocalized(error: String): String {
     val parts = error.split("|", limit = 2)

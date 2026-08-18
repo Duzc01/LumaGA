@@ -482,7 +482,7 @@ private fun ProfileOverflowMenu(
         }
         if (!anonymous) {
             DropdownMenuItem(
-                text = { Text(L.str(context, "MNGA Link")) },
+                text = { Text(L.str(context, "LumaGA Link")) },
                 leadingIcon = { Icon(Icons.Filled.Share, null) },
                 onClick = {
                     expanded = false

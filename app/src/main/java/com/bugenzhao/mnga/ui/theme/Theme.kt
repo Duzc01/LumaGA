@@ -78,7 +78,7 @@ private fun Color.luminance(): Float =
     (0.2126f * red + 0.7152f * green + 0.0722f * blue)
 
 @Composable
-fun MNGATheme(
+fun LumaGATheme(
     themeColor: ThemeColor,
     colorSchemeMode: ColorSchemeMode,
     content: @Composable () -> Unit,
@@ -91,7 +91,7 @@ fun MNGATheme(
     val accent = Color(if (dark) themeColor.darkColor else themeColor.lightColor)
     MaterialTheme(
         colorScheme = scheme(accent, dark),
-        typography = MNGATypography,
+        typography = LumaGATypography,
         content = content,
     )
 }
