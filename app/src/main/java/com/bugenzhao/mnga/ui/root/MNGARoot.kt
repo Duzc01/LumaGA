@@ -249,11 +249,6 @@ private fun GlobalSheets(
         )
     }
 
-    val showingPaywall by App.plus.isShowingModal.collectAsState()
-    if (showingPaywall) {
-        com.bugenzhao.mnga.ui.screens.plus.PlusSheet(onDismiss = { App.plus.dismissPaywall() })
-    }
-
     val showingNotis by App.notis.showingSheet.collectAsState()
     if (showingNotis) {
         com.bugenzhao.mnga.ui.screens.notifications.NotificationListSheet(

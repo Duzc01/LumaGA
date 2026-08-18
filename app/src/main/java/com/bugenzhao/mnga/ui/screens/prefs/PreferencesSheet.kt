@@ -21,7 +21,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Article
 import androidx.compose.material.icons.filled.AutoAwesome
-import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ChevronRight
@@ -49,7 +48,6 @@ import androidx.compose.material.icons.filled.RestartAlt
 import androidx.compose.material.icons.filled.Science
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Share
-import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.filled.Swipe
 import androidx.compose.material.icons.filled.TextFields
@@ -90,9 +88,6 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.bugenzhao.mnga.App
 import com.bugenzhao.mnga.BuildConfig
-import com.bugenzhao.mnga.model.PlusFeature
-import com.bugenzhao.mnga.model.PlusModel
-import com.bugenzhao.mnga.model.UnlockStatus
 import com.bugenzhao.mnga.protos.datamodel.Device
 import com.bugenzhao.mnga.storage.ColorSchemeMode
 import com.bugenzhao.mnga.storage.ContentImageScalePref
@@ -106,12 +101,7 @@ import com.bugenzhao.mnga.ui.components.GroupedRow
 import com.bugenzhao.mnga.ui.nav.Navigator
 import com.bugenzhao.mnga.ui.nav.Route
 import com.bugenzhao.mnga.ui.screens.misc.AllWhatsNewContent
-import com.bugenzhao.mnga.ui.screens.misc.fmtL
 import com.bugenzhao.mnga.util.L
-import java.text.SimpleDateFormat
-import java.util.Calendar
-import java.util.Date
-import java.util.Locale
 import kotlinx.coroutines.launch
 
 /** The mock topic id that backs the about & acknowledgements page. */
@@ -132,7 +122,6 @@ private enum class PickerKind {
     SWIPE_EDGE,
     SWIPE_ACTION,
     DEVICE,
-    DEBUG_OVERRIDE,
 }
 
 private data class PickerOption<T>(
@@ -164,7 +153,6 @@ fun PreferencesSheet(onDismiss: () -> Unit, navigator: Navigator? = null) {
     val useInsetGroupedModern by prefs.useInsetGroupedModern.flow.collectAsState()
     val hideMNGAMeta by prefs.hideMNGAMeta.flow.collectAsState()
     val alwaysShareImageAsFile by prefs.alwaysShareImageAsFile.flow.collectAsState()
-    val showPlusInTitle by prefs.showPlusInTitle.flow.collectAsState()
 
     val defaultOrderRaw by prefs.defaultTopicListOrderRaw.flow.collectAsState()
     val hideBlocked by prefs.topicListHideBlocked.flow.collectAsState()
@@ -196,10 +184,6 @@ fun PreferencesSheet(onDismiss: () -> Unit, navigator: Navigator? = null) {
     val requestOption by prefs.requestOption.collectAsState()
     val device = requestOption.device
 
-    val plusCached by App.plus.cachedStatus.collectAsState()
-    val plusOverride by App.plus.debugOverride.collectAsState()
-    val plusStatus = plusOverride ?: plusCached
-    val plusUnlocked = plusStatus.isUnlocked
 
     var picker by remember { mutableStateOf<PickerKind?>(null) }
     var showingWhatsNew by remember { mutableStateOf(false) }
@@ -267,12 +251,7 @@ fun PreferencesSheet(onDismiss: () -> Unit, navigator: Navigator? = null) {
                                 title = L.str(context, "Theme Color"),
                                 valueLabel = L.str(context, themeColor.label),
                                 dot = themeColorDot(themeColor),
-                                gate = PlusFeature.CUSTOM_APPEARANCE,
-                                locked = !plusUnlocked,
                                 onClick = { picker = PickerKind.THEME_COLOR },
-                                onLockedTap = {
-                                    PlusModel.checkPlus(PlusFeature.CUSTOM_APPEARANCE)
-                                },
                             )
                             SwitchRow(
                                 icon = Icons.Filled.PhoneIphone,
@@ -289,14 +268,9 @@ fun PreferencesSheet(onDismiss: () -> Unit, navigator: Navigator? = null) {
                             NavigationRow(
                                 icon = Icons.Outlined.FrontHand,
                                 title = L.str(context, "Block Contents"),
-                                gate = PlusFeature.BLOCK_CONTENTS,
-                                locked = !plusUnlocked,
                                 onClick = {
                                     navigator?.push(Route.BlockWords)
                                     dismiss()
-                                },
-                                onLockedTap = {
-                                    PlusModel.checkPlus(PlusFeature.BLOCK_CONTENTS)
                                 },
                             )
                             SwitchRow(
@@ -318,13 +292,8 @@ fun PreferencesSheet(onDismiss: () -> Unit, navigator: Navigator? = null) {
                                 title = L.str(context, "Sync Favorites"),
                                 checked = useRemote,
                                 onChange = { next ->
-                                    if (PlusModel.withPlusCheck(PlusFeature.SYNC_FORUMS) {
-                                            App.favoriteForums.useRemote.value = next
-                                            true
-                                        }
-                                    ) {
-                                        scope.launch { App.favoriteForums.sync() }
-                                    }
+                                    App.favoriteForums.useRemote.value = next
+                                    scope.launch { App.favoriteForums.sync() }
                                 },
                             )
                         }
@@ -404,12 +373,7 @@ fun PreferencesSheet(onDismiss: () -> Unit, navigator: Navigator? = null) {
                                 icon = Icons.Filled.RestartAlt,
                                 title = L.str(context, "Resume Reading Progress"),
                                 valueLabel = resumeFromLabel(context, resumeFrom),
-                                gate = PlusFeature.RESUME_PROGRESS,
-                                locked = !plusUnlocked,
                                 onClick = { picker = PickerKind.RESUME },
-                                onLockedTap = {
-                                    PlusModel.checkPlus(PlusFeature.RESUME_PROGRESS)
-                                },
                             )
                             SwitchRow(
                                 icon = Icons.Filled.OpenInBrowser,
@@ -432,12 +396,7 @@ fun PreferencesSheet(onDismiss: () -> Unit, navigator: Navigator? = null) {
                                 } else {
                                     L.str(context, "Trailing")
                                 },
-                                gate = PlusFeature.CUSTOM_APPEARANCE,
-                                locked = !plusUnlocked,
                                 onClick = { picker = PickerKind.SWIPE_EDGE },
-                                onLockedTap = {
-                                    PlusModel.checkPlus(PlusFeature.CUSTOM_APPEARANCE)
-                                },
                             )
                             PickerRow(
                                 icon = Icons.Filled.ThumbUp,
@@ -447,54 +406,36 @@ fun PreferencesSheet(onDismiss: () -> Unit, navigator: Navigator? = null) {
                                 } else {
                                     L.str(context, "Quote")
                                 },
-                                gate = PlusFeature.CUSTOM_APPEARANCE,
-                                locked = !plusUnlocked,
                                 onClick = { picker = PickerKind.SWIPE_ACTION },
-                                onLockedTap = {
-                                    PlusModel.checkPlus(PlusFeature.CUSTOM_APPEARANCE)
-                                },
                             )
                             PickerRow(
                                 icon = Icons.Filled.Event,
                                 title = L.str(context, "Date Display"),
                                 valueLabel = dateTimeStrategyLabel(context, dateTimeStrategy),
-                                gate = PlusFeature.CUSTOM_APPEARANCE,
-                                locked = !plusUnlocked,
                                 onClick = { picker = PickerKind.DATE_TIME },
-                                onLockedTap = {
-                                    PlusModel.checkPlus(PlusFeature.CUSTOM_APPEARANCE)
-                                },
                             )
                             SwitchRow(
                                 icon = Icons.Outlined.Edit,
                                 title = L.str(context, "Show Signature"),
                                 checked = showSignature,
-                                gate = PlusFeature.CUSTOM_APPEARANCE,
-                                locked = !plusUnlocked,
                                 onChange = { prefs.showSignature.value = it },
                             )
                             SwitchRow(
                                 icon = Icons.Outlined.AccountCircle,
                                 title = L.str(context, "Show Avatar"),
                                 checked = showAvatar,
-                                gate = PlusFeature.CUSTOM_APPEARANCE,
-                                locked = !plusUnlocked,
                                 onChange = { prefs.showAvatar.value = it },
                             )
                             SwitchRow(
                                 icon = Icons.Filled.Person,
                                 title = L.str(context, "Show Author Indicator"),
                                 checked = showAuthorIndicator,
-                                gate = PlusFeature.CUSTOM_APPEARANCE,
-                                locked = !plusUnlocked,
                                 onChange = { prefs.postRowShowAuthorIndicator.value = it },
                             )
                             SwitchRow(
                                 icon = Icons.Filled.Info,
                                 title = L.str(context, "Show User Details"),
                                 checked = showUserDetails,
-                                gate = PlusFeature.CUSTOM_APPEARANCE,
-                                locked = !plusUnlocked,
                                 onChange = { prefs.postRowShowUserDetails.value = it },
                             )
                             if (showUserDetails) {
@@ -502,8 +443,6 @@ fun PreferencesSheet(onDismiss: () -> Unit, navigator: Navigator? = null) {
                                     icon = Icons.Filled.CalendarMonth,
                                     title = L.str(context, "Show User Register Date"),
                                     checked = showUserRegDate,
-                                    gate = PlusFeature.CUSTOM_APPEARANCE,
-                                    locked = !plusUnlocked,
                                     onChange = { prefs.postRowShowUserRegDate.value = it },
                                 )
                             }
@@ -523,8 +462,6 @@ fun PreferencesSheet(onDismiss: () -> Unit, navigator: Navigator? = null) {
                                 icon = Icons.Filled.DarkMode,
                                 title = L.str(context, "Dim Images in Dark Mode"),
                                 checked = dimImages,
-                                gate = PlusFeature.CUSTOM_APPEARANCE,
-                                locked = !plusUnlocked,
                                 onChange = { prefs.postRowDimImagesInDarkMode.value = it },
                             )
                         }
@@ -542,12 +479,7 @@ fun PreferencesSheet(onDismiss: () -> Unit, navigator: Navigator? = null) {
                                 } else {
                                     L.str(context, "Compact")
                                 },
-                                gate = PlusFeature.CUSTOM_APPEARANCE,
-                                locked = !plusUnlocked,
                                 onClick = { picker = PickerKind.LIST_STYLE },
-                                onLockedTap = {
-                                    PlusModel.checkPlus(PlusFeature.CUSTOM_APPEARANCE)
-                                },
                             )
                             SwitchRow(
                                 icon = Icons.Filled.VisibilityOff,
@@ -561,14 +493,6 @@ fun PreferencesSheet(onDismiss: () -> Unit, navigator: Navigator? = null) {
                                 checked = alwaysShareImageAsFile,
                                 onChange = { prefs.alwaysShareImageAsFile.value = it },
                             )
-                            if (plusStatus.isPaid) {
-                                SwitchRow(
-                                    icon = Icons.Filled.Star,
-                                    title = L.str(context, "Show Plus in Title"),
-                                    checked = showPlusInTitle,
-                                    onChange = { prefs.showPlusInTitle.value = it },
-                                )
-                            }
                         }
                     }
                     // endregion
@@ -614,64 +538,9 @@ fun PreferencesSheet(onDismiss: () -> Unit, navigator: Navigator? = null) {
                     }
                     // endregion
 
-                    // region Plus
-                    item(key = "plus") {
-                        Section(
-                            header = L.str(context, "Plus"),
-                            footer = L.str(
-                                context,
-                                if (plusStatus.isPaid) "Plus Thanks" else "Plus Explanation",
-                            ),
-                        ) {
-                            if (plusStatus.isPaid) {
-                                NavigationRow(
-                                    icon = Icons.Filled.AutoAwesome,
-                                    title = L.str(context, "Plus Unlocked"),
-                                    onClick = { App.plus.showPaywall() },
-                                )
-                            } else {
-                                NavigationRow(
-                                    icon = Icons.Filled.AutoAwesome,
-                                    title = L.str(context, plusStatus.tryOrUnlock),
-                                    onClick = { App.plus.showPaywall() },
-                                )
-                            }
-                            if (plusStatus is UnlockStatus.Trial) {
-                                val valid = plusStatus.trialValid == true
-                                GroupedRow(
-                                    leading = {
-                                        Icon(
-                                            Icons.Filled.Event,
-                                            contentDescription = null,
-                                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        )
-                                    },
-                                    title =
-                                        if (valid) {
-                                            fmtL(
-                                                context,
-                                                "Trial ends on %@",
-                                                SimpleDateFormat("yyyy/MM/dd", Locale.getDefault())
-                                                    .format(plusStatus.expiration),
-                                            )
-                                        } else {
-                                            L.str(context, "Your Plus trial has expired")
-                                        },
-                                )
-                            }
-                        }
-                    }
-                    // endregion
-
                     // region Debug
                     item(key = "debug") {
                         Section(header = L.str(context, "Debug")) {
-                            PickerRow(
-                                icon = Icons.Filled.BugReport,
-                                title = L.str(context, "Override Unlock Status"),
-                                valueLabel = plusOverride.debugLabel(context),
-                                onClick = { picker = PickerKind.DEBUG_OVERRIDE },
-                            )
                             SwitchRow(
                                 icon = Icons.Filled.Notifications,
                                 title = L.str(context, "Always Show Notification Badge"),
@@ -857,27 +726,6 @@ fun PreferencesSheet(onDismiss: () -> Unit, navigator: Navigator? = null) {
                 onSelect = { prefs.setDevice(it) },
                 onDismiss = { picker = null },
             )
-        PickerKind.DEBUG_OVERRIDE -> {
-            val trialLater = UnlockStatus.Trial(
-                Calendar.getInstance().apply {
-                    time = Date()
-                    add(Calendar.DAY_OF_YEAR, PlusModel.TRIAL_DAYS)
-                }.time
-            )
-            PickerDialog(
-                title = L.str(context, "Override Unlock Status"),
-                options = listOf(
-                    PickerOption<UnlockStatus?>(null, L.str(context, "None")),
-                    PickerOption<UnlockStatus?>(UnlockStatus.Lite, "lite"),
-                    PickerOption<UnlockStatus?>(UnlockStatus.Trial(Date(0)), "trial (expired)"),
-                    PickerOption<UnlockStatus?>(trialLater, "trial (+14d)"),
-                    PickerOption<UnlockStatus?>(UnlockStatus.Paid, "paid"),
-                ),
-                selected = plusOverride,
-                onSelect = { App.plus.setDebugOverride(it) },
-                onDismiss = { picker = null },
-            )
-        }
         null -> {}
     }
     // endregion
@@ -936,23 +784,17 @@ private fun SwitchRow(
     title: String,
     checked: Boolean,
     onChange: (Boolean) -> Unit,
-    gate: PlusFeature? = null,
-    locked: Boolean = false,
 ) {
     GroupedRow(
         leading = {
             Icon(
                 icon,
                 contentDescription = null,
-                tint =
-                    if (locked) MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-                    else MaterialTheme.colorScheme.onSurfaceVariant,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         },
         title = title,
-        trailing = {
-            Switch(checked = checked, onCheckedChange = onChange, enabled = !locked)
-        },
+        trailing = { Switch(checked = checked, onCheckedChange = onChange) },
     )
 }
 
@@ -963,21 +805,14 @@ private fun PickerRow(
     valueLabel: String,
     onClick: () -> Unit,
     dot: Color? = null,
-    gate: PlusFeature? = null,
-    locked: Boolean = false,
-    onLockedTap: (() -> Unit)? = null,
 ) {
     GroupedRow(
-        onClick = {
-            if (locked && onLockedTap != null) onLockedTap() else onClick()
-        },
+        onClick = onClick,
         leading = {
             Icon(
                 icon,
                 contentDescription = null,
-                tint =
-                    if (locked) MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-                    else MaterialTheme.colorScheme.onSurfaceVariant,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         },
         title = title,
@@ -1009,21 +844,14 @@ private fun NavigationRow(
     icon: ImageVector,
     title: String,
     onClick: () -> Unit,
-    gate: PlusFeature? = null,
-    locked: Boolean = false,
-    onLockedTap: (() -> Unit)? = null,
 ) {
     GroupedRow(
-        onClick = {
-            if (locked && onLockedTap != null) onLockedTap() else onClick()
-        },
+        onClick = onClick,
         leading = {
             Icon(
                 icon,
                 contentDescription = null,
-                tint =
-                    if (locked) MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-                    else MaterialTheme.colorScheme.onSurfaceVariant,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         },
         title = title,
@@ -1147,14 +975,6 @@ private fun deviceLabel(context: android.content.Context, device: Device): Strin
         Device.WINDOWS_PHONE -> L.str(context, "Windows Phone")
         Device.CUSTOM -> L.str(context, "Custom")
         else -> L.str(context, "Unknown")
-    }
-
-private fun UnlockStatus?.debugLabel(context: android.content.Context): String =
-    when (this) {
-        null -> L.str(context, "None")
-        UnlockStatus.Lite -> "lite"
-        is UnlockStatus.Trial -> if (trialValid == true) "trial (+14d)" else "trial (expired)"
-        UnlockStatus.Paid -> "paid"
     }
 
 @Composable

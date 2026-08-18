@@ -36,7 +36,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -247,7 +246,6 @@ fun WhatsNewSheet(onDismiss: () -> Unit) {
             markWhatsNewShown()
             onDismiss()
         },
-        onSecondary = { App.plus.showPaywall() },
     )
 }
 
@@ -257,7 +255,6 @@ fun WhatsNewPage(
     entry: WhatsNewEntry,
     primaryLabel: String,
     onPrimary: () -> Unit,
-    onSecondary: (() -> Unit)? = null,
 ) {
     val context = LocalContext.current
     Dialog(onDismissRequest = onPrimary, properties = DialogProperties(usePlatformDefaultWidth = false)) {
@@ -280,11 +277,6 @@ fun WhatsNewPage(
                 Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
                     Button(onClick = onPrimary, modifier = Modifier.fillMaxWidth()) {
                         Text(L.str(context, primaryLabel))
-                    }
-                    if (onSecondary != null) {
-                        TextButton(onClick = onSecondary) {
-                            Text(L.str(context, "Check out Plus"))
-                        }
                     }
                 }
             }

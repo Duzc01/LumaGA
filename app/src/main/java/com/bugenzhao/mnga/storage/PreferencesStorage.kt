@@ -167,7 +167,6 @@ class PreferencesStorage(private val prefs: SharedPreferences) {
     val hideNotificationToolbarShortcut = boolPref("hideNotificationToolbarShortcut", false)
     val useInsetGroupedModern = boolPref("useInsetGroupedModern", true)
     val hideMNGAMeta = boolPref("hideMNGAMeta", false)
-    val showPlusInTitle = boolPref("showPlusInTitle", false)
     val alwaysPortraitOnPhone = boolPref("alwaysPortraitOnPhone", false)
     val postRowSwipeActionLeading = boolPref("postRowSwipeActionLeading", false)
     val postRowSwipeVoteFirst = boolPref("postRowSwipeVoteFirst", false)

@@ -6,7 +6,6 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -34,19 +33,17 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.bugenzhao.mnga.App
-import com.bugenzhao.mnga.model.PlusModel
 import com.bugenzhao.mnga.model.ToastModel
 import kotlinx.coroutines.delay
 
 /**
- * Renders the four toast channels (banner at top, HUD centered, alert above
- * content), ported from `Modifiers/ToastModifier.swift`.
+ * Renders the toast channels (banner at top, HUD centered), ported from
+ * `Modifiers/ToastModifier.swift`.
  */
 @Composable
 fun ToastHost() {
     BannerToast(ToastModel.banner)
     HudToast(ToastModel.hud)
-    AlertToast(ToastModel.alert)
 }
 
 @Composable
@@ -126,38 +123,6 @@ private fun HudToast(model: ToastModel) {
                 MaterialTheme.colorScheme.surfaceContainerHigh,
                 Icons.Filled.CheckCircle,
             )
-        }
-    }
-}
-
-@Composable
-private fun AlertToast(model: ToastModel) {
-    ToastSlot(model, Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 16.dp)) { msg ->
-        if (msg is ToastModel.Message.RequirePlus) {
-            Column(
-                Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(18.dp))
-                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.4f))
-                    .clickable {
-                        model.dismiss()
-                        PlusModel.shared?.showPaywall()
-                    }
-                    .padding(14.dp)
-            ) {
-                Text(
-                    "\"${msg.feature.label}\" is a Plus feature",
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-                Text(
-                    "Tap to unlock MNGA Plus to access this feature",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
         }
     }
 }

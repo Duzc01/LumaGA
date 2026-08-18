@@ -21,8 +21,6 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PersonAddAlt1
 import androidx.compose.material.icons.filled.PersonRemoveAlt1
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.WorkspacePremium
-import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.Badge
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -48,7 +46,6 @@ import com.bugenzhao.mnga.protos.datamodel.AuthInfo
 import com.bugenzhao.mnga.protos.datamodel.User
 import com.bugenzhao.mnga.ui.nav.Navigator
 import com.bugenzhao.mnga.ui.nav.Route
-import com.bugenzhao.mnga.ui.screens.plus.rememberPlusStatus
 import com.bugenzhao.mnga.util.L
 
 /**
@@ -220,22 +217,6 @@ fun UserMenuSheet(
                     ) {
                         onDismiss()
                         navigator.push(Route.TopicDetails(topicId = "mnga_about_feedback"))
-                    }
-                    val status = rememberPlusStatus()
-                    MenuRow(
-                        icon = Icons.Outlined.AutoAwesome,
-                        title = L.str(
-                            context,
-                            if (status.isPaid) "Plus Unlocked" else status.tryOrUnlock,
-                        ),
-                        subtitle = L.str(
-                            context,
-                            if (status.isPaid) "All Plus Features" else "Unlock Plus",
-                        ),
-                        trailingIcon = Icons.Filled.WorkspacePremium,
-                    ) {
-                        onDismiss()
-                        App.plus.showPaywall()
                     }
                 }
             }

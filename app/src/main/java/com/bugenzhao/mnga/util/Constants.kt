@@ -16,12 +16,6 @@ object Constants {
         const val favoriteForums = "favoriteForums"
     }
 
-    object Plus {
-        const val unlockID = "mnga.unlock"
-        const val trialID = "mnga.unlock.trial14"
-        val ids = listOf(unlockID, trialID)
-    }
-
     /** NGA page size, used by jump/page math. */
     const val postPerPage = 20
 }

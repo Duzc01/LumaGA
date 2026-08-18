@@ -85,7 +85,6 @@ import com.bugenzhao.mnga.ui.components.Avatar
 import com.bugenzhao.mnga.ui.components.LoadingRow
 import com.bugenzhao.mnga.ui.nav.Navigator
 import com.bugenzhao.mnga.ui.nav.Route
-import com.bugenzhao.mnga.ui.screens.plus.rememberPlusStatus
 import com.bugenzhao.mnga.ui.screens.user.nameDisplayCompat
 import com.bugenzhao.mnga.ui.screens.topiclist.copyToClipboard
 import com.bugenzhao.mnga.ui.screens.topiclist.openInBrowser
@@ -170,8 +169,6 @@ fun ForumListScreen(
     val currentUser by App.currentUser.user.collectAsState()
     val unreadCount by App.notis.unreadCountAnimated.collectAsState()
     val debugBadge by App.prefs.debugAlwaysShowNotificationBadge.flow.collectAsState()
-    val hideMNGAMeta by App.prefs.hideMNGAMeta.flow.collectAsState()
-    val plusStatus = rememberPlusStatus()
     val canPaste by App.schemes.canTryNavigateToPasteboardURL.collectAsState()
     var editMode by remember { mutableStateOf(false) }
     var moreMenuExpanded by remember { mutableStateOf(false) }
@@ -247,16 +244,6 @@ fun ForumListScreen(
                                 )
                             }
                         }
-                    }
-                    if (!plusStatus.isPaid) {
-                        TextButton(onClick = { App.plus.showPaywall() }) {
-                            Text(
-                                L.str(context, plusStatus.tryOrUnlock),
-                                fontWeight = FontWeight.Bold,
-                                maxLines = 1,
-                            )
-                        }
-                        Spacer(Modifier.width(2.dp))
                     }
                     IconButton(onClick = { navigator.push(Route.GlobalSearch) }) {
                         Icon(
@@ -387,8 +374,9 @@ fun ForumListScreen(
                             LoadingRow()
                         }
                     } else {
-                        val visibleCategories =
-                            categories.filterNot { hideMNGAMeta && it.id == "mnga" }
+                        // The "mnga" meta category is the app's own board; it
+                        // never belongs on the forum home.
+                        val visibleCategories = categories.filterNot { it.id == "mnga" }
                         visibleCategories.forEach { category ->
                             item(
                                 key = "cat-header-${category.id}",

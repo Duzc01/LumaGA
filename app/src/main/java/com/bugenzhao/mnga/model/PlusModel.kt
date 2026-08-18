@@ -89,8 +89,8 @@ sealed class UnlockStatus : Comparable<UnlockStatus> {
  *
  * The iOS app uses StoreKit; this port keeps the same status semantics and
  * persistence key, and treats Google Play Billing as the store when wired.
- * No store is wired here, so [ALWAYS_UNLOCKED] makes every Plus feature
- * available and turns the paywall into a feature overview.
+ * No store is wired here and the app carries no Plus entry points, so
+ * [ALWAYS_UNLOCKED] simply makes every Plus feature available.
  */
 class PlusModel(private val prefs: SharedPreferences) {
 
@@ -100,11 +100,9 @@ class PlusModel(private val prefs: SharedPreferences) {
         const val TRIAL_DAYS = 14
 
         /**
-         * This port ships without a store, so Plus starts unlocked for everyone
-         * and the paywall degrades into an informational feature list. Flip to
-         * `false` to restore the iOS gating; the debug override keeps working
-         * either way, so Lite/Trial can still be forced at runtime to exercise
-         * the paywall UI.
+         * This port ships without a store, so Plus starts unlocked for everyone.
+         * Flip to `false` to restore the iOS gating -- note the paywall UI is
+         * gone, so gated features would then simply refuse silently.
          */
         const val ALWAYS_UNLOCKED = true
 
@@ -113,21 +111,14 @@ class PlusModel(private val prefs: SharedPreferences) {
             add(Calendar.DAY_OF_YEAR, TRIAL_DAYS)
         }.time
 
-        fun checkPlus(feature: PlusFeature): Boolean {
-            val model = shared
-            if (model == null || model.isUnlocked) return model != null
-            ToastModel.showAuto(ToastModel.Message.RequirePlus(feature))
-            return false
-        }
-
-        inline fun withPlusCheck(feature: PlusFeature, body: () -> Boolean): Boolean {
-            if (!checkPlus(feature)) return false
-            return body()
-        }
+        /**
+         * Whether [feature] may be used. This port has no store and no paywall,
+         * so [ALWAYS_UNLOCKED] makes every answer yes; the call sites are kept
+         * as a record of what iOS gates.
+         */
+        @Suppress("UNUSED_PARAMETER")
+        fun checkPlus(feature: PlusFeature): Boolean = shared?.isUnlocked == true
     }
-
-    private val _isShowingModal = MutableStateFlow(false)
-    val isShowingModal: StateFlow<Boolean> = _isShowingModal
 
     private val _cachedStatus = MutableStateFlow<UnlockStatus>(UnlockStatus.Lite)
     val cachedStatus: StateFlow<UnlockStatus> = _cachedStatus
@@ -170,14 +161,6 @@ class PlusModel(private val prefs: SharedPreferences) {
                 if (store != null) updateStatus(store, initial = true)
             }
         }
-    }
-
-    fun showPaywall() {
-        _isShowingModal.value = true
-    }
-
-    fun dismissPaywall() {
-        _isShowingModal.value = false
     }
 
     fun setDebugOverride(status: UnlockStatus?) {

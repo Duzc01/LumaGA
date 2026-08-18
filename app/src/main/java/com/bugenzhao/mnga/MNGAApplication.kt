@@ -74,7 +74,7 @@ class MNGAApplication : Application() {
         }
 
         // Route toast haptics.
-        listOf(ToastModel.hud, ToastModel.banner, ToastModel.alert, ToastModel.editorAlert)
+        listOf(ToastModel.hud, ToastModel.banner, ToastModel.editorAlert)
             .forEach { model ->
                 model.haptic = { type -> com.bugenzhao.mnga.util.Haptics.vibrate(this, type) }
             }

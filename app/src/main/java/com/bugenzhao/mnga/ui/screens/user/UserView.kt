@@ -538,6 +538,6 @@ private fun HeaderAction(
     }
 }
 
-/** Plus gate helper: fire the require-plus toast when locked. */
+/** Plus gate helper; always true in this port, see [PlusModel.ALWAYS_UNLOCKED]. */
 internal fun checkPlusFeature(feature: PlusFeature): Boolean =
     PlusModel.shared?.let { PlusModel.checkPlus(feature) } == true
