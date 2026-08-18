@@ -22,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.bugenzhao.mnga.protos.datamodel.Forum
@@ -40,17 +41,18 @@ fun ForumId.idDescription(): String =
     if (hasFid()) "#$fid" else "st#$stid"
 
 /**
- * 28dp forum icon; remote NGA resource icon with the bundled default icon as
- * placeholder, a port of `ForumIconView`.
+ * Forum icon; remote NGA resource icon with the bundled default icon as
+ * placeholder, a port of `ForumIconView`. [size] defaults to the row size
+ * (28dp); grid cells may pass a larger one.
  */
 @Composable
-fun ForumIcon(iconUrl: String, modifier: Modifier = Modifier) {
+fun ForumIcon(iconUrl: String, size: Dp = 28.dp, modifier: Modifier = Modifier) {
     val model = forumIconModel(iconUrl) ?: DefaultForumIconAsset
     AsyncImage(
         model = model,
         contentDescription = null,
         modifier = modifier
-            .size(28.dp)
+            .size(size)
             .clip(RoundedCornerShape(6.dp)),
     )
 }

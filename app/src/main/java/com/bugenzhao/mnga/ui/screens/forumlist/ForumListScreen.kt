@@ -3,9 +3,11 @@ package com.bugenzhao.mnga.ui.screens.forumlist
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -13,9 +15,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.Close
@@ -27,8 +32,6 @@ import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.ExpandLess
 import androidx.compose.material.icons.outlined.ExpandMore
 import androidx.compose.material.icons.outlined.FilterList
-import androidx.compose.material.icons.outlined.KeyboardArrowDown
-import androidx.compose.material.icons.outlined.KeyboardArrowUp
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.OpenInBrowser
 import androidx.compose.material.icons.outlined.PlaylistAddCheck
@@ -68,6 +71,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.bugenzhao.mnga.App
@@ -333,16 +337,18 @@ fun ForumListScreen(
             onRefresh = refresh,
             modifier = Modifier.fillMaxSize().padding(padding),
         ) {
-            LazyColumn(
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(3),
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = androidx.compose.foundation.layout.PaddingValues(
-                    horizontal = 16.dp,
-                    vertical = 8.dp,
-                ),
-                verticalArrangement = Arrangement.spacedBy(2.dp),
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 // ---- Favorites section.
-                item(key = "favorites-header") {
+                item(
+                    key = "favorites-header",
+                    span = { GridItemSpan(maxLineSpan) },
+                ) {
                     SectionHeader(
                         title = L.str(context, "Favorites"),
                         expanded = FavoritesSectionID !in collapsedCategories,
@@ -361,30 +367,24 @@ fun ForumListScreen(
                 }
                 if (FavoritesSectionID !in collapsedCategories) {
                     if (favoriteForums.isEmpty()) {
-                        item(key = "favorites-empty") { FavoritesEmptyHint() }
+                        item(key = "favorites-empty", span = { GridItemSpan(maxLineSpan) }) {
+                            FavoritesEmptyHint()
+                        }
                     } else {
-                        itemsIndexed(
+                        items(
                             favoriteForums,
-                            key = { _, forum -> "fav-${forumIdKey(forum.id)}" },
-                        ) { index, forum ->
-                            ForumRowWithMenu(
+                            key = { forum -> "fav-${forumIdKey(forum.id)}" },
+                        ) { forum ->
+                            ForumGridCellWithMenu(
                                 forum = forum,
-                                index = index,
-                                showStar = false,
                                 isFavorite = true,
                                 editMode = editMode,
-                                isFirst = index == 0,
-                                isLast = index == favoriteForums.lastIndex,
                                 contextMenuForum = contextMenuForum,
                                 onContextMenu = { contextMenuForum = it },
                                 onDismissMenu = { contextMenuForum = null },
                                 onClick = { navigator.push(Route.TopicList(forumId = forum.id)) },
                                 onToggleFavorite = { toggleFavorite(forum) },
                                 onRemove = { toggleFavorite(forum) },
-                                onMove = { from, to ->
-                                    App.favoriteForums.move(from, to)
-                                    Haptics.lightImpact(view)
-                                },
                             )
                         }
                     }
@@ -393,12 +393,17 @@ fun ForumListScreen(
                 // ---- All forums, per collapsible category.
                 if (filterMode == FilterMode.ALL) {
                     if (categories.isEmpty()) {
-                        item(key = "categories-loading") { LoadingRow() }
+                        item(key = "categories-loading", span = { GridItemSpan(maxLineSpan) }) {
+                            LoadingRow()
+                        }
                     } else {
                         val visibleCategories =
                             categories.filterNot { hideMNGAMeta && it.id == "mnga" }
                         visibleCategories.forEach { category ->
-                            item(key = "cat-header-${category.id}") {
+                            item(
+                                key = "cat-header-${category.id}",
+                                span = { GridItemSpan(maxLineSpan) },
+                            ) {
                                 SectionHeader(
                                     title = category.name,
                                     expanded = category.id !in collapsedCategories,
@@ -406,27 +411,24 @@ fun ForumListScreen(
                                 )
                             }
                             if (category.id !in collapsedCategories) {
-                                itemsIndexed(
+                                items(
                                     category.forumsList,
-                                    key = { _, forum ->
+                                    key = { forum ->
                                         "cat-${category.id}-${forumIdKey(forum.id)}"
                                     },
-                                ) { _, forum ->
-                                    ForumRowWithMenu(
+                                ) { forum ->
+                                    ForumGridCellWithMenu(
                                         forum = forum,
-                                        index = 0,
-                                        showStar = true,
                                         isFavorite = App.favoriteForums.isFavorite(forum.id),
                                         editMode = false,
-                                        isFirst = true,
-                                        isLast = true,
                                         contextMenuForum = contextMenuForum,
                                         onContextMenu = { contextMenuForum = it },
                                         onDismissMenu = { contextMenuForum = null },
-                                        onClick = { navigator.push(Route.TopicList(forumId = forum.id)) },
+                                        onClick = {
+                                            navigator.push(Route.TopicList(forumId = forum.id))
+                                        },
                                         onToggleFavorite = { toggleFavorite(forum) },
                                         onRemove = {},
-                                        onMove = { _, _ -> },
                                     )
                                 }
                             }
@@ -516,115 +518,150 @@ private fun FavoritesEmptyHint() {
 }
 
 /**
- * A forum row with long-press context menu (favorite toggle, copy link,
- * share) and optional edit-mode controls (remove / move).
+ * A grid cell (icon + name) with a long-press context menu (favorite toggle,
+ * copy link, share) and an edit-mode remove badge.
  */
 @Composable
-private fun ForumRowWithMenu(
+private fun ForumGridCellWithMenu(
     forum: Forum,
-    index: Int,
-    showStar: Boolean,
     isFavorite: Boolean,
     editMode: Boolean,
-    isFirst: Boolean,
-    isLast: Boolean,
     contextMenuForum: Forum?,
     onContextMenu: (Forum?) -> Unit,
     onDismissMenu: () -> Unit,
     onClick: () -> Unit,
     onToggleFavorite: () -> Unit,
     onRemove: () -> Unit,
-    onMove: (Int, Int) -> Unit,
+) {
+    val navID = NavigationIdentifier.ForumID(forum.id)
+    Box {
+        ForumGridCell(
+            forum = forum,
+            editMode = editMode,
+            onClick = onClick,
+            onLongClick = { if (!editMode) onContextMenu(forum) },
+            onRemove = onRemove,
+        )
+        ForumContextMenu(
+            expanded = contextMenuForum == forum,
+            onDismiss = onDismissMenu,
+            isFavorite = isFavorite,
+            navID = navID,
+            onToggleFavorite = {
+                onToggleFavorite()
+                onDismissMenu()
+            },
+        )
+    }
+}
+
+/** Dense 3-per-row grid cell: forum icon on top, single-line name below. */
+@Composable
+private fun ForumGridCell(
+    forum: Forum,
+    editMode: Boolean,
+    onClick: () -> Unit,
+    onLongClick: () -> Unit,
+    onRemove: () -> Unit,
 ) {
     val context = LocalContext.current
-    val navID = NavigationIdentifier.ForumID(forum.id)
-
     Box {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            ForumRowCard(
-                forum = forum,
-                modifier = if (editMode) Modifier.weight(1f) else Modifier.fillMaxWidth(),
-                isFavorite = showStar && isFavorite,
-                onClick = { if (!editMode) onClick() },
-                onLongClick = { if (!editMode) onContextMenu(forum) },
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .combinedClickable(
+                    enabled = true,
+                    onClick = { if (!editMode) onClick() },
+                    onLongClick = onLongClick,
+                )
+                .padding(horizontal = 4.dp, vertical = 12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            ForumIcon(iconUrl = forum.iconUrl, size = 36.dp)
+            Text(
+                forum.name,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.Center,
             )
-            if (editMode) {
-                IconButton(onClick = onRemove) {
-                    Icon(
-                        Icons.Outlined.Close,
-                        contentDescription = L.str(context, "Remove from Favorites"),
-                    )
-                }
-                Column {
-                    IconButton(
-                        onClick = { onMove(index, index - 1) },
-                        enabled = !isFirst,
-                    ) {
-                        Icon(Icons.Outlined.KeyboardArrowUp, contentDescription = null)
-                    }
-                    IconButton(
-                        onClick = { onMove(index, index + 1) },
-                        enabled = !isLast,
-                    ) {
-                        Icon(Icons.Outlined.KeyboardArrowDown, contentDescription = null)
-                    }
-                }
+        }
+        if (editMode) {
+            IconButton(
+                onClick = onRemove,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .size(24.dp),
+            ) {
+                Icon(
+                    Icons.Outlined.Close,
+                    contentDescription = L.str(context, "Remove from Favorites"),
+                    modifier = Modifier.size(14.dp),
+                    tint = MaterialTheme.colorScheme.error,
+                )
             }
         }
+    }
+}
 
-        DropdownMenu(
-            expanded = contextMenuForum == forum,
-            onDismissRequest = onDismissMenu,
-        ) {
+/** Shared long-press context menu for a forum (favorite / copy / share / open). */
+@Composable
+private fun ForumContextMenu(
+    expanded: Boolean,
+    onDismiss: () -> Unit,
+    isFavorite: Boolean,
+    navID: NavigationIdentifier,
+    onToggleFavorite: () -> Unit,
+) {
+    val context = LocalContext.current
+    DropdownMenu(expanded = expanded, onDismissRequest = onDismiss) {
+        DropdownMenuItem(
+            text = {
+                Text(
+                    L.str(
+                        context,
+                        if (isFavorite) "Remove from Favorites" else "Mark as Favorite",
+                    )
+                )
+            },
+            leadingIcon = {
+                Icon(
+                    if (isFavorite) Icons.Outlined.Star else Icons.Outlined.StarBorder,
+                    contentDescription = null,
+                )
+            },
+            onClick = onToggleFavorite,
+        )
+        navID.mngaURL?.let { url ->
             DropdownMenuItem(
-                text = {
-                    Text(
-                        L.str(
-                            context,
-                            if (isFavorite) "Remove from Favorites" else "Mark as Favorite",
-                        )
-                    )
-                },
-                leadingIcon = {
-                    Icon(
-                        if (isFavorite) Icons.Outlined.Star else Icons.Outlined.StarBorder,
-                        contentDescription = null,
-                    )
-                },
+                text = { Text(L.str(context, "Copy Link")) },
+                leadingIcon = { Icon(Icons.Outlined.ContentCopy, contentDescription = null) },
                 onClick = {
-                    onToggleFavorite()
-                    onDismissMenu()
+                    copyToClipboard(context, url)
+                    onDismiss()
                 },
             )
-            navID.mngaURL?.let { url ->
-                DropdownMenuItem(
-                    text = { Text(L.str(context, "Copy Link")) },
-                    leadingIcon = { Icon(Icons.Outlined.ContentCopy, contentDescription = null) },
-                    onClick = {
-                        copyToClipboard(context, url)
-                        onDismissMenu()
-                    },
-                )
-            }
+        }
+        DropdownMenuItem(
+            text = { Text(L.str(context, "Share")) },
+            leadingIcon = { Icon(Icons.Outlined.Share, contentDescription = null) },
+            onClick = {
+                val url = navID.webpageURL ?: navID.mngaURL
+                if (url != null) shareText(context, url)
+                onDismiss()
+            },
+        )
+        navID.webpageURL?.let { url ->
             DropdownMenuItem(
-                text = { Text(L.str(context, "Share")) },
-                leadingIcon = { Icon(Icons.Outlined.Share, contentDescription = null) },
+                text = { Text(L.str(context, "Open in Browser")) },
+                leadingIcon = { Icon(Icons.Outlined.OpenInBrowser, contentDescription = null) },
                 onClick = {
-                    val url = navID.webpageURL ?: navID.mngaURL
-                    if (url != null) shareText(context, url)
-                    onDismissMenu()
+                    openInBrowser(context, url)
+                    onDismiss()
                 },
             )
-            navID.webpageURL?.let { url ->
-                DropdownMenuItem(
-                    text = { Text(L.str(context, "Open in Browser")) },
-                    leadingIcon = { Icon(Icons.Outlined.OpenInBrowser, contentDescription = null) },
-                    onClick = {
-                        openInBrowser(context, url)
-                        onDismissMenu()
-                    },
-                )
-            }
         }
     }
 }
