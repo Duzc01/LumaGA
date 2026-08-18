@@ -1,7 +1,5 @@
 package com.bugenzhao.mnga.ui.screens.topicdetails
 
-import androidx.compose.material.icons.outlined.Edit
-
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.animation.animateColorAsState
@@ -322,20 +320,12 @@ fun PostRow(
                 val sig = user?.signature
                 if (sig != null && sig.spansList.isNotEmpty()) {
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                    Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Icon(
-                            Icons.Outlined.Edit,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp),
-                            tint = MaterialTheme.colorScheme.primary,
-                        )
-                        PostContent(
-                            content = sig,
-                            env = ContentEnv(actions = contentActions),
-                            fontSize = PostFontSize.SMALL,
-                            defaultColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
+                    PostContent(
+                        content = sig,
+                        env = ContentEnv(actions = contentActions),
+                        fontSize = PostFontSize.SMALL,
+                        defaultColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
             }
         }

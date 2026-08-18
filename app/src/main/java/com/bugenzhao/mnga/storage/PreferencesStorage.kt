@@ -62,17 +62,6 @@ enum class DateTimeStrategy(val raw: Int, val label: String) {
     }
 }
 
-enum class ContentImageScalePref(val raw: String, val label: String, val scale: Float) {
-    SMALL("small", "Small", 0.5f),
-    MEDIUM("medium", "Medium", 2f / 3f),
-    FULL_SIZE("fullSize", "Full Size", 1.0f);
-
-    companion object {
-        fun fromRaw(raw: String): ContentImageScalePref =
-            entries.firstOrNull { it.raw == raw } ?: FULL_SIZE
-    }
-}
-
 enum class TopicResumeFrom(val raw: String, val label: String) {
     NONE("none", "None"),
     LAST("last", "Last Viewed"),
@@ -176,9 +165,7 @@ class PreferencesStorage(private val prefs: SharedPreferences) {
     val postRowDateTimeStrategyRaw = intPref("postRowDateTimeStrategy", 0)
     val topicDetailsWebApiStrategyRaw = intPref("topicDetailsWebApiStrategyNew", 1)
 
-    val postRowImageScaleRaw = stringPref("postRowImageScale", "fullSize")
     val resumeTopicFromRaw = stringPref("resumeTopicFrom", "none")
-
     val defaultTopicListOrder: TopicListOrder
         get() = TopicListOrder.fromRaw(defaultTopicListOrderRaw.value)
     val themeColor: ThemeColor
@@ -187,8 +174,6 @@ class PreferencesStorage(private val prefs: SharedPreferences) {
         get() = ColorSchemeMode.fromRaw(colorSchemeRaw.value)
     val postRowDateTimeStrategy: DateTimeStrategy
         get() = DateTimeStrategy.fromRaw(postRowDateTimeStrategyRaw.value)
-    val postRowImageScale: ContentImageScalePref
-        get() = ContentImageScalePref.fromRaw(postRowImageScaleRaw.value)
     val resumeTopicFrom: TopicResumeFrom
         get() = TopicResumeFrom.fromRaw(resumeTopicFromRaw.value)
     val topicDetailsWebApiStrategy: WebApiStrategy

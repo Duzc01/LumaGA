@@ -63,9 +63,9 @@ fun formatSize(bytes: Long): String = when {
  * - Open-source-sticker attachments render as fixed 50dp tiles (no viewer).
  * - `onlyThumbs` (inside a reply quote) renders a "View Image" button instead
  *   of loading the picture.
- * - Otherwise the image loads at its natural width, capped at
- * `postRowImageScale × screen width`, dimmed in dark mode per preference, and
- * opens the viewer (with all sibling attachments) on tap.
+ * - Otherwise the image loads at its natural width, capped at the screen
+ *   width, dimmed in dark mode per preference, and opens the viewer (with
+ *   all sibling attachments) on tap.
  */
 @Composable
 fun ContentImageView(
@@ -98,9 +98,7 @@ fun ContentImageView(
         return
     }
 
-    val scale = App.prefs.postRowImageScale.scale
-    val maxWidth =
-        (LocalConfiguration.current.screenWidthDp * scale).dp
+    val maxWidth = LocalConfiguration.current.screenWidthDp.dp
     val dark = isSystemInDarkTheme()
     val dim = dark && App.prefs.postRowDimImagesInDarkMode.flow.collectAsState().value
     val filter =

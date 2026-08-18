@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Delete
-import androidx.compose.material.icons.outlined.Draw
 import androidx.compose.material.icons.outlined.Send
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -101,32 +100,22 @@ class SignaturePostModel(scope: CoroutineScope = appScope) : GenericPostModel(sc
 }
 
 /**
- * Signature display widget, ported from `UserSignatureView`: leading
- * signature glyph plus the (rich or raw) post content at small size.
+ * Signature display widget, ported from `UserSignatureView`: the (rich or
+ * raw) post content at small size.
  */
 @Composable
 fun UserSignatureView(
     content: PostContent,
-    modifier: Modifier = Modifier,
     color: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color.Unspecified,
     contentRenderer: (@Composable (PostContent) -> Unit)? = null,
 ) {
-    Row(modifier = modifier, verticalAlignment = Alignment.Top) {
-        Icon(
-            Icons.Outlined.Draw,
-            contentDescription = null,
-            modifier = Modifier.size(16.dp).padding(top = 2.dp),
-            tint = androidx.compose.material3.MaterialTheme.colorScheme.primary,
-        )
-        androidx.compose.foundation.layout.Spacer(Modifier.size(4.dp))
-        val renderer = contentRenderer
-        if (renderer != null) renderer(content)
-        else RawPostContent(
-            content,
-            style = MaterialTheme.typography.bodySmall,
-            color = color,
-        )
-    }
+    val renderer = contentRenderer
+    if (renderer != null) renderer(content)
+    else RawPostContent(
+        content,
+        style = MaterialTheme.typography.bodySmall,
+        color = color,
+    )
 }
 
 /**

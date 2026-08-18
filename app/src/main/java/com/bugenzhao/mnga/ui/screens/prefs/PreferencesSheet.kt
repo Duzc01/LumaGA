@@ -40,7 +40,6 @@ import androidx.compose.material.icons.filled.OpenInBrowser
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PhoneIphone
-import androidx.compose.material.icons.filled.Photo
 import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.RestartAlt
@@ -89,7 +88,6 @@ import com.bugenzhao.mnga.App
 import com.bugenzhao.mnga.BuildConfig
 import com.bugenzhao.mnga.protos.datamodel.Device
 import com.bugenzhao.mnga.storage.ColorSchemeMode
-import com.bugenzhao.mnga.storage.ContentImageScalePref
 import com.bugenzhao.mnga.storage.DateTimeStrategy
 import com.bugenzhao.mnga.storage.ThemeColor
 import com.bugenzhao.mnga.storage.TopicListOrder
@@ -114,7 +112,6 @@ private enum class PickerKind {
     WEB_API,
     RESUME,
     DATE_TIME,
-    IMAGE_SCALE,
     DEVICE,
 }
 
@@ -160,7 +157,6 @@ fun PreferencesSheet(onDismiss: () -> Unit, navigator: Navigator? = null) {
     val showSignature by prefs.showSignature.flow.collectAsState()
     val showAuthorIndicator by prefs.postRowShowAuthorIndicator.flow.collectAsState()
     val showUserRegDate by prefs.postRowShowUserRegDate.flow.collectAsState()
-    val imageScaleRaw by prefs.postRowImageScaleRaw.flow.collectAsState()
     val dimImages by prefs.postRowDimImagesInDarkMode.flow.collectAsState()
 
     val debugBadge by prefs.debugAlwaysShowNotificationBadge.flow.collectAsState()
@@ -193,7 +189,6 @@ fun PreferencesSheet(onDismiss: () -> Unit, navigator: Navigator? = null) {
     val webApiStrategy = WebApiStrategy.fromRaw(webApiStrategyRaw)
     val resumeFrom = TopicResumeFrom.fromRaw(resumeFromRaw)
     val dateTimeStrategy = DateTimeStrategy.fromRaw(dateTimeStrategyRaw)
-    val imageScale = ContentImageScalePref.fromRaw(imageScaleRaw)
 
     Dialog(
         onDismissRequest = { dismiss() },
@@ -379,12 +374,6 @@ fun PreferencesSheet(onDismiss: () -> Unit, navigator: Navigator? = null) {
                                 checked = showUserRegDate,
                                 onChange = { prefs.postRowShowUserRegDate.value = it },
                             )
-                            PickerRow(
-                                icon = Icons.Filled.Photo,
-                                title = L.str(context, "Image Scale"),
-                                valueLabel = L.str(context, imageScale.label),
-                                onClick = { picker = PickerKind.IMAGE_SCALE },
-                            )
                             SwitchRow(
                                 icon = Icons.Filled.DarkMode,
                                 title = L.str(context, "Dim Images in Dark Mode"),
@@ -562,16 +551,6 @@ fun PreferencesSheet(onDismiss: () -> Unit, navigator: Navigator? = null) {
                 },
                 selected = dateTimeStrategy,
                 onSelect = { prefs.postRowDateTimeStrategyRaw.value = it.raw },
-                onDismiss = { picker = null },
-            )
-        PickerKind.IMAGE_SCALE ->
-            PickerDialog(
-                title = L.str(context, "Image Scale"),
-                options = ContentImageScalePref.entries.map {
-                    PickerOption(it, L.str(context, it.label))
-                },
-                selected = imageScale,
-                onSelect = { prefs.postRowImageScaleRaw.value = it.raw },
                 onDismiss = { picker = null },
             )
         PickerKind.DEVICE ->
