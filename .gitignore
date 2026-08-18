@@ -23,3 +23,7 @@ local.properties
 
 # Editor / tooling
 .workbuddy/
+
+# Release signing (never commit)
+app/release.keystore
+app/release-keystore.properties

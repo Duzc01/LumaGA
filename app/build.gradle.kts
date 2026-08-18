@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -7,6 +9,17 @@ plugins {
 android {
     namespace = "com.bugenzhao.mnga"
     compileSdk = 36
+
+    // Release signing credentials. The keystore and passwords live in
+    // app/release-keystore.properties, which is git-ignored; a backup copy is
+    // kept under ~/Documents/LumaGA-release-signing/. Without the properties
+    // file (e.g. fresh clones) the release build stays unsigned.
+    val releaseKeystorePropertiesFile = rootProject.file("app/release-keystore.properties")
+    val releaseKeystoreProperties = Properties().apply {
+        if (releaseKeystorePropertiesFile.exists()) {
+            releaseKeystorePropertiesFile.inputStream().use { load(it) }
+        }
+    }
 
     defaultConfig {
         applicationId = "com.bugenzhao.mnga"
@@ -26,12 +39,25 @@ android {
             keyAlias = "androiddebugkey"
             keyPassword = "android"
         }
+        // Release signing (credentials from app/release-keystore.properties,
+        // see the note at the top of the android block).
+        create("release") {
+            if (releaseKeystorePropertiesFile.exists()) {
+                storeFile = file(releaseKeystoreProperties["storeFile"] as String)
+                storePassword = releaseKeystoreProperties["storePassword"] as String
+                keyAlias = releaseKeystoreProperties["keyAlias"] as String
+                keyPassword = releaseKeystoreProperties["keyPassword"] as String
+            }
+        }
     }
 
     buildTypes {
         release {
             isMinifyEnabled = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            if (releaseKeystorePropertiesFile.exists()) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
     }
 
