@@ -53,7 +53,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -61,7 +60,6 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import coil.compose.AsyncImage
 import com.bugenzhao.mnga.App
 import com.bugenzhao.mnga.model.PagingDataSource
 import com.bugenzhao.mnga.protos.datamodel.Forum
@@ -73,11 +71,11 @@ import com.bugenzhao.mnga.protos.service.ForumSearchRequest
 import com.bugenzhao.mnga.protos.service.ForumSearchResponse
 import com.bugenzhao.mnga.protos.service.TopicSearchRequest
 import com.bugenzhao.mnga.protos.service.TopicSearchResponse
+import com.bugenzhao.mnga.ui.screens.forumlist.ForumIcon
 import com.bugenzhao.mnga.ui.nav.Navigator
 import com.bugenzhao.mnga.ui.nav.Route
 import com.bugenzhao.mnga.util.DateFormatters
 import com.bugenzhao.mnga.util.L
-import com.bugenzhao.mnga.util.URLs
 import com.bugenzhao.mnga.util.errorLocalized
 import com.bugenzhao.mnga.storage.DateTimeStrategy
 import java.util.Date
@@ -360,7 +358,7 @@ internal fun ForumRowLite(forum: Forum, onClick: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            ForumIconLite(forum.iconUrl)
+            ForumIcon(iconUrl = forum.iconUrl, name = L.str(context, forum.name))
             Column(Modifier.weight(1f)) {
                 Text(
                     L.str(context, forum.name),
@@ -396,24 +394,6 @@ internal fun ForumRowLite(forum: Forum, onClick: () -> Unit) {
             }
         }
     }
-}
-
-/** 28dp forum icon with the accent-tinted bundled placeholder of `ForumIconView`. */
-@Composable
-private fun ForumIconLite(iconUrl: String) {
-    val resolved = iconUrl.takeIf { it.isNotEmpty() }?.let { URLs.resourceURL(it) }
-    AsyncImage(
-        model = resolved ?: "file:///android_asset/misc/default_forum_icon.png",
-        contentDescription = null,
-        modifier = Modifier
-            .size(28.dp)
-            .clip(RoundedCornerShape(6.dp)),
-        colorFilter = if (resolved == null) {
-            ColorFilter.tint(MaterialTheme.colorScheme.primary)
-        } else {
-            null
-        },
-    )
 }
 
 /**

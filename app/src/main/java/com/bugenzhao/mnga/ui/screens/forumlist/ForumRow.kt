@@ -19,14 +19,15 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import coil.compose.AsyncImage
 import com.bugenzhao.mnga.protos.datamodel.Forum
 import com.bugenzhao.mnga.protos.datamodel.ForumId
 import com.bugenzhao.mnga.protos.datamodel.Topic
+import com.bugenzhao.mnga.ui.components.AvatarImage
+import com.bugenzhao.mnga.ui.components.InitialAvatar
+import com.bugenzhao.mnga.ui.components.isDefaultAvatarUrl
 import com.bugenzhao.mnga.ui.screens.topiclist.DefaultForumIconAsset
 import com.bugenzhao.mnga.ui.screens.topiclist.TopicSubjectView
 import com.bugenzhao.mnga.ui.screens.topiclist.forumIconModel
@@ -40,18 +41,31 @@ fun ForumId.idDescription(): String =
     if (hasFid()) "#$fid" else "st#$stid"
 
 /**
- * 28dp forum icon; remote NGA resource icon with the bundled default icon as
- * placeholder, a port of `ForumIconView`.
+ * 28dp forum icon, a port of `ForumIconView`. Forums NGA gives no icon for (or
+ * whose icon fails to load) get a generated [InitialAvatar] from [name]
+ * instead of the bundled placeholder every such forum used to share; the
+ * bundled icon is still the last resort for nameless forums.
  */
 @Composable
-fun ForumIcon(iconUrl: String, modifier: Modifier = Modifier) {
-    val model = forumIconModel(iconUrl) ?: DefaultForumIconAsset
-    AsyncImage(
-        model = model,
-        contentDescription = null,
-        modifier = modifier
-            .size(28.dp)
-            .clip(RoundedCornerShape(6.dp)),
+fun ForumIcon(iconUrl: String, name: String, modifier: Modifier = Modifier) {
+    val model = forumIconModel(iconUrl)
+    val generated: (@Composable () -> Unit)? = if (name.isBlank()) {
+        null
+    } else {
+        { InitialAvatar(name = name, size = 28.dp, modifier = modifier) }
+    }
+    if (generated != null && isDefaultAvatarUrl(model)) {
+        generated()
+        return
+    }
+    AvatarImage(
+        url = model ?: DefaultForumIconAsset,
+        name = name,
+        size = 28.dp,
+        // Real icons keep their squarish frame; the generated one stays a disc.
+        shape = RoundedCornerShape(6.dp),
+        modifier = modifier,
+        fallback = generated,
     )
 }
 
@@ -83,11 +97,11 @@ fun ForumRow(
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Spacer(Modifier.width(8.dp))
-            ForumIcon(iconUrl = forum.iconUrl)
+            ForumIcon(iconUrl = forum.iconUrl, name = forum.name)
         }
     } else {
         Row(modifier = modifier, verticalAlignment = Alignment.CenterVertically) {
-            ForumIcon(iconUrl = forum.iconUrl)
+            ForumIcon(iconUrl = forum.iconUrl, name = forum.name)
             Spacer(Modifier.width(12.dp))
             Text(
                 forum.name,

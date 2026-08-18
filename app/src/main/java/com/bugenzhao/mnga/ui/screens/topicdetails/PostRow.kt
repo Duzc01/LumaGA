@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Reply
 import androidx.compose.material.icons.filled.AttachFile
@@ -70,7 +69,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -79,7 +77,6 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import coil.compose.AsyncImage
 import com.bugenzhao.mnga.App
 import com.bugenzhao.mnga.logicCallAsync
 import com.bugenzhao.mnga.model.NavigationIdentifier
@@ -102,6 +99,7 @@ import com.bugenzhao.mnga.protos.service.AsyncRequest
 import com.bugenzhao.mnga.protos.service.PostVoteRequest
 import com.bugenzhao.mnga.protos.service.PostVoteResponse
 import com.bugenzhao.mnga.storage.BlockWordsStorage
+import com.bugenzhao.mnga.ui.components.AvatarImage
 import com.bugenzhao.mnga.ui.components.DateTimeText
 import com.bugenzhao.mnga.ui.post.AttachmentsView
 import com.bugenzhao.mnga.ui.post.ContentActions
@@ -475,29 +473,11 @@ fun PostRowUserView(
     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             if (showAvatar) {
-                val avatarUrl = user?.avatarUrl
-                Box(
-                    Modifier
-                        .size(36.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.surfaceContainerHigh),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    if (avatarUrl.isNullOrEmpty()) {
-                        Icon(
-                            Icons.Filled.Person,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                        )
-                    } else {
-                        AsyncImage(
-                            model = avatarUrl,
-                            contentDescription = null,
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier.size(36.dp),
-                        )
-                    }
-                }
+                AvatarImage(
+                    url = user?.avatarUrl,
+                    name = user?.name?.display()?.ifEmpty { null } ?: post.authorId,
+                    size = 36.dp,
+                )
             }
 
             val name = user?.name

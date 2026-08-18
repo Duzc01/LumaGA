@@ -8,11 +8,9 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ChevronRight
-import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -29,9 +27,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import coil.compose.AsyncImage
 import com.bugenzhao.mnga.App
 import com.bugenzhao.mnga.model.display
+import com.bugenzhao.mnga.ui.components.AvatarImage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -102,20 +100,7 @@ fun QuoteUserView(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(4.dp),
         ) {
-            if (avatarURL != null) {
-                AsyncImage(
-                    model = avatarURL,
-                    contentDescription = null,
-                    modifier = Modifier.size(20.dp).clip(CircleShape),
-                )
-            } else {
-                Icon(
-                    Icons.Outlined.Person,
-                    contentDescription = null,
-                    modifier = Modifier.size(16.dp),
-                    tint = MaterialTheme.colorScheme.primary,
-                )
-            }
+            AvatarImage(url = avatarURL, name = name.orEmpty(), size = 20.dp)
             Text(
                 name ?: "??????",
                 style = MaterialTheme.typography.labelLarge,

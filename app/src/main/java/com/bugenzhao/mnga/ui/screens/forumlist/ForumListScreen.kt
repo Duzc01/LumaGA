@@ -85,6 +85,7 @@ import com.bugenzhao.mnga.ui.components.LoadingRow
 import com.bugenzhao.mnga.ui.nav.Navigator
 import com.bugenzhao.mnga.ui.nav.Route
 import com.bugenzhao.mnga.ui.screens.plus.rememberPlusStatus
+import com.bugenzhao.mnga.ui.screens.user.nameDisplayCompat
 import com.bugenzhao.mnga.ui.screens.topiclist.copyToClipboard
 import com.bugenzhao.mnga.ui.screens.topiclist.openInBrowser
 import com.bugenzhao.mnga.ui.screens.topiclist.shareText
@@ -211,7 +212,11 @@ fun ForumListScreen(
                                     .background(MaterialTheme.colorScheme.surface),
                                 contentAlignment = Alignment.Center,
                             ) {
-                                Avatar(url = currentUser?.avatarUrl, size = 26)
+                                Avatar(
+                                    url = currentUser?.avatarUrl,
+                                    name = currentUser?.nameDisplayCompat,
+                                    size = 26,
+                                )
                             }
                         }
                     }

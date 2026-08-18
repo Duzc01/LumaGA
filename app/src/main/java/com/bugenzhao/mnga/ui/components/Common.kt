@@ -1,6 +1,5 @@
 package com.bugenzhao.mnga.ui.components
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -25,7 +24,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import coil.compose.AsyncImage
 import com.bugenzhao.mnga.LogicException
 import com.bugenzhao.mnga.util.DateFormatters
 import com.bugenzhao.mnga.util.L
@@ -113,21 +111,19 @@ fun GroupedRow(
     }
 }
 
-/** Avatar image with rounded corners; falls back to a colored circle. */
+/**
+ * Circular avatar image, degrading to a generated [InitialAvatar] built from
+ * [name] when there is no usable avatar.
+ */
 @Composable
-fun Avatar(url: String?, size: Int = 40, onClick: (() -> Unit)? = null) {
-    val shape = CircleShape
-    if (url.isNullOrEmpty()) {
-        Box(
-            Modifier.size(size.dp).clip(shape)
-                .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-        )
+fun Avatar(url: String?, name: String? = null, size: Int = 40, onClick: (() -> Unit)? = null) {
+    val image: @Composable () -> Unit = {
+        AvatarImage(url = url, name = name.orEmpty(), size = size.dp)
+    }
+    if (onClick != null) {
+        Box(Modifier.clip(CircleShape).clickable { onClick() }) { image() }
     } else {
-        AsyncImage(
-            model = url,
-            contentDescription = null,
-            modifier = Modifier.size(size.dp).clip(shape),
-        )
+        image()
     }
 }
 

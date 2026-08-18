@@ -45,7 +45,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import coil.compose.AsyncImage
 import com.bugenzhao.mnga.App
 import com.bugenzhao.mnga.model.PlusFeature
 import com.bugenzhao.mnga.model.PlusModel
@@ -53,6 +52,7 @@ import com.bugenzhao.mnga.protos.datamodel.PostContent
 import com.bugenzhao.mnga.protos.datamodel.User
 import com.bugenzhao.mnga.protos.datamodel.UserName
 import com.bugenzhao.mnga.storage.pref
+import com.bugenzhao.mnga.ui.components.AvatarImage
 import com.bugenzhao.mnga.util.L
 import com.bugenzhao.mnga.util.URLs
 import java.text.DateFormat
@@ -243,21 +243,32 @@ private fun UserViewImpl(
                 .then(if (click != null) Modifier.clickable { click() } else Modifier),
             contentAlignment = Alignment.Center,
         ) {
-            if (avatarURL != null && showAvatar) {
-                AsyncImage(
-                    model = avatarURL,
-                    contentDescription = name,
-                    modifier = Modifier.size(size),
-                )
-            } else {
-                val placeholder: ImageVector =
-                    if (anonymous) Icons.Outlined.TheaterComedy
-                    else Icons.Filled.AccountCircle
+            val placeholderIcon: @Composable (ImageVector) -> Unit = { icon ->
                 Icon(
-                    placeholder,
+                    icon,
                     contentDescription = null,
                     modifier = Modifier.size(size),
                     tint = MaterialTheme.colorScheme.primary,
+                )
+            }
+            if (showAvatar) {
+                AvatarImage(
+                    url = avatarURL,
+                    name = name,
+                    size = size,
+                    contentDescription = name,
+                    // Anonymous names are server-generated noise, so their
+                    // initial would mean nothing — keep the masks glyph.
+                    fallback = if (anonymous) {
+                        { placeholderIcon(Icons.Outlined.TheaterComedy) }
+                    } else {
+                        null
+                    },
+                )
+            } else {
+                placeholderIcon(
+                    if (anonymous) Icons.Outlined.TheaterComedy
+                    else Icons.Filled.AccountCircle
                 )
             }
         }
