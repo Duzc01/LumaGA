@@ -109,16 +109,12 @@ private const val ABOUT_TOPIC_ID = "mnga_about_feedback"
 private enum class PickerKind {
     COLOR_SCHEME,
     THEME_COLOR,
-    LIST_STYLE,
     ORDER,
     HIDE_BLOCKED,
-    SEARCH_BAR,
     WEB_API,
     RESUME,
     DATE_TIME,
     IMAGE_SCALE,
-    SWIPE_EDGE,
-    SWIPE_ACTION,
     DEVICE,
 }
 
@@ -147,15 +143,12 @@ fun PreferencesSheet(onDismiss: () -> Unit, navigator: Navigator? = null) {
     val themeColorRaw by prefs.themeColorRaw.flow.collectAsState()
     val alwaysPortrait by prefs.alwaysPortraitOnPhone.flow.collectAsState()
     val useInAppSafari by prefs.useInAppSafari.flow.collectAsState()
-    val hideNotificationShortcut by prefs.hideNotificationToolbarShortcut.flow.collectAsState()
-    val useInsetGroupedModern by prefs.useInsetGroupedModern.flow.collectAsState()
     val alwaysShareImageAsFile by prefs.alwaysShareImageAsFile.flow.collectAsState()
 
     val defaultOrderRaw by prefs.defaultTopicListOrderRaw.flow.collectAsState()
     val hideBlocked by prefs.topicListHideBlocked.flow.collectAsState()
     val showRefreshButton by prefs.topicListShowRefreshButton.flow.collectAsState()
     val showForumShortcut by prefs.topicListShowForumShortcut.flow.collectAsState()
-    val searchInBottomBar by prefs.topicListShowSearchInBottomBar.flow.collectAsState()
     val subjectMulticolor by prefs.topicListSubjectMulticolor.flow.collectAsState()
 
     val usePaginatedDetails by prefs.usePaginatedDetails.flow.collectAsState()
@@ -163,8 +156,6 @@ fun PreferencesSheet(onDismiss: () -> Unit, navigator: Navigator? = null) {
     val resumeFromRaw by prefs.resumeTopicFromRaw.flow.collectAsState()
     val autoOpenInBrowserWhenBanned by prefs.autoOpenInBrowserWhenBanned.flow.collectAsState()
 
-    val swipeLeading by prefs.postRowSwipeActionLeading.flow.collectAsState()
-    val swipeVoteFirst by prefs.postRowSwipeVoteFirst.flow.collectAsState()
     val dateTimeStrategyRaw by prefs.postRowDateTimeStrategyRaw.flow.collectAsState()
     val showSignature by prefs.showSignature.flow.collectAsState()
     val showAvatar by prefs.showAvatar.flow.collectAsState()
@@ -268,12 +259,6 @@ fun PreferencesSheet(onDismiss: () -> Unit, navigator: Navigator? = null) {
                                     dismiss()
                                 },
                             )
-                            SwitchRow(
-                                icon = Icons.Filled.NotificationsOff,
-                                title = L.str(context, "Hide Notification Shortcut"),
-                                checked = hideNotificationShortcut,
-                                onChange = { prefs.hideNotificationToolbarShortcut.value = it },
-                            )
                             NavigationRow(
                                 icon = Icons.Filled.CleaningServices,
                                 title = L.str(context, "Cache Management"),
@@ -326,16 +311,6 @@ fun PreferencesSheet(onDismiss: () -> Unit, navigator: Navigator? = null) {
                                 checked = showForumShortcut,
                                 onChange = { prefs.topicListShowForumShortcut.value = it },
                             )
-                            PickerRow(
-                                icon = Icons.Filled.Search,
-                                title = L.str(context, "Search Bar Position"),
-                                valueLabel = if (searchInBottomBar) {
-                                    L.str(context, "Bottom")
-                                } else {
-                                    L.str(context, "Top")
-                                },
-                                onClick = { picker = PickerKind.SEARCH_BAR },
-                            )
                             SwitchRow(
                                 icon = Icons.Filled.Palette,
                                 title = L.str(context, "Multicolor Subject"),
@@ -383,26 +358,6 @@ fun PreferencesSheet(onDismiss: () -> Unit, navigator: Navigator? = null) {
                     // region Post Row
                     item(key = "post-row") {
                         Section(header = L.str(context, "Post Row")) {
-                            PickerRow(
-                                icon = Icons.Filled.Swipe,
-                                title = L.str(context, "Swipe Trigger Edge"),
-                                valueLabel = if (swipeLeading) {
-                                    L.str(context, "Leading")
-                                } else {
-                                    L.str(context, "Trailing")
-                                },
-                                onClick = { picker = PickerKind.SWIPE_EDGE },
-                            )
-                            PickerRow(
-                                icon = Icons.Filled.ThumbUp,
-                                title = L.str(context, "Primary Swipe Action"),
-                                valueLabel = if (swipeVoteFirst) {
-                                    L.str(context, "Vote Up")
-                                } else {
-                                    L.str(context, "Quote")
-                                },
-                                onClick = { picker = PickerKind.SWIPE_ACTION },
-                            )
                             PickerRow(
                                 icon = Icons.Filled.Event,
                                 title = L.str(context, "Date Display"),
@@ -466,16 +421,6 @@ fun PreferencesSheet(onDismiss: () -> Unit, navigator: Navigator? = null) {
                     // region Appearance
                     item(key = "appearance") {
                         Section(header = L.str(context, "Appearance")) {
-                            PickerRow(
-                                icon = Icons.Filled.ListAlt,
-                                title = L.str(context, "List Style"),
-                                valueLabel = if (useInsetGroupedModern) {
-                                    L.str(context, "Modern")
-                                } else {
-                                    L.str(context, "Compact")
-                                },
-                                onClick = { picker = PickerKind.LIST_STYLE },
-                            )
                             SwitchRow(
                                 icon = Icons.Filled.Share,
                                 title = L.str(context, "Always Share Image as File"),
@@ -586,17 +531,6 @@ fun PreferencesSheet(onDismiss: () -> Unit, navigator: Navigator? = null) {
                 onSelect = { prefs.themeColorRaw.value = it.raw },
                 onDismiss = { picker = null },
             )
-        PickerKind.LIST_STYLE ->
-            PickerDialog(
-                title = L.str(context, "List Style"),
-                options = listOf(
-                    PickerOption(false, L.str(context, "Compact")),
-                    PickerOption(true, L.str(context, "Modern")),
-                ),
-                selected = useInsetGroupedModern,
-                onSelect = { prefs.useInsetGroupedModern.value = it },
-                onDismiss = { picker = null },
-            )
         PickerKind.ORDER ->
             PickerDialog(
                 title = L.str(context, "Default Order"),
@@ -614,17 +548,6 @@ fun PreferencesSheet(onDismiss: () -> Unit, navigator: Navigator? = null) {
                 ),
                 selected = hideBlocked,
                 onSelect = { prefs.topicListHideBlocked.value = it },
-                onDismiss = { picker = null },
-            )
-        PickerKind.SEARCH_BAR ->
-            PickerDialog(
-                title = L.str(context, "Search Bar Position"),
-                options = listOf(
-                    PickerOption(false, L.str(context, "Top")),
-                    PickerOption(true, L.str(context, "Bottom")),
-                ),
-                selected = searchInBottomBar,
-                onSelect = { prefs.topicListShowSearchInBottomBar.value = it },
                 onDismiss = { picker = null },
             )
         PickerKind.WEB_API ->
@@ -672,28 +595,6 @@ fun PreferencesSheet(onDismiss: () -> Unit, navigator: Navigator? = null) {
                 },
                 selected = imageScale,
                 onSelect = { prefs.postRowImageScaleRaw.value = it.raw },
-                onDismiss = { picker = null },
-            )
-        PickerKind.SWIPE_EDGE ->
-            PickerDialog(
-                title = L.str(context, "Swipe Trigger Edge"),
-                options = listOf(
-                    PickerOption(true, L.str(context, "Leading")),
-                    PickerOption(false, L.str(context, "Trailing")),
-                ),
-                selected = swipeLeading,
-                onSelect = { prefs.postRowSwipeActionLeading.value = it },
-                onDismiss = { picker = null },
-            )
-        PickerKind.SWIPE_ACTION ->
-            PickerDialog(
-                title = L.str(context, "Primary Swipe Action"),
-                options = listOf(
-                    PickerOption(true, L.str(context, "Vote Up")),
-                    PickerOption(false, L.str(context, "Quote")),
-                ),
-                selected = swipeVoteFirst,
-                onSelect = { prefs.postRowSwipeVoteFirst.value = it },
                 onDismiss = { picker = null },
             )
         PickerKind.DEVICE ->
