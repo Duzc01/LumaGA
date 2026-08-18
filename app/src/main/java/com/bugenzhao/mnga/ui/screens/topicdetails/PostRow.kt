@@ -6,7 +6,9 @@ import android.content.Intent
 import android.net.Uri
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -73,8 +75,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.bugenzhao.mnga.App
 import com.bugenzhao.mnga.logicCallAsync
@@ -286,9 +290,7 @@ fun PostRow(
                 post = post,
                 user = user,
                 isAuthor = isAuthor,
-                showMenu = showMenu && !dummy,
                 action = action,
-                onMenuClick = { menuOpen = true },
             )
 
             // Content (block-words overlay with tap-to-reveal).
@@ -297,9 +299,11 @@ fun PostRow(
             PostRowFooter(
                 post = post,
                 vote = vote,
+                showMenu = showMenu && !dummy,
                 onUpvote = { doVote(PostVoteRequest.Operation.UPVOTE) },
                 onDownvote = { doVote(PostVoteRequest.Operation.DOWNVOTE) },
                 onQuote = { onPostAction?.invoke(PostRowAction.QUOTE, post) },
+                onMenuClick = { menuOpen = true },
             )
 
             if (post.commentsList.isNotEmpty()) {
@@ -407,46 +411,152 @@ private fun PostAttachmentsSheet(
 
 // region Header
 
+/**
+ * Two-line post header: the avatar spans a name row (name + trailing post
+ * date) and a metadata row (labelled user stats + trailing device / floor).
+ */
 @Composable
 private fun PostRowHeader(
     post: Post,
     user: User?,
     isAuthor: Boolean,
-    showMenu: Boolean,
     action: TopicDetailsActionModel?,
-    onMenuClick: () -> Unit,
 ) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        PostRowUserView(post = post, user = user, isAuthor = isAuthor, action = action)
-        Spacer(Modifier.weight(1f))
-        if (post.floor != 0) {
-            Row(verticalAlignment = Alignment.Top) {
-                Text(
-                    "#",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.primary,
-                )
-                Text(
-                    post.floor.toString(),
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Medium,
-                    color = MaterialTheme.colorScheme.primary,
-                )
-            }
+    val showAvatar = App.prefs.showAvatar.flow.collectAsState().value
+    val showDetails = App.prefs.postRowShowUserDetails.flow.collectAsState().value
+    val showRegDate = App.prefs.postRowShowUserRegDate.flow.collectAsState().value
+
+    Row(
+        Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.Top,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        if (showAvatar) {
+            PostRowAvatar(post = post, user = user)
         }
-        if (showMenu) {
-            IconButton(onClick = onMenuClick) {
-                Icon(
-                    Icons.Filled.MoreVert,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                PostRowUserName(
+                    post = post,
+                    user = user,
+                    isAuthor = isAuthor,
+                    action = action,
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.weight(1f),
                 )
+                Spacer(Modifier.width(8.dp))
+                DateTimeText(timestampSeconds = post.postDate)
+            }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (showDetails && user != null && user.name.anonymous.isEmpty()) {
+                    UserDetailsLine(user = user, showRegDate = showRegDate)
+                }
+                Spacer(Modifier.weight(1f))
+                PostRowFloor(post = post)
             }
         }
     }
 }
 
-/** Avatar + username + user details line, ported from `PostRowUserView`. */
+/** Device icon + `[N 楼]`, trailing the header's metadata row. */
+@Composable
+private fun PostRowFloor(post: Post) {
+    val context = LocalContext.current
+    if (post.floor == 0) return
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(3.dp),
+    ) {
+        Icon(
+            deviceIcon(post.device),
+            contentDescription = null,
+            modifier = Modifier.size(13.dp),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(
+            L.str(context, "[Floor %lld]", post.floor),
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+/** Circular author avatar for the post header. */
+@Composable
+private fun PostRowAvatar(post: Post, user: User?, size: Dp = 36.dp) {
+    AvatarImage(
+        url = user?.avatarUrl,
+        name = user?.name?.display()?.ifEmpty { null } ?: post.authorId,
+        size = size,
+    )
+}
+
+/**
+ * Author name plus the mute / thread-author indicators. Tapping toggles the
+ * raw id, long-pressing opens the profile.
+ */
+@Composable
+private fun PostRowUserName(
+    post: Post,
+    user: User?,
+    isAuthor: Boolean,
+    action: TopicDetailsActionModel?,
+    style: TextStyle,
+    modifier: Modifier = Modifier,
+) {
+    val showAuthorIndicator = App.prefs.postRowShowAuthorIndicator.flow.collectAsState().value
+    var showId by remember(post.id) { mutableStateOf(false) }
+
+    Row(
+        modifier,
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        val name = user?.name
+        val displayed = when {
+            name == null -> post.authorId
+            showId -> name.normal.ifEmpty { post.authorId }
+            else -> name.display()
+        }
+        Text(
+            displayed,
+            style = style,
+            fontWeight = if (isAuthor) FontWeight.SemiBold else FontWeight.Medium,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            color = if (user?.mute == true) {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            } else {
+                MaterialTheme.colorScheme.onSurface
+            },
+            modifier = Modifier
+                .weight(1f, fill = false)
+                .combinedClickable(
+                    onClick = { showId = !showId },
+                    onLongClick = { user?.let { action?.showUserProfile?.value = it } },
+                ),
+        )
+
+        if (user?.mute == true) {
+            Icon(
+                Icons.Filled.MicOff,
+                contentDescription = "Muted",
+                modifier = Modifier.size(14.dp),
+                tint = MaterialTheme.colorScheme.error,
+            )
+        }
+        if (isAuthor && showAuthorIndicator) {
+            Icon(
+                Icons.Filled.Person,
+                contentDescription = null,
+                modifier = Modifier.size(14.dp),
+                tint = MaterialTheme.colorScheme.primary,
+            )
+        }
+    }
+}
+
+/** Compact avatar + name, used by the inline comment rows. */
 @Composable
 fun PostRowUserView(
     post: Post,
@@ -455,98 +565,58 @@ fun PostRowUserView(
     action: TopicDetailsActionModel? = null,
 ) {
     val showAvatar = App.prefs.showAvatar.flow.collectAsState().value
-    val showDetails = App.prefs.postRowShowUserDetails.flow.collectAsState().value
-    val showRegDate = App.prefs.postRowShowUserRegDate.flow.collectAsState().value
-    val showAuthorIndicator = App.prefs.postRowShowAuthorIndicator.flow.collectAsState().value
-
-    var showId by remember(post.id) { mutableStateOf(false) }
-
-    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            if (showAvatar) {
-                AvatarImage(
-                    url = user?.avatarUrl,
-                    name = user?.name?.display()?.ifEmpty { null } ?: post.authorId,
-                    size = 36.dp,
-                )
-            }
-
-            val name = user?.name
-            val displayed = when {
-                name == null -> post.authorId
-                showId -> name.normal.ifEmpty { post.authorId }
-                else -> name.display()
-            }
-            Text(
-                displayed,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = if (isAuthor) FontWeight.SemiBold else FontWeight.Medium,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                color = if (user?.mute == true) {
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                } else {
-                    MaterialTheme.colorScheme.onSurface
-                },
-                modifier = Modifier.combinedClickable(
-                    onClick = { showId = !showId },
-                    onLongClick = { user?.let { action?.showUserProfile?.value = it } },
-                ),
-            )
-
-            if (user?.mute == true) {
-                Icon(
-                    Icons.Filled.MicOff,
-                    contentDescription = "Muted",
-                    modifier = Modifier.size(14.dp),
-                    tint = MaterialTheme.colorScheme.error,
-                )
-            }
-            if (isAuthor && showAuthorIndicator) {
-                Icon(
-                    Icons.Filled.Person,
-                    contentDescription = null,
-                    modifier = Modifier.size(14.dp),
-                    tint = MaterialTheme.colorScheme.primary,
-                )
-            }
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        if (showAvatar) {
+            PostRowAvatar(post = post, user = user)
         }
-
-        if (showDetails && user != null && user.name.anonymous.isEmpty()) {
-            UserDetailsLine(user = user, showRegDate = showRegDate)
-        }
+        PostRowUserName(
+            post = post,
+            user = user,
+            isAuthor = isAuthor,
+            action = action,
+            style = MaterialTheme.typography.bodyMedium,
+        )
     }
 }
 
 @Composable
 private fun UserDetailsLine(user: User, showRegDate: Boolean) {
     val context = LocalContext.current
-    val regDate = if (showRegDate && user.regDate > 0) {
-        DateFormatters.detailed(context, Date(user.regDate * 1000)).substringBefore(' ')
-    } else {
-        null
-    }
-    val ipLocation = user.ipLocation.takeIf { it.isNotEmpty() }
-    // Nothing left to show once both are absent; skip the row so it does not
-    // eat the header's vertical spacing.
-    if (regDate == null && ipLocation == null) return
-
+    val secondary = MaterialTheme.colorScheme.onSurfaceVariant
     Row(
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        if (regDate != null) {
+        LabelledStat(
+            label = L.str(context, "Fame:"),
+            // Fame is stored x10 signed; render with one decimal.
+            value = String.format("%.1f", user.fame / 10.0),
+            color = if (user.fame < 0) MaterialTheme.colorScheme.error else secondary,
+        )
+        LabelledStat(
+            label = L.str(context, "Posts:"),
+            value = user.postNum.toString(),
+            color = if (user.postNum in 1 until 50) {
+                MaterialTheme.colorScheme.error
+            } else {
+                secondary
+            },
+        )
+        if (showRegDate && user.regDate > 0) {
             Text(
-                regDate,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                DateFormatters.detailed(context, Date(user.regDate * 1000)).substringBefore(' '),
+                style = MaterialTheme.typography.labelMedium,
+                color = secondary,
             )
         }
-        if (ipLocation != null) {
+        if (user.ipLocation.isNotEmpty()) {
             Text(
-                ipLocation,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                user.ipLocation,
+                style = MaterialTheme.typography.labelMedium,
+                color = secondary,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -554,31 +624,73 @@ private fun UserDetailsLine(user: User, showRegDate: Boolean) {
     }
 }
 
+/** One `label: value` metadata item of the header's second line. */
+@Composable
+private fun LabelledStat(label: String, value: String, color: Color) {
+    Text(
+        label + value,
+        style = MaterialTheme.typography.labelMedium,
+        color = color,
+        maxLines = 1,
+    )
+}
+
 // endregion
 
 // region Footer
 
+/**
+ * Footer action row. The reference layout keeps every control right-aligned,
+ * with the overflow menu as its last item; the informational edit / attachment
+ * markers stay on the left.
+ */
 @Composable
 private fun PostRowFooter(
     post: Post,
     vote: VotesModel.Vote,
+    showMenu: Boolean,
     onUpvote: () -> Unit,
     onDownvote: () -> Unit,
     onQuote: () -> Unit,
+    onMenuClick: () -> Unit,
 ) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        // Voter.
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        // Leading indicators.
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            if (post.alterInfo.isNotEmpty()) {
+                Icon(
+                    Icons.Filled.Edit,
+                    contentDescription = null,
+                    modifier = Modifier.size(14.dp),
+                    tint = MaterialTheme.colorScheme.outline,
+                )
+            }
+            if (post.attachmentsList.isNotEmpty()) {
+                Icon(
+                    Icons.Filled.AttachFile,
+                    contentDescription = null,
+                    modifier = Modifier.size(14.dp),
+                    tint = MaterialTheme.colorScheme.outline,
+                )
+            }
+        }
+
+        Spacer(Modifier.weight(1f))
+
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Icon(
                 if (vote.state == VoteState.UP) Icons.Filled.ThumbUp else Icons.Outlined.ThumbUp,
                 contentDescription = "Upvote",
                 modifier = Modifier
-                    .size(22.dp)
+                    .size(18.dp)
                     .combinedClickable(onClick = onUpvote, onLongClick = {}),
                 tint = if (vote.state == VoteState.UP) {
                     MaterialTheme.colorScheme.primary
                 } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant
+                    MaterialTheme.colorScheme.outline
                 },
             )
             val score = maxOf(post.score + vote.delta, 0)
@@ -589,61 +701,40 @@ private fun PostRowFooter(
                 color = if (vote.state == VoteState.UP) {
                     MaterialTheme.colorScheme.primary
                 } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant
+                    MaterialTheme.colorScheme.outline
                 },
             )
             Icon(
                 if (vote.state == VoteState.DOWN) Icons.Filled.ThumbDown else Icons.Outlined.ThumbDown,
                 contentDescription = "Downvote",
                 modifier = Modifier
-                    .size(22.dp)
+                    .size(18.dp)
                     .combinedClickable(onClick = onDownvote, onLongClick = {}),
                 tint = if (vote.state == VoteState.DOWN) {
                     MaterialTheme.colorScheme.primary
                 } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant
+                    MaterialTheme.colorScheme.outline
                 },
             )
             Icon(
                 Icons.Outlined.FormatQuote,
                 contentDescription = "Quote",
                 modifier = Modifier
-                    .size(22.dp)
+                    .size(18.dp)
                     .combinedClickable(onClick = onQuote, onLongClick = {}),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                tint = MaterialTheme.colorScheme.outline,
             )
-        }
-
-        Spacer(Modifier.weight(1f))
-
-        // Trailing indicators.
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-        ) {
-            if (post.alterInfo.isNotEmpty()) {
+            if (showMenu) {
                 Icon(
-                    Icons.Filled.Edit,
+                    Icons.Filled.MoreVert,
                     contentDescription = null,
-                    modifier = Modifier.size(14.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier
+                        .size(18.dp)
+                        .clip(CircleShape)
+                        .clickable(onClick = onMenuClick),
+                    tint = MaterialTheme.colorScheme.outline,
                 )
             }
-            if (post.attachmentsList.isNotEmpty()) {
-                Icon(
-                    Icons.Filled.AttachFile,
-                    contentDescription = null,
-                    modifier = Modifier.size(14.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            DateTimeText(timestampSeconds = post.postDate)
-            Icon(
-                deviceIcon(post.device),
-                contentDescription = null,
-                modifier = Modifier.size(14.dp),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
         }
     }
 }

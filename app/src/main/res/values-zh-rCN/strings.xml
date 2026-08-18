@@ -167,6 +167,9 @@
     <string name="topic_s">话题 %1$s</string>
     <string name="floor">楼层</string>
     <string name="floor_d">第 %1$d 层</string>
+    <string name="floor_bracketed">[%1$d 楼]</string>
+    <string name="fame_colon">威望：</string>
+    <string name="posts_colon">发帖：</string>
     <string name="page">页面</string>
     <string name="jump">跳转</string>
     <string name="jump_to">跳转至…</string>

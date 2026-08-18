@@ -167,6 +167,9 @@
     <string name="topic_s">Topic %@</string>
     <string name="floor">Floor</string>
     <string name="floor_d">Floor %lld</string>
+    <string name="floor_bracketed">[Floor %1$d]</string>
+    <string name="fame_colon">Fame:</string>
+    <string name="posts_colon">Posts:</string>
     <string name="page">Page</string>
     <string name="jump">Jump</string>
     <string name="jump_to">Jump to...</string>

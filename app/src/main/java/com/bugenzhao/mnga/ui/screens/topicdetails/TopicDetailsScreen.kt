@@ -837,7 +837,6 @@ private fun TopicDetailsRow(
 
     when (row) {
         RowSpec.Header -> {
-            var expanded by remember { mutableStateOf(true) }
             Surface(shape = RoundedCornerShape(12.dp), color = MaterialTheme.colorScheme.surface) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     TopicSubjectHeader(topic = topic)
@@ -845,7 +844,7 @@ private fun TopicDetailsRow(
                     val first = remember(items) {
                         items.minByOrNull { it.floor }?.takeIf { it.id.pid == "0" }
                     }
-                    if (first != null && expanded) {
+                    if (first != null) {
                         PostRow(
                             post = first,
                             isAuthor = first.authorId == topic.authorId,
@@ -856,14 +855,6 @@ private fun TopicDetailsRow(
                             enableAuthorOnly = enableAuthorOnly,
                             onPostAction = onPostAction,
                         )
-                    }
-                    if (first != null) {
-                        TextButton(onClick = { expanded = !expanded }) {
-                            Text(
-                                if (expanded) "▾ " + L.str(context, "Topic") else "▸ " + L.str(context, "Topic"),
-                                style = MaterialTheme.typography.labelMedium,
-                            )
-                        }
                     }
                 }
             }
