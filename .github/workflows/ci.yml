@@ -37,12 +37,31 @@ jobs:
       # The Rust `logic` library ships prebuilt in logic/src/main/jniLibs, so
       # the APK build itself needs no NDK / Rust toolchain on CI. Building it
       # from rust/ is covered by rust.yml.
+      #
+      # Signing: the release keystore/passwords live in repo secrets (push
+      # builds only; PRs from forks have no secret access and stay unsigned,
+      # which is fine for a build-check).
+      - name: Inject release signing (push builds only)
+        if: github.event_name == 'push'
+        env:
+          KEYSTORE_B64: ${{ secrets.LUMA_KEYSTORE_BASE64 }}
+          STORE_PASS: ${{ secrets.LUMA_STORE_PASSWORD }}
+          KEY_PASS: ${{ secrets.LUMA_KEY_PASSWORD }}
+        run: |
+          echo "$KEYSTORE_B64" | base64 -d > app/release.keystore
+          cat > app/release-keystore.properties <<EOF
+          storeFile=release.keystore
+          storePassword=$STORE_PASS
+          keyAlias=luma
+          keyPassword=$KEY_PASS
+          EOF
+
       - name: Build
-        run: ./gradlew assembleDebug --stacktrace
+        run: ./gradlew assembleRelease --stacktrace
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: app-debug
-          path: app/build/outputs/apk/debug/app-debug.apk
+          name: app-release
+          path: app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
