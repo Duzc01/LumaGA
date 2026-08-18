@@ -109,7 +109,16 @@ fun ContentImageView(
         } else null
 
     Column(modifier) {
-        val painter = coil.compose.rememberAsyncImagePainter(model = url)
+        // Load at the original resolution: while the placeholder box is only
+        // 48dp tall, Coil would otherwise downsample to that tiny size and the
+        // image would look blurry once it expands to its real aspect ratio.
+        val painter = coil.compose.rememberAsyncImagePainter(
+            model =
+                coil.request.ImageRequest.Builder(context)
+                    .data(url)
+                    .size(coil.size.Size.ORIGINAL)
+                    .build()
+        )
         // Reading the painter state subscribes to load progress so the box
         // re-measures once the intrinsic size is known.
         val painterState = painter.state
