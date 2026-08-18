@@ -39,7 +39,6 @@ import androidx.compose.material.icons.filled.PhoneIphone
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.ThumbDown
 import androidx.compose.material.icons.filled.ThumbUp
-import androidx.compose.material.icons.filled.ThumbUpOffAlt
 import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.FormatQuote
 import androidx.compose.material.icons.outlined.Person
@@ -152,8 +151,6 @@ fun PostRow(
     val view = LocalView.current
     val scope = rememberCoroutineScope()
 
-    val postRowSwipeActionLeading = App.prefs.postRowSwipeActionLeading.flow.collectAsState().value
-    val postRowSwipeVoteFirst = App.prefs.postRowSwipeVoteFirst.flow.collectAsState().value
     val showSignature = App.prefs.showSignature.flow.collectAsState().value
 
     val mock = post.id.tid.startsWith("mnga_")
@@ -304,6 +301,7 @@ fun PostRow(
                 vote = vote,
                 onUpvote = { doVote(PostVoteRequest.Operation.UPVOTE) },
                 onDownvote = { doVote(PostVoteRequest.Operation.DOWNVOTE) },
+                onQuote = { onPostAction?.invoke(PostRowAction.QUOTE, post) },
             )
 
             if (post.commentsList.isNotEmpty()) {
@@ -341,19 +339,12 @@ fun PostRow(
         }
     }
 
-    // Long-press context menu wrapper.
-    val swipeActions = buildSwipeActions(
-        voteState = vote.state,
-        voteFirst = postRowSwipeVoteFirst,
-        mock = mock,
-        onQuote = { onPostAction?.invoke(PostRowAction.QUOTE, post) },
-        onVote = { doVote(PostVoteRequest.Operation.UPVOTE) },
-    )
-
+    // Quote / vote quick actions were folded into the footer (up/down vote and
+    // quote buttons), so the swipe-reveal row is kept only as a plain wrapper.
     SwipeActionsRow(
-        enabled = swipeActions.isNotEmpty(),
-        leading = postRowSwipeActionLeading,
-        actions = swipeActions,
+        enabled = false,
+        leading = false,
+        actions = emptyList(),
         modifier = modifier,
     ) {
         Box {
@@ -601,6 +592,7 @@ private fun PostRowFooter(
     vote: VotesModel.Vote,
     onUpvote: () -> Unit,
     onDownvote: () -> Unit,
+    onQuote: () -> Unit,
 ) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         // Voter.
@@ -639,6 +631,14 @@ private fun PostRowFooter(
                 } else {
                     MaterialTheme.colorScheme.onSurfaceVariant
                 },
+            )
+            Icon(
+                Icons.Outlined.FormatQuote,
+                contentDescription = "Quote",
+                modifier = Modifier
+                    .size(22.dp)
+                    .combinedClickable(onClick = onQuote, onLongClick = {}),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
 
@@ -940,27 +940,10 @@ private data class SwipeAction(
     val onClick: () -> Unit,
 )
 
-private fun buildSwipeActions(
-    voteState: VoteState,
-    voteFirst: Boolean,
-    mock: Boolean,
-    onQuote: () -> Unit,
-    onVote: () -> Unit,
-): List<SwipeAction> {
-    if (mock) return emptyList()
-    val quote = SwipeAction("Quote", Icons.Outlined.FormatQuote, Color.Unspecified, onQuote)
-    val vote = SwipeAction(
-        if (voteState == VoteState.UP) "Cancel" else "Vote Up",
-        if (voteState == VoteState.UP) Icons.Filled.ThumbUpOffAlt else Icons.Outlined.ThumbUp,
-        Color.Unspecified,
-        onVote,
-    )
-    return if (voteFirst) listOf(vote, quote) else listOf(quote, vote)
-}
-
 /**
  * Swipe-to-reveal action row (vote/quote), replacing SwiftUI `swipeActions`.
- * The content shifts horizontally while the actions sit behind it; releasing
+ * Kept as a plain wrapper now that the vote/quote actions live in the footer;
+ * the content shifts horizontally while the actions sit behind it; releasing
  * snaps back after firing the tapped action.
  */
 @Composable
