@@ -158,6 +158,7 @@ fun RouteDispatcher(
                     ?: route.mode,
                 dateRange = route.dateRange,
                 editor = editor,
+                route = route,
             )
         is Route.TopicDetails ->
             TopicDetailsScreen(navigator, route, editor = editor)

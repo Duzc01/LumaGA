@@ -106,6 +106,8 @@ fun TopicListScreen(
     mode: TopicListMode = TopicListMode.NORMAL,
     dateRange: Int = 0,
     editor: com.bugenzhao.mnga.ui.editor.EditorController? = null,
+    /** The stack route rendering this screen, used to tell a pop from a push. */
+    route: Route? = null,
 ) {
     val context = LocalContext.current
     val view = LocalView.current
@@ -270,7 +272,13 @@ fun TopicListScreen(
 
     DisposableEffect(Unit) {
         onDispose {
-            if (dataSource.items.isNotEmpty()) {
+            // Only keep the snapshot when this screen was pushed away by a
+            // deeper route (so popping back restores it). When the route was
+            // popped off the stack for good, drop the snapshot so the next
+            // entry into this forum starts fresh instead of showing the
+            // stale list.
+            val stillInStack = route != null && navigator.stack.value.any { it === route }
+            if (stillInStack && dataSource.items.isNotEmpty()) {
                 savedItemsB64 = dataSource.items.map {
                     Base64.encodeToString(it.toByteArray(), Base64.NO_WRAP)
                 }
@@ -281,6 +289,12 @@ fun TopicListScreen(
                     (dataSource.latestResponse as? com.google.protobuf.Message)
                         ?.toByteArray()
                         ?.let { Base64.encodeToString(it, Base64.NO_WRAP) }
+            } else if (!stillInStack) {
+                savedItemsB64 = emptyList()
+                savedLoadedPage = 0
+                savedTotalPages = 1
+                savedLastRefresh = 0L
+                savedResponseB64 = null
             }
         }
     }
