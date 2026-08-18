@@ -1,5 +1,6 @@
 package com.bugenzhao.mnga.ui.screens.topiclist
 
+import android.util.Base64
 import androidx.activity.compose.BackHandler
 
 import androidx.compose.foundation.layout.Box
@@ -51,6 +52,7 @@ import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -238,7 +240,52 @@ fun TopicListScreen(
     }
     val state by dataSource.state.collectAsState()
 
-    LaunchedEffect(dataSource) { dataSource.initialLoad() }
+    // -- Keep the loaded topic list across navigation: when this screen is
+    // pushed away (e.g. into a topic details page) and popped back, restore
+    // the previous items/page/scroll instead of refetching and jumping to top.
+    var savedItemsB64 by rememberSaveable(forumId, mode) { mutableStateOf<List<String>>(emptyList()) }
+    var savedLoadedPage by rememberSaveable(forumId, mode) { mutableStateOf(0) }
+    var savedTotalPages by rememberSaveable(forumId, mode) { mutableStateOf(1) }
+    var savedLastRefresh by rememberSaveable(forumId, mode) { mutableStateOf(0L) }
+    var savedResponseB64 by rememberSaveable(forumId, mode) { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(dataSource) {
+        if (savedItemsB64.isNotEmpty()) {
+            val parser =
+                when (dataSource) {
+                    hotDataSource -> HotTopicListResponse.parser()
+                    else -> TopicListResponse.parser()
+                }
+            dataSource.restoreItems(
+                items = savedItemsB64.map { Topic.parseFrom(Base64.decode(it, Base64.NO_WRAP)) },
+                loadedPage = savedLoadedPage,
+                totalPages = savedTotalPages,
+                lastRefreshTime = savedLastRefresh.takeIf { it > 0 }?.let { java.util.Date(it) },
+                latestResponse = savedResponseB64?.let {
+                    parser.parseFrom(Base64.decode(it, Base64.NO_WRAP))
+                },
+            )
+        } else {
+            dataSource.initialLoad()
+        }
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            if (dataSource.items.isNotEmpty()) {
+                savedItemsB64 = dataSource.items.map {
+                    Base64.encodeToString(it.toByteArray(), Base64.NO_WRAP)
+                }
+                savedLoadedPage = dataSource.loadedPage
+                savedTotalPages = dataSource.totalPages
+                savedLastRefresh = dataSource.lastRefreshTime?.time ?: 0L
+                savedResponseB64 =
+                    (dataSource.latestResponse as? com.google.protobuf.Message)
+                        ?.toByteArray()
+                        ?.let { Base64.encodeToString(it, Base64.NO_WRAP) }
+            }
+        }
+    }
 
     // -- Forum meta enrichment (SS5 updateForumMeta).
     var forum by remember(forumId) {
