@@ -25,7 +25,8 @@ kotlin {
 }
 
 dependencies {
-    // Generated protobuf code is checked in under src/main/java.
+    // Generated protobuf code is checked in under src/main/java; regenerate it
+    // from rust/protos with rust/gen-kotlin-protos.sh.
     // Exclude the transitive protobuf-java brought by protobuf-kotlin to keep a
     // single copy on the classpath.
     implementation(libs.protobuf.java)

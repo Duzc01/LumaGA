@@ -1,0 +1,24 @@
+[workspace]
+resolver = "2"
+members = [
+    "logic/cache",
+    "logic/config",
+    "logic/logic",
+    "logic/mock_gen",
+    "logic/protos",
+    "logic/service",
+    "logic/text",
+]
+
+[workspace.dependencies]
+serde = { version = "1", features = ["derive"] }
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "time"] }
+
+# Local vendored sled (upstream rev 95a883f) with a fix for the IVec alignment
+# assert reading the wrong byte, which panics on Android's top-byte-tagged
+# heap pointers and poisons the CACHE lazy_static for the whole session.
+[patch."https://github.com/spacejam/sled"]
+sled = { path = "logic/sled" }
+
+[profile.release]
+lto = true

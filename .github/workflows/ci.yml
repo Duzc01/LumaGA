@@ -35,7 +35,8 @@ jobs:
           printf "\n24333f8a63b6825ea9c5514f83c2829b004d1fee" > "$ANDROID_HOME/licenses/android-sdk-license"
 
       # The Rust `logic` library ships prebuilt in logic/src/main/jniLibs, so
-      # the APK build itself needs no NDK / Rust toolchain on CI.
+      # the APK build itself needs no NDK / Rust toolchain on CI. Building it
+      # from rust/ is covered by rust.yml.
       - name: Build
         run: ./gradlew assembleDebug --stacktrace
 

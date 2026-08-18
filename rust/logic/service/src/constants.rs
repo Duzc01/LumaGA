@@ -1,0 +1,23 @@
+#![allow(unused)]
+
+pub const DEFAULT_BASE_URL: &str = "https://bbs.nga.cn";
+pub const DEFAULT_MOCK_BASE_URL: &str = "https://mnga-pages.bugenzhao.com/api/";
+pub const DEFAULT_PROXY_BASE_URL: &str = "https://nga.bugenzhao.com";
+pub const FORUM_ICON_PATH: &str = "https://img4.nga.cn/ngabbs/nga_classic/f/app/";
+pub const MNGA_ICON_PATH: &str = "https://github.com/BugenZhao/MNGA/blob/5c0e519f9064ab1d7dbfb8e14aa2a96fc7058419/assets/MNGA-round-liquid-glass-compressed.png";
+
+pub const SUCCESS_MSGS: &[&str] = &[
+    "完毕",
+    "没找到",
+    "没有符合条件的结果",
+    "今天已经签到",
+    "找不到用户",
+];
+
+pub const APPLE_UA: &str = "NGA_skull/7.3.1(iPhone17,1;iOS 26.0)";
+pub const ANDROID_UA: &str = "Nga_Official/80024(Android12)";
+pub const DESKTOP_UA: &str = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/101.0.4951.64 Safari/537.36";
+pub const WINDOWS_PHONE_UA: &str = "NGA_WP_JW/(;WINDOWS)";
+
+#[cfg(test)]
+pub const REVIEW_UID: &str = "62650766";

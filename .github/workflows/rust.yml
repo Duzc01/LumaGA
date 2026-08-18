@@ -1,0 +1,85 @@
+name: Rust
+
+# Separate from the APK workflow: the Android builds compile OpenSSL from
+# source once per ABI, so this takes far longer than ./gradlew assembleDebug
+# and only needs to run when the Rust sources change.
+on:
+  push:
+    branches: [main]
+    paths: ["rust/**", ".github/workflows/rust.yml"]
+  pull_request:
+    branches: [main]
+    paths: ["rust/**", ".github/workflows/rust.yml"]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build liblogic.so
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: rust
+    steps:
+      - uses: actions/checkout@v4
+
+      # The Rust protobuf bindings are generated at build time and protoc-rust
+      # shells out to protoc.
+      - name: Set up protoc
+        uses: arduino/setup-protoc@v3
+        with:
+          version: "35.x"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      # rust-toolchain.toml pins the channel and the three Android targets, so
+      # rustup installs everything on the first cargo call.
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: rust
+
+      - name: Install cargo-ndk
+        run: cargo install --locked cargo-ndk@4.1.2
+
+      - name: Unit tests
+        # Placeholders: auth.rs's test-only default expects these to exist. The
+        # real values live in a local .env and no test here needs them.
+        env:
+          AUTH_DEBUG_UID: "0"
+          AUTH_DEBUG_TOKEN: "none"
+        run: |
+          cargo test -p service --lib test_extract_error_shapes
+          cargo test -p service --lib test_sanitize_control_chars_in_json_strings
+
+      - name: Build
+        run: |
+          export ANDROID_NDK_HOME="${ANDROID_NDK_LATEST_HOME:?no NDK on this runner}"
+          "$ANDROID_NDK_HOME/ndk-build" --version | head -1
+          ./build-jni-libs.sh
+
+      # A missing or renamed symbol only surfaces at System.loadLibrary time in
+      # the app, so assert the JNI entry points here.
+      - name: Check JNI symbols
+        run: |
+          for abi in arm64-v8a x86_64 x86; do
+            so="../logic/src/main/jniLibs/$abi/liblogic.so"
+            for sym in rustCall rustCallAsync; do
+              readelf --dyn-syms "$so" \
+                | grep -q "Java_com_bugenzhao_mnga_LogicKt_$sym" \
+                || { echo "error: $abi missing Java_com_bugenzhao_mnga_LogicKt_$sym"; exit 1; }
+            done
+            echo "$abi ok"
+          done
+
+      # For inspection only. The .so files committed under logic/src/main/jniLibs
+      # stay the source of truth for the APK; builds are not reproducible
+      # byte-for-byte, so they are not compared against these.
+      - name: Upload libraries
+        uses: actions/upload-artifact@v4
+        with:
+          name: jniLibs
+          path: logic/src/main/jniLibs/*/liblogic.so
+          if-no-files-found: error

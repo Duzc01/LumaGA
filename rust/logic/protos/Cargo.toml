@@ -1,0 +1,14 @@
+[package]
+name = "protos"
+version = "0.1.0"
+edition = "2024"
+
+[features]
+
+[dependencies]
+base-62 = "0.1"
+protobuf = "2" # TODO: 3
+
+[build-dependencies]
+cargo-emit = "0.2"
+protoc-rust = "2" # TODO: protobuf-codegen = "3"

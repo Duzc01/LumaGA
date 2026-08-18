@@ -1,0 +1,403 @@
+syntax = "proto3";
+option java_package = "com.bugenzhao.mnga.protos.service";
+option java_multiple_files = true;
+
+import "DataModel.proto";
+
+/*
+ * Synchronous services that return immediately.
+ */
+message SyncRequest {
+  oneof value {
+    // Configure and initialize logic, should be called once the app is started.
+    ConfigureRequest configure = 1;
+    // Find user info in locally loaded dictionary.
+    LocalUserRequest local_user = 2;
+    // Sync auth info to logic, should be called if current user changes.
+    AuthRequest auth = 3;
+    // Parse string as `PostContent`.
+    ContentParseRequest content_parse = 4;
+    // Parse string as `Subject` of topic.
+    SubjectParseRequest subject_parse = 5;
+    // Mark some notifications as read.
+    MarkNotificationReadRequest mark_noti_read = 6;
+    // Set options for requesting.
+    SetRequestOptionRequest set_request_option = 7;
+    // Invalidate the global HTTP client.
+    InvalidateClientRequest invalidate_client = 8;
+    // Update locally cached progress of a topic.
+    UpdateTopicProgressRequest update_topic_progress = 9;
+  }
+}
+
+message ConfigureRequest {
+  Configuration config = 1;
+  bool debug = 2; // Whether this is a debugging environment.
+}
+message ConfigureResponse { optional string error = 1; }
+
+message LocalUserRequest { string user_id = 1; }
+message LocalUserResponse { User user = 1; }
+
+message AuthRequest { AuthInfo info = 1; }
+message AuthResponse {}
+
+message ContentParseRequest { string raw = 1; }
+message ContentParseResponse { PostContent content = 1; }
+
+message SubjectParseRequest { string raw = 1; }
+message SubjectParseResponse { Subject subject = 1; }
+
+message MarkNotificationReadRequest {
+  repeated string ids = 1;
+  bool read = 2;
+}
+message MarkNotificationReadResponse {}
+
+message SetRequestOptionRequest { RequestOption option = 1; }
+message SetRequestOptionResponse {}
+
+message UpdateTopicProgressRequest {
+  string topic_id = 1;
+  uint32 highest_floor = 2;
+  uint32 current_floor = 3;
+}
+message UpdateTopicProgressResponse {}
+
+/*
+ * Asynchronous services that are called in callback manner.
+ */
+message AsyncRequest {
+  oneof value {
+    // Get topics in given forum.
+    TopicListRequest topic_list = 1;
+    // Get posts in given topic.
+    TopicDetailsRequest topic_details = 2;
+    // Set filter for subforums.
+    SubforumFilterRequest subforum_filter = 3;
+    // Get all forums.
+    ForumListRequest forum_list = 4;
+    // Find user info remotely.
+    RemoteUserRequest remote_user = 5;
+    // Do voting to posts.
+    PostVoteRequest post_vote = 6;
+    // Get history of visited topics.
+    TopicHistoryRequest topic_history = 7;
+    // Get hot topics in given forum.
+    HotTopicListRequest hot_topic_list = 8;
+    // Search for a specific forum.
+    ForumSearchRequest forum_search = 9;
+    // Get favorite topics.
+    FavoriteTopicListRequest favorite_topic_list = 10;
+    // Mark a topic as favored.
+    TopicFavorRequest topic_favor = 11;
+    // Fetch the initial content for a posting action.
+    PostReplyFetchContentRequest post_reply_fetch_content = 12;
+    // Do posting to some topic or forum.
+    PostReplyRequest post_reply = 13;
+    // Get all notifications.
+    FetchNotificationRequest fetch_notification = 14;
+    // Upload attachments before posting.
+    UploadAttachmentRequest upload_attachment = 15;
+    // Get topics of given user.
+    UserTopicListRequest user_topic_list = 16;
+    // Get posts of given user.
+    UserPostListRequest user_post_list = 17;
+    // Get short message conversations of current user.
+    ShortMessageListRequest short_message_list = 18;
+    // Get short message posts of a conversation.
+    ShortMessageDetailsRequest short_message_details = 19;
+    // Do posting to some short message post or conversation.
+    ShortMessagePostRequest short_message_post = 20;
+    // Search for topics with some keyword in specific forum or all forums.
+    TopicSearchRequest topic_search = 21;
+    // Sign in (clock in) for today.
+    ClockInRequest clock_in = 22;
+    // Clear or check the cache.
+    CacheRequest cache = 23;
+    // List favorite topic folders.
+    FavoriteFolderListRequest favorite_folder_list = 24;
+    // Modify a favorite topic folder.
+    FavoriteFolderModifyRequest favorite_folder_modify = 25;
+    // Create a favorite topic folder.
+    FavoriteFolderCreateRequest favorite_folder_create = 26;
+    // Update the signature of the current user.
+    UserSignatureUpdateRequest user_signature_update = 27;
+    // Get favorite forums (forum_favor2).
+    FavoriteForumListRequest favorite_forum_list = 28;
+    // Add or remove a favorite forum (forum_favor2).
+    FavoriteForumModifyRequest favorite_forum_modify = 29;
+  }
+}
+
+message TopicListRequest {
+  enum Order {
+    LAST_POST = 0; // Order by the time of the last post of the topic.
+    POST_DATE = 1; // Order by the initial post time of the topic.
+  }
+
+  ForumId id = 1;
+  uint32 page = 2;
+  bool sort_subforums = 4;
+  Order order = 5;
+  bool recommended_only = 6; // Whether to only show recommended topics.
+}
+message TopicListResponse {
+  Forum forum = 4; // Details of the given forum id.
+  repeated Topic topics = 1;
+  uint32 pages = 2;
+  repeated Subforum subforums = 3;
+}
+
+message TopicDetailsRequest {
+  enum WebApiStrategy {
+    DISABLED = 0;  // Do not use web API.
+    SECONDARY = 1; // If XML API returns truncated content, fallback to use web API.
+    PRIMARY = 2;   // Prefer to use web API, fallback to XML API if parsing failed.
+    ONLY = 3;      // Only use web API.
+  }
+
+  string topic_id = 1;
+  string fav = 3; // See `Topic.fav`
+  string post_id = 4;
+  string author_id = 5;
+  bool anonymous_author_only = 7; // For anonymous author only mode, set this flag,
+                                  // and specify the `post_id` posted by this author.
+                                  // `post_id` can be omitted if it's the topic author.
+  uint32 page = 2;
+  bool local_cache = 6; // Whether to only request cached version of the topic.
+  WebApiStrategy web_api_strategy = 8; // Whether or in what circumstances to use web API.
+}
+message TopicDetailsResponse {
+  Topic topic = 1;
+  repeated Post replies = 2;
+  string forum_name = 4;
+  uint32 pages = 3;
+  bool is_local_cache = 5; // Whether the replies are from local cache.
+  optional string local_reason = 7; // Reason why online load is failed.
+  repeated User in_place_users = 6;
+  string api_used = 8;
+}
+
+message SubforumFilterRequest {
+  enum Operation {
+    SHOW = 0;  // Subscribe.
+    BLOCK = 1; // Unsubscribe.
+  }
+  Operation operation = 1;
+  string forum_id = 2;           // ID of the parent forum.
+  string subforum_filter_id = 3; // See `Subforum.filter_id`
+}
+message SubforumFilterResponse {}
+
+message ForumListRequest {}
+message ForumListResponse { repeated Category categories = 1; }
+
+message RemoteUserRequest {
+  string user_id = 1;   // Request by ID.
+  string user_name = 2; // Request by name.
+}
+message RemoteUserResponse { optional User user = 1; }
+
+message PostVoteRequest {
+  enum Operation {
+    UPVOTE = 0;
+    DOWNVOTE = 1;
+  }
+  Operation operation = 1;
+  PostId post_id = 2;
+}
+message PostVoteResponse {
+  sint32 delta = 1;          // Delta to add to the current score.
+  optional string error = 2; // not used
+  VoteState state = 3;       // Vote state after voting.
+}
+
+message TopicHistoryRequest { uint64 limit = 1; }
+message TopicHistoryResponse { repeated TopicSnapshot topics = 1; }
+
+message HotTopicListRequest {
+  enum DateRange {
+    DAY = 0;
+    WEEK = 1;
+    MONTH = 2;
+  }
+  ForumId id = 1;
+  DateRange range = 2; // Only see topics posted in this date range.
+  optional uint32 fetch_page_limit = 3; // Maximum page of topics to collect.
+  optional uint64 limit = 4;
+}
+message HotTopicListResponse {
+  repeated Topic topics = 1;
+  Forum forum = 2; // Details of the given forum id.
+}
+
+message ForumSearchRequest { string key = 1; }
+message ForumSearchResponse { repeated Forum forums = 1; }
+
+message FavoriteForumListRequest {}
+message FavoriteForumListResponse { repeated Forum forums = 1; }
+
+message FavoriteForumModifyRequest {
+  enum Operation {
+    ADD = 0;
+    DEL = 1;
+  }
+  Operation operation = 1;
+  ForumId id = 2;
+}
+message FavoriteForumModifyResponse {}
+
+message FavoriteTopicListRequest {
+  uint32 page = 1;
+  string folder_id = 2;
+}
+message FavoriteTopicListResponse {
+  repeated Topic topics = 1;
+  uint32 pages = 2;
+}
+
+message FavoriteFolderListRequest {}
+message FavoriteFolderListResponse { repeated FavoriteTopicFolder folders = 1; }
+
+message FavoriteFolderModifyRequest {
+  string folder_id = 1;
+  oneof change {
+    string rename = 2;
+    bool set_default = 3;
+    bool delete = 4;
+  }
+}
+message FavoriteFolderModifyResponse {}
+
+message FavoriteFolderCreateRequest {
+  string name = 1;
+  bool set_default = 2;
+}
+message FavoriteFolderCreateResponse { string folder_id = 1; }
+
+message TopicFavorRequest {
+  enum Operation {
+    ADD = 0;
+    DELETE = 1;
+  }
+  string topic_id = 1;
+  Operation operation = 2;
+  string folder_id = 3; // To create a new folder, use "-1".
+}
+message TopicFavorResponse {
+  bool is_favored = 1; // Whether `folder_ids` is non-empty.
+  repeated string folder_ids = 2; // IDs of the favorite folders that the topic is in.
+}
+
+message PostReplyFetchContentRequest { PostReplyAction action = 1; }
+message PostReplyFetchContentResponse {
+  string content = 1;
+  optional string subject = 2;    // Used for topics.
+  PostReplyVerbatim verbatim = 3; // Extra info to keep and pass verbatim.
+}
+
+message PostReplyRequest {
+  PostReplyAction action = 1;
+  string content = 2;
+  optional string subject = 3;
+  repeated PostAttachment attachments = 4;
+  bool anonymous = 5; // Whether to post as anonymous identity.
+}
+message PostReplyResponse { string message = 1; }
+
+message FetchNotificationRequest {}
+message FetchNotificationResponse { repeated Notification notis = 1; }
+
+message UploadAttachmentRequest {
+  PostReplyAction action = 1;
+  bytes file = 2; // Data of the file.
+}
+message UploadAttachmentResponse { PostAttachment attachment = 1; }
+
+message UserTopicListRequest {
+  string author_id = 1;
+  uint32 page = 2;
+}
+message UserTopicListResponse {
+  repeated Topic topics = 1;
+  uint32 pages = 2;
+}
+
+message UserPostListRequest {
+  string author_id = 1;
+  uint32 page = 2;
+}
+message UserPostListResponse { repeated TopicWithLightPost tps = 1; }
+
+message ShortMessageListRequest { uint32 page = 1; }
+message ShortMessageListResponse {
+  repeated ShortMessage messages = 1;
+  uint32 pages = 2;
+}
+
+message ShortMessageDetailsRequest {
+  string id = 1;
+  uint32 page = 2;
+}
+message ShortMessageDetailsResponse {
+  repeated ShortMessagePost posts = 1;
+  uint32 pages = 2;
+  repeated User users = 3;
+}
+
+message ShortMessagePostRequest {
+  ShortMessagePostAction action = 1;
+  string content = 2;
+  string subject = 3;
+  repeated string to = 4; // Used if `action.operation`` is `NEW`
+}
+message ShortMessagePostResponse {}
+
+message UserSignatureUpdateRequest {
+  string signature = 1;
+}
+message UserSignatureUpdateResponse {}
+
+message TopicSearchRequest {
+  ForumId id = 1; // If not provided, search in all forums.
+  uint32 page = 2;
+  bool search_content = 3;   // Whether to search content for the key.
+  bool recommended_only = 4; // Whether to only search recommended topics.
+  string key = 5;
+}
+message TopicSearchResponse {
+  repeated Topic topics = 1;
+  uint32 pages = 2;
+}
+
+message ClockInRequest {}
+message ClockInResponse {
+  string date = 1;
+  bool is_first_time = 2;
+}
+
+message CacheRequest {
+  CacheType type = 1;
+  CacheOperation operation = 2;
+}
+message CacheResponse {
+  uint64 items = 1;
+  uint64 total_size = 2;
+}
+
+message InvalidateClientRequest {}
+message InvalidateClientResponse {}
+
+/*
+ * MNGA-only mock APIs.
+ */
+message MockApi {
+  message TopicList { string id = 1; }
+  message TopicDetails { string id = 1; }
+
+  oneof value {
+    TopicList topic_list = 1;
+    TopicDetails topic_details = 2;
+  }
+}

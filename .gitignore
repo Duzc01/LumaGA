@@ -11,8 +11,12 @@ captures/
 .externalNativeBuild/
 .cxx/
 
+# Rust
+rust/target/
+
 # Local configuration
 local.properties
+.env
 
 # Log files
 *.log
