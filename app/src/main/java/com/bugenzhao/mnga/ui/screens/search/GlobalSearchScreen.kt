@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
@@ -45,6 +46,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -54,6 +56,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -92,6 +95,7 @@ import kotlinx.coroutines.CoroutineScope
 fun GlobalSearchScreen(navigator: Navigator) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val keyboard = LocalSoftwareKeyboardController.current
 
     var text by remember { mutableStateOf("") }
     var commitedText by remember { mutableStateOf<String?>(null) }
@@ -134,7 +138,13 @@ fun GlobalSearchScreen(navigator: Navigator) {
                     // Clearing the field clears the committed query.
                     if (value.isEmpty()) commitedText = null
                 },
-                onCommit = { commitedText = text.ifEmpty { null } },
+                onCommit = {
+                    // Hide the keyboard: while it is open the window is
+                    // resized, and a results list swapped in at that moment
+                    // can measure with a zero-size viewport.
+                    keyboard?.hide()
+                    commitedText = text.ifEmpty { null }
+                },
             )
 
             if (commitedText != null) {
@@ -271,23 +281,48 @@ internal fun ForumResultsList(
     val context = LocalContext.current
     val state by dataSource.state.collectAsState()
 
-    when {
-        dataSource.notLoaded -> {
-            LaunchedEffect(dataSource) { dataSource.initialLoad() }
-            CenteredSpinner()
-        }
-        state.items.isEmpty() && state.latestError != null ->
-            ErrorState(context.errorLocalized(state.latestError?.error ?: "error"))
-        state.items.isEmpty() -> EmptyResultsState()
-        else -> LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            item(key = "header") { SectionHeader(L.str(context, "Search Results")) }
-            itemsIndexed(state.items, key = { _, forum -> forum.id.idDescription }) { _, forum ->
-                ForumRowLite(forum) {
-                    navigator.push(Route.TopicList(forumId = forum.id))
+    // Keep observing the loading state here, before the branch selection: the
+    // results list is swapped in right when loading finishes (while the
+    // window/insets may still be changing), and its first measure can land in
+    // a zero-size viewport. The read below keeps the composition wired to the
+    // loading->loaded transition so the list re-measures once the viewport
+    // settles. The value itself is not used; the observation is the point.
+    @Suppress("UNUSED_VARIABLE")
+    val loadingProbe = state.isLoading || state.lastRefreshTime != null
+
+    // The swapped-in content is recreated whenever its branch changes. A bare
+    // LazyColumn entering this slot can otherwise keep measuring the stale
+    // (zero-item) content and render nothing until a later recomposition
+    // forces a relayout.
+    val branch = when {
+        dataSource.notLoaded -> 0
+        state.items.isEmpty() && state.latestError != null -> 1
+        state.items.isEmpty() -> 2
+        else -> 3
+    }
+    key(branch) {
+        when {
+            dataSource.notLoaded -> {
+                LaunchedEffect(dataSource) { dataSource.initialLoad() }
+                CenteredSpinner()
+            }
+            state.items.isEmpty() && state.latestError != null ->
+                ErrorState(context.errorLocalized(state.latestError?.error ?: "error"))
+            state.items.isEmpty() -> EmptyResultsState()
+            else -> {
+                val lstate = rememberLazyListState()
+                LazyColumn(
+                    state = lstate,
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(vertical = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    item(key = "header") { SectionHeader(L.str(context, "Search Results")) }
+                    itemsIndexed(state.items, key = { _, forum -> forum.id.idDescription }) { _, forum ->
+                        ForumRowLite(forum) {
+                            navigator.push(Route.TopicList(forumId = forum.id))
+                        }
+                    }
                 }
             }
         }
@@ -303,29 +338,46 @@ internal fun TopicResultsList(
     val context = LocalContext.current
     val state by dataSource.state.collectAsState()
 
-    when {
-        dataSource.notLoaded -> {
-            LaunchedEffect(dataSource) { dataSource.initialLoad() }
-            CenteredSpinner()
-        }
-        state.items.isEmpty() && state.latestError != null ->
-            ErrorState(context.errorLocalized(state.latestError?.error ?: "error"))
-        state.items.isEmpty() -> EmptyResultsState()
-        else -> LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            item(key = "header") { SectionHeader(L.str(context, "Search Results")) }
-            itemsIndexed(state.items, key = { _, topic -> topic.id }) { index, topic ->
-                LaunchedEffect(index, state.items.size) {
-                    dataSource.loadMoreIfNeeded(index)
-                }
-                TopicRowLite(topic) {
-                    navigator.push(topicDetailsRoute(topic))
+    // Observe the loading state: see ForumResultsList.
+    @Suppress("UNUSED_VARIABLE")
+    val loadingProbe = state.isLoading || state.lastRefreshTime != null
+
+    // See ForumResultsList: recreate the swapped-in content per branch.
+    val branch = when {
+        dataSource.notLoaded -> 0
+        state.items.isEmpty() && state.latestError != null -> 1
+        state.items.isEmpty() -> 2
+        else -> 3
+    }
+    key(branch) {
+        when {
+            dataSource.notLoaded -> {
+                LaunchedEffect(dataSource) { dataSource.initialLoad() }
+                CenteredSpinner()
+            }
+            state.items.isEmpty() && state.latestError != null ->
+                ErrorState(context.errorLocalized(state.latestError?.error ?: "error"))
+            state.items.isEmpty() -> EmptyResultsState()
+            else -> {
+                val lstate = rememberLazyListState()
+                LazyColumn(
+                    state = lstate,
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(vertical = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    item(key = "header") { SectionHeader(L.str(context, "Search Results")) }
+                    itemsIndexed(state.items, key = { _, topic -> topic.id }) { index, topic ->
+                        LaunchedEffect(index, state.items.size) {
+                            dataSource.loadMoreIfNeeded(index)
+                        }
+                        TopicRowLite(topic) {
+                            navigator.push(topicDetailsRoute(topic))
+                        }
+                    }
+                    item(key = "footer") { ListFooter(loading = state.isLoading) }
                 }
             }
-            item(key = "footer") { ListFooter(loading = state.isLoading) }
         }
     }
 }

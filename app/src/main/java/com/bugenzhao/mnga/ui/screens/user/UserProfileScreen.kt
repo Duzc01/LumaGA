@@ -41,6 +41,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -183,7 +184,9 @@ fun UserProfileScreen(
         )
     }
 
-    LaunchedEffect(topicDataSource) { if (topicDataSource.notLoaded) topicDataSource.initialLoad() }
+    LaunchedEffect(topicDataSource) {
+        if (topicDataSource.notLoaded) topicDataSource.initialLoad()
+    }
     LaunchedEffect(postDataSource, tab.value) {
         if (tab.value == ProfileTab.POSTS && postDataSource.notLoaded) {
             postDataSource.initialLoad()
@@ -258,6 +261,17 @@ fun UserProfileScreen(
         val postState by postDataSource.state.collectAsState()
         val listState = rememberLazyListState()
 
+        // Force a fresh measure of the list whenever the active tab's content
+        // transitions between loading/empty/loaded. Without this, the
+        // LazyColumn occasionally keeps measuring the stale item set (the
+        // item-provider update can land after the layout pass and no new
+        // pass is scheduled), leaving the rows invisible until the next
+        // recomposition (e.g. a tab switch) forces a relayout.
+        val activeDS = if (tab.value == ProfileTab.TOPICS) topicDataSource else postDataSource
+        val activeIsEmpty =
+            if (tab.value == ProfileTab.TOPICS) topicState.items.isEmpty()
+            else postState.items.isEmpty()
+
         // Prefetch when approaching the end of the active list.
         val activeItems = if (tab.value == ProfileTab.TOPICS) topicState.items
         else postState.items
@@ -278,6 +292,7 @@ fun UserProfileScreen(
             onRefresh = { refresh() },
             modifier = Modifier.fillMaxSize().padding(padding),
         ) {
+            key(activeDS.isInitialLoading to activeIsEmpty) {
             LazyColumn(
                 state = listState,
                 modifier = Modifier.fillMaxSize(),
@@ -406,6 +421,7 @@ fun UserProfileScreen(
                         )
                     }
                 }
+            }
             }
         }
     }

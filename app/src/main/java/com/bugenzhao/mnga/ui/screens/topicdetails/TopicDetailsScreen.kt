@@ -527,11 +527,11 @@ fun TopicDetailsScreen(
                         } else null,
                         onGotoTopic = if (onlyPostId != null && topic.id.isNotEmpty()) {
                             {
+                                // Leave the single-post view for the full topic.
                                 navigator.push(
                                     Route.TopicDetails(
                                         topicId = topic.id,
                                         fav = route.fav,
-                                        postId = onlyPostId,
                                     )
                                 )
                             }
