@@ -198,8 +198,13 @@ fun ForumListScreen(
                     )
                 },
                 navigationIcon = {
-                    // User menu avatar button with a 1dp accent ring.
-                    IconButton(onClick = onShowUserMenu) {
+                    // User menu avatar button with a 1dp accent ring. The start
+                    // padding mirrors the visual gap of the trailing MoreVert
+                    // icon so the avatar and the "More" icon sit symmetrically.
+                    IconButton(
+                        onClick = onShowUserMenu,
+                        modifier = Modifier.padding(start = 14.dp),
+                    ) {
                         Box(
                             Modifier
                                 .size(30.dp)
