@@ -89,8 +89,8 @@ sealed class UnlockStatus : Comparable<UnlockStatus> {
  *
  * The iOS app uses StoreKit; this port keeps the same status semantics and
  * persistence key, and treats Google Play Billing as the store when wired.
- * Purchases are optional at runtime — without billing the app functions in
- * Lite mode exactly like an un-purchased iOS install.
+ * No store is wired here, so [ALWAYS_UNLOCKED] makes every Plus feature
+ * available and turns the paywall into a feature overview.
  */
 class PlusModel(private val prefs: SharedPreferences) {
 
@@ -98,6 +98,15 @@ class PlusModel(private val prefs: SharedPreferences) {
         var shared: PlusModel? = null
 
         const val TRIAL_DAYS = 14
+
+        /**
+         * This port ships without a store, so Plus starts unlocked for everyone
+         * and the paywall degrades into an informational feature list. Flip to
+         * `false` to restore the iOS gating; the debug override keeps working
+         * either way, so Lite/Trial can still be forced at runtime to exercise
+         * the paywall UI.
+         */
+        const val ALWAYS_UNLOCKED = true
 
         fun trialExpiration(from: Date): Date = Calendar.getInstance().apply {
             time = from
@@ -148,10 +157,18 @@ class PlusModel(private val prefs: SharedPreferences) {
         get() = status.isUnlocked
 
     init {
-        _cachedStatus.value = UnlockStatus.decode(prefs.getString("cachedUnlockStatus", null))
-        appScope.launch {
-            val store = billing?.fetchStatus()
-            if (store != null) updateStatus(store, initial = true)
+        if (ALWAYS_UNLOCKED) {
+            // There is no store to consult, so start unlocked and trusted
+            // rather than leaving the UI waiting on a lookup that never lands.
+            _cachedStatus.value = UnlockStatus.Paid
+            _isStatusTrusted.value = true
+        } else {
+            _cachedStatus.value =
+                UnlockStatus.decode(prefs.getString("cachedUnlockStatus", null))
+            appScope.launch {
+                val store = billing?.fetchStatus()
+                if (store != null) updateStatus(store, initial = true)
+            }
         }
     }
 
@@ -170,6 +187,13 @@ class PlusModel(private val prefs: SharedPreferences) {
     /** Never let a stale local cache downgrade what the store reported. */
     @Synchronized
     fun updateStatus(newStatus: UnlockStatus, initial: Boolean = false) {
+        if (ALWAYS_UNLOCKED) {
+            // Nothing can downgrade an unlocked build, and there is no receipt
+            // worth writing to disk.
+            _cachedStatus.value = UnlockStatus.Paid
+            _isStatusTrusted.value = true
+            return
+        }
         if (initial) {
             _isStatusTrusted.value = newStatus >= _cachedStatus.value
             if (newStatus > _cachedStatus.value) _cachedStatus.value = newStatus

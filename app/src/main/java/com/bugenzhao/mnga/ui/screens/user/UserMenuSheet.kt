@@ -48,6 +48,7 @@ import com.bugenzhao.mnga.protos.datamodel.AuthInfo
 import com.bugenzhao.mnga.protos.datamodel.User
 import com.bugenzhao.mnga.ui.nav.Navigator
 import com.bugenzhao.mnga.ui.nav.Route
+import com.bugenzhao.mnga.ui.screens.plus.rememberPlusStatus
 import com.bugenzhao.mnga.util.L
 
 /**
@@ -220,11 +221,17 @@ fun UserMenuSheet(
                         onDismiss()
                         navigator.push(Route.TopicDetails(topicId = "mnga_about_feedback"))
                     }
-                    val status by App.plus.cachedStatus.collectAsState()
+                    val status = rememberPlusStatus()
                     MenuRow(
                         icon = Icons.Outlined.AutoAwesome,
-                        title = L.str(context, status.tryOrUnlock),
-                        subtitle = L.str(context, "Unlock Plus"),
+                        title = L.str(
+                            context,
+                            if (status.isPaid) "Plus Unlocked" else status.tryOrUnlock,
+                        ),
+                        subtitle = L.str(
+                            context,
+                            if (status.isPaid) "All Plus Features" else "Unlock Plus",
+                        ),
                         trailingIcon = Icons.Filled.WorkspacePremium,
                     ) {
                         onDismiss()

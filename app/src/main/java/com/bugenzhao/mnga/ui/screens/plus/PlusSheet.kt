@@ -99,6 +99,18 @@ private fun productsFor(status: UnlockStatus): List<PlusProduct> = when (status)
     UnlockStatus.Paid -> emptyList()
 }
 
+/**
+ * The Plus status the UI should render: the debug override when one is set,
+ * otherwise the cached store status. Mirrors [PlusModel.status] so that every
+ * screen agrees on what the user is entitled to.
+ */
+@Composable
+fun rememberPlusStatus(): UnlockStatus {
+    val override by App.plus.debugOverride.collectAsState()
+    val cached by App.plus.cachedStatus.collectAsState()
+    return override ?: cached
+}
+
 private fun plusFeatureIcon(feature: PlusFeature): ImageVector = when (feature) {
     PlusFeature.CUSTOM_APPEARANCE -> Icons.Filled.Palette
     PlusFeature.MULTI_ACCOUNT -> Icons.Filled.Group
@@ -128,10 +140,8 @@ fun PlusSheet(onDismiss: () -> Unit) {
     val scope = rememberCoroutineScope()
     val paywall = App.plus
 
-    val cached by paywall.cachedStatus.collectAsState()
-    val debugOverride by paywall.debugOverride.collectAsState()
     val trusted by paywall.isStatusTrusted.collectAsState()
-    val status = debugOverride ?: cached
+    val status = rememberPlusStatus()
 
     var purchasingId by remember { mutableStateOf<String?>(null) }
     var restoring by remember { mutableStateOf(false) }

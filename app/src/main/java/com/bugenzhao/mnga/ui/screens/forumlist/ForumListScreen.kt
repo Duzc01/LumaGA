@@ -84,6 +84,7 @@ import com.bugenzhao.mnga.ui.components.Avatar
 import com.bugenzhao.mnga.ui.components.LoadingRow
 import com.bugenzhao.mnga.ui.nav.Navigator
 import com.bugenzhao.mnga.ui.nav.Route
+import com.bugenzhao.mnga.ui.screens.plus.rememberPlusStatus
 import com.bugenzhao.mnga.ui.screens.topiclist.copyToClipboard
 import com.bugenzhao.mnga.ui.screens.topiclist.openInBrowser
 import com.bugenzhao.mnga.ui.screens.topiclist.shareText
@@ -169,7 +170,7 @@ fun ForumListScreen(
     val debugBadge by App.prefs.debugAlwaysShowNotificationBadge.flow.collectAsState()
     val showPlusInTitle by App.prefs.showPlusInTitle.flow.collectAsState()
     val hideMNGAMeta by App.prefs.hideMNGAMeta.flow.collectAsState()
-    val plusStatus by App.plus.cachedStatus.collectAsState()
+    val plusStatus = rememberPlusStatus()
     val canPaste by App.schemes.canTryNavigateToPasteboardURL.collectAsState()
     var editMode by remember { mutableStateOf(false) }
     var filterMenuExpanded by remember { mutableStateOf(false) }
