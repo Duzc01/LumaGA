@@ -4,6 +4,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -189,7 +190,15 @@ fun ForumListScreen(
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("LumaGA", fontWeight = FontWeight.Bold, maxLines = 1) },
+                title = {
+                    Text(
+                        "LumaGA",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onBackground,
+                        maxLines = 1,
+                    )
+                },
                 navigationIcon = {
                     // User menu avatar button with a 1dp accent ring.
                     IconButton(onClick = onShowUserMenu) {
@@ -240,7 +249,15 @@ fun ForumListScreen(
                     }
                     if (editMode) {
                         TextButton(onClick = { editMode = false }) {
-                            Text(L.str(context, "Done"))
+                            Text("完成")
+                        }
+                    } else {
+                        TextButton(onClick = { editMode = true }) {
+                            Text(
+                                "管理",
+                                color = MaterialTheme.colorScheme.primary,
+                                fontWeight = FontWeight.Bold,
+                            )
                         }
                     }
                     IconButton(onClick = { navigator.push(Route.GlobalSearch) }) {
@@ -307,18 +324,20 @@ fun ForumListScreen(
             }
         },
     ) { padding ->
-        PullToRefreshBox(
-            isRefreshing = state.isRefreshing,
-            onRefresh = refresh,
-            modifier = Modifier.fillMaxSize().padding(padding),
-        ) {
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(3),
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
+        Column(Modifier.fillMaxSize().padding(padding)) {
+            HomeSearchBar(onClick = { navigator.push(Route.GlobalSearch) })
+            PullToRefreshBox(
+                isRefreshing = state.isRefreshing,
+                onRefresh = refresh,
+                modifier = Modifier.fillMaxWidth().weight(1f),
             ) {
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(3),
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
                 // ---- Favorites section.
                 item(
                     key = "favorites-header",
@@ -412,6 +431,39 @@ fun ForumListScreen(
                 }
             }
         }
+        }
+    }
+}
+
+/**
+ * Inline search bar styled after the design draft: a rounded neutral pill with a
+ * magnifier icon and a placeholder. Tapping it opens the global search screen.
+ */
+@Composable
+private fun HomeSearchBar(onClick: () -> Unit) {
+    val context = LocalContext.current
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .clip(RoundedCornerShape(21.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 14.dp, vertical = 11.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            Icons.Outlined.Search,
+            contentDescription = L.str(context, "Search"),
+            modifier = Modifier.size(20.dp),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(Modifier.width(10.dp))
+        Text(
+            "搜索版块",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+        )
     }
 }
 
