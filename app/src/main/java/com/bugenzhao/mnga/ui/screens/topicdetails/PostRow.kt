@@ -428,7 +428,7 @@ private fun PostRowHeader(
 
     Row(
         Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.Top,
+        verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         if (showAvatar) {
