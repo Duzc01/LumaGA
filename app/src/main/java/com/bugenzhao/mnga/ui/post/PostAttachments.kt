@@ -138,15 +138,17 @@ fun ContentImageView(
                 .clickable(enabled = isReady) { onViewImage(listOf(url), url) },
             contentAlignment = Alignment.Center,
         ) {
-            if (isReady) {
-                androidx.compose.foundation.Image(
-                    painter = painter,
-                    contentDescription = alt,
-                    contentScale = ContentScale.Fit,
-                    colorFilter = filter,
-                    modifier = Modifier.fillMaxSize(),
-                )
-            } else {
+            // The painter must stay composed (and drawn) even before the image
+            // is ready: AsyncImagePainter only starts its request while drawing,
+            // so skipping Image would leave the state stuck at Loading forever.
+            androidx.compose.foundation.Image(
+                painter = painter,
+                contentDescription = alt,
+                contentScale = ContentScale.Fit,
+                colorFilter = filter,
+                modifier = Modifier.fillMaxSize(),
+            )
+            if (!isReady) {
                 Icon(
                     if (painterState is AsyncImagePainter.State.Error) {
                         Icons.Outlined.BrokenImage
