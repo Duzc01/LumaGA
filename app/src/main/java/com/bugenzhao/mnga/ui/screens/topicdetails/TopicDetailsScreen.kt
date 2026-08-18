@@ -57,6 +57,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.bugenzhao.mnga.App
 import com.bugenzhao.mnga.logicCall
+import com.bugenzhao.mnga.model.GenericPostModel
 import com.bugenzhao.mnga.model.NavigationIdentifier
 import com.bugenzhao.mnga.model.PlusFeature
 import com.bugenzhao.mnga.model.PlusModel
@@ -71,6 +72,7 @@ import com.bugenzhao.mnga.protos.datamodel.ForumId
 import com.bugenzhao.mnga.protos.datamodel.Post
 import com.bugenzhao.mnga.protos.datamodel.PostId
 import com.bugenzhao.mnga.protos.datamodel.Topic
+import com.bugenzhao.mnga.protos.datamodel.postIdOrNull
 import com.bugenzhao.mnga.protos.service.AsyncRequest
 import com.bugenzhao.mnga.protos.service.SyncRequest
 import com.bugenzhao.mnga.protos.service.TopicDetailsRequest
@@ -78,6 +80,8 @@ import com.bugenzhao.mnga.protos.service.TopicDetailsResponse
 import com.bugenzhao.mnga.protos.service.UpdateTopicProgressRequest
 import com.bugenzhao.mnga.storage.TopicResumeFrom
 import com.bugenzhao.mnga.ui.components.imageviewer.ImageViewerDialog
+import com.bugenzhao.mnga.ui.editor.EditorController
+import com.bugenzhao.mnga.ui.editor.PostReplyTask
 import com.bugenzhao.mnga.ui.nav.Navigator
 import com.bugenzhao.mnga.ui.nav.Route
 import com.bugenzhao.mnga.util.Constants
@@ -86,6 +90,7 @@ import com.bugenzhao.mnga.util.L
 import java.util.Date
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -99,7 +104,7 @@ import kotlinx.coroutines.withContext
 fun TopicDetailsScreen(
     navigator: Navigator,
     route: Route.TopicDetails,
-    onPostAction: ((action: String, post: Post) -> Unit)? = null,
+    editor: EditorController? = null,
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -171,6 +176,37 @@ fun TopicDetailsScreen(
     }
     val viewingImage = remember(route) { ViewingImageModel() }
     val currentViewingFloor = remember(route) { CurrentViewingFloor() }
+
+    // Posting flows (reply / quote / comment / edit / report) are performed by
+    // the global editor controller, whose sheet the root hosts.
+    val onPostAction: ((action: String, post: Post) -> Unit)? = remember(editor) {
+        editor?.let { controller ->
+            { postAction, post ->
+                when (postAction) {
+                    PostRowAction.REPLY -> controller.reply(post)
+                    PostRowAction.QUOTE -> controller.quote(post)
+                    PostRowAction.COMMENT -> controller.comment(post)
+                    PostRowAction.MODIFY -> controller.modify(post)
+                    PostRowAction.REPORT -> controller.report(post)
+                    else -> {}
+                }
+            }
+        }
+    }
+
+    // Pull the just-posted reply into view: each task carries the page its
+    // result lands on, so reload exactly that one once the send succeeds.
+    val noSent = remember { MutableStateFlow<GenericPostModel.Context?>(null) }
+    val sentContext by (editor?.postReply?.sent ?: noSent).collectAsState()
+    LaunchedEffect(sentContext) {
+        val task = sentContext?.task as? PostReplyTask ?: return@LaunchedEffect
+        if (task.action.postIdOrNull?.tid != route.topicId) return@LaunchedEffect
+        when (val page = task.pageToReload) {
+            is GenericPostModel.PageToReload.Last -> dataSource.reloadLastPage()
+            is GenericPostModel.PageToReload.Exact ->
+                dataSource.reload(page = page.page, evenIfNotLoaded = true)
+        }
+    }
 
     val state by dataSource.state.collectAsState()
     val response = state.latestResponse as? TopicDetailsResponse

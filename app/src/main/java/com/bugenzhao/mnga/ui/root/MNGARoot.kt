@@ -125,7 +125,7 @@ fun RouteDispatcher(
                 editor = editor,
             )
         is Route.TopicDetails ->
-            TopicDetailsScreen(navigator, route)
+            TopicDetailsScreen(navigator, route, editor = editor)
         is Route.UserProfile ->
             UserProfileScreen(
                 navigator,

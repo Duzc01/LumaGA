@@ -34,17 +34,24 @@ class EditorController(val scope: CoroutineScope) {
 
     /** Attach a comment to a post, mirroring `PostRowView.doComment`. */
     fun comment(post: Post) {
+        // A comment lands on its host post's page, not on the topic's last one.
         postReply.show(
-            replyAction(post, PostReplyAction.Operation.COMMENT),
-            GenericPostModel.PageToReload.Exact(post.atPage),
+            replyAction(
+                post,
+                PostReplyAction.Operation.COMMENT,
+                GenericPostModel.PageToReload.Exact(post.atPage),
+            ),
         )
     }
 
     /** Edit (or append to) one's own post, mirroring `PostRowView.doEdit`. */
     fun modify(post: Post) {
         postReply.show(
-            replyAction(post, PostReplyAction.Operation.MODIFY),
-            GenericPostModel.PageToReload.Exact(post.atPage),
+            replyAction(
+                post,
+                PostReplyAction.Operation.MODIFY,
+                GenericPostModel.PageToReload.Exact(post.atPage),
+            ),
         )
     }
 
@@ -88,12 +95,17 @@ class EditorController(val scope: CoroutineScope) {
         )
     }
 
-    private fun replyAction(post: Post, operation: PostReplyAction.Operation) =
+    private fun replyAction(
+        post: Post,
+        operation: PostReplyAction.Operation,
+        pageToReload: GenericPostModel.PageToReload = GenericPostModel.PageToReload.Last,
+    ) =
         PostReplyTask(
             action = PostReplyAction.newBuilder()
                 .setOperation(operation)
                 .setPostId(post.id)
                 .setForumId(ForumId.newBuilder().setFid(post.fid).build())
                 .build(),
+            pageToReload = pageToReload,
         )
 }

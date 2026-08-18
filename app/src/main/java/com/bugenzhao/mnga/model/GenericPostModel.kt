@@ -64,7 +64,7 @@ abstract class GenericPostModel(private val scope: CoroutineScope) {
         }
     }
 
-    fun show(action: Task, pageToReload: PageToReload = PageToReload.Last) {
+    fun show(action: Task) {
         val key = action.hashKey
         if (_showEditor.value) return
         _context.value = null
