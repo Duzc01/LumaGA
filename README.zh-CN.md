@@ -88,12 +88,6 @@ rust/gen-kotlin-protos.sh   # 仅当 rust/protos/ 变更时
 
 登录使用内置 WebView 打开 NGA 登录页，登录成功后读取 `ngaPassportUid` / `ngaPassportCid` Cookie 完成授权。实现在 `app/src/main/java/com/bugenzhao/mnga/ui/screens/login/LoginSheet.kt`。
 
-## 已知事项
-
-- **夜间模式页面切换闪白**：已通过在导航栈底部铺设跟随主题的不透明背景修复（主题本身继承自 Light 主题，Window 背景为白色）。
-- **返回列表页不丢状态**：导航栈为每个路由保存状态（`rememberSaveable`），返回时恢复列表数据与滚动位置。
-- **列表页无封面图**：NGA 话题列表接口不返回图片数据，图片仅在帖子详情中提供。
-
 ## 致谢与许可
 
 MNGA 未附带 LICENSE，其 README 保留所有权利，因此本移植项目（含 `rust/` 下引入的 Rust 源码）未经作者许可不可再分发。`rust/logic/sled` 保留其自身的 MIT / Apache-2.0 许可文件。
