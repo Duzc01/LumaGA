@@ -19,6 +19,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AttachFile
+import androidx.compose.material.icons.outlined.BrokenImage
 import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material.icons.outlined.Link
 import androidx.compose.material3.CircularProgressIndicator
@@ -113,6 +114,7 @@ fun ContentImageView(
         // re-measures once the intrinsic size is known.
         val painterState = painter.state
         val intrinsic = painter.intrinsicSize
+        val isReady = painterState is AsyncImagePainter.State.Success
         val aspect =
             if (intrinsic.width > 0f && intrinsic.height > 0f) {
                 intrinsic.width / intrinsic.height
@@ -123,22 +125,37 @@ fun ContentImageView(
             Modifier
                 .fillMaxWidth()
                 .widthIn(max = maxWidth)
-                .aspectRatio(aspect)
+                .then(
+                    if (isReady) {
+                        Modifier.aspectRatio(aspect)
+                    } else {
+                        // Before the image is ready (or if it failed) show only
+                        // a small icon instead of a full-size placeholder.
+                        Modifier.height(48.dp)
+                    }
+                )
                 .clip(RoundedCornerShape(8.dp))
-                .clickable { onViewImage(listOf(url), url) },
+                .clickable(enabled = isReady) { onViewImage(listOf(url), url) },
             contentAlignment = Alignment.Center,
         ) {
-            androidx.compose.foundation.Image(
-                painter = painter,
-                contentDescription = alt,
-                contentScale = ContentScale.Fit,
-                colorFilter = filter,
-                modifier = Modifier.fillMaxSize(),
-            )
-            if (painterState is AsyncImagePainter.State.Loading) {
-                CircularProgressIndicator(
-                    Modifier.size(22.dp),
-                    strokeWidth = 2.dp,
+            if (isReady) {
+                androidx.compose.foundation.Image(
+                    painter = painter,
+                    contentDescription = alt,
+                    contentScale = ContentScale.Fit,
+                    colorFilter = filter,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            } else {
+                Icon(
+                    if (painterState is AsyncImagePainter.State.Error) {
+                        Icons.Outlined.BrokenImage
+                    } else {
+                        Icons.Outlined.Image
+                    },
+                    contentDescription = null,
+                    modifier = Modifier.size(24.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
