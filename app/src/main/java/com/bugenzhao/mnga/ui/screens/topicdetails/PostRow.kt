@@ -319,10 +319,11 @@ fun PostRow(
             if (showSignature) {
                 val sig = user?.signature
                 if (sig != null && sig.spansList.isNotEmpty()) {
-                    // 签名分隔线：与帖子分割线不同色、不满屏。
+                    // 签名分隔线：主题色、更粗，与帖子分割线区分；两侧各留 48dp。
                     HorizontalDivider(
-                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.25f),
-                        modifier = Modifier.width(96.dp),
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.4f),
+                        thickness = 2.dp,
+                        modifier = Modifier.padding(horizontal = 48.dp),
                     )
                     PostContent(
                         content = sig,
