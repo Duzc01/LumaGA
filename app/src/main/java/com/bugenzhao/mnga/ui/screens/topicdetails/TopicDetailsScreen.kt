@@ -1075,7 +1075,7 @@ private fun TopicSubjectHeader(topic: Topic) {
                 }
                 tags.forEach { tag ->
                     Surface(
-                        shape = RoundedCornerShape(50),
+                        shape = RoundedCornerShape(2.dp),
                         color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
                     ) {
                         Text(
