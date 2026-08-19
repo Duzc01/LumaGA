@@ -6,6 +6,22 @@ Android port of [MNGA](https://github.com/BugenZhao/MNGA), an NGA (bbs.nga.cn)
 client. Built with Jetpack Compose, on top of the same Rust `logic` backend
 MNGA uses, linked in as `liblogic.so` over JNI.
 
+## Screenshots
+
+Home | Topic list | Topic detail
+--- | --- | ---
+![Home](docs/screenshots/mnga_home.jpg) | ![Topic list](docs/screenshots/mnga_list.jpg) | ![Topic detail](docs/screenshots/mnga_post.jpg)
+
+## Usage
+
+- Download the latest APK from the [Releases](https://github.com/Duzc01/LumaGA/releases) page:
+  - `app-release.apk` — signed release build (recommended)
+  - `app-debug.apk` — debug build (built by CI on every push)
+- Install and sign in with your NGA account on first launch.
+- `mnga://` deep links are supported, e.g. `mnga://forum/f/722` opens a forum
+  directly; links copied to the clipboard are also detected and opened
+  automatically when the app comes to the foreground.
+
 ## Layout
 
 - `app/` — Compose UI, ported from the MNGA SwiftUI app.

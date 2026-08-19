@@ -17,6 +17,20 @@ NGA（bbs.nga.cn）论坛的 Android 第三方客户端，[MNGA](https://github.
 - **个性化**：深浅色主题、主题色、字号、图片缩放、屏蔽内容等
 - **其他**：缓存管理、`mnga://` 深链、剪贴板链接跳转、Plus 功能位
 
+## 示例
+
+主页 | 列表页 | 帖子页
+--- | --- | ---
+![主页](docs/screenshots/mnga_home.jpg) | ![列表页](docs/screenshots/mnga_list.jpg) | ![帖子页](docs/screenshots/mnga_post.jpg)
+
+## 使用说明
+
+- 到 [Releases](https://github.com/Duzc01/LumaGA/releases) 页面下载最新版本：
+  - `app-release.apk` —— 正式版（签名安装包，推荐）
+  - `app-debug.apk` —— 调试版（每次 push 由 CI 构建）
+- 安装后打开 App，在首页登录 NGA 账号即可浏览版块、帖子与短消息。
+- 支持 `mnga://` 深链：例如 `mnga://forum/f/722` 可直达对应版块；App 在前台时也会自动识别剪贴板中的链接并跳转。
+
 ## 目录结构
 
 ```
