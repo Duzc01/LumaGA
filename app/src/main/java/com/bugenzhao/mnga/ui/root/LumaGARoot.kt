@@ -14,6 +14,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -22,6 +23,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalView
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.bugenzhao.mnga.App
 import com.bugenzhao.mnga.model.NavigationIdentifier
@@ -67,9 +69,21 @@ fun LumaGARoot(onNewIntent: (android.content.Intent) -> Unit) {
         }
         GlobalOverlays(navigator, editor)
 
-        // Pasteboard deep-link handling on resume: when the newest clipboard
-        // entry is a navigable NGA/LumaGA link that has not been jumped to
-        // yet, navigate there directly.
+        // Pasteboard deep-link handling: when the newest clipboard entry is a
+        // navigable NGA/LumaGA link that has not been jumped to yet, navigate
+        // there directly. Android 12+ only lets a *focused* app read the
+        // clipboard, so the check runs both on resume and when the window
+        // gains focus (on a cold start the focus arrives after onResume).
+        val view = androidx.compose.ui.platform.LocalView.current
+        DisposableEffect(view) {
+            val listener = android.view.ViewTreeObserver.OnWindowFocusChangeListener { hasFocus ->
+                if (hasFocus) maybeNavigateToPasteboardLink()
+            }
+            view.viewTreeObserver.addOnWindowFocusChangeListener(listener)
+            onDispose {
+                view.viewTreeObserver.removeOnWindowFocusChangeListener(listener)
+            }
+        }
         LifecycleResumeEffect(Unit) {
             App.schemes.refreshPasteboardStatus()
             maybeNavigateToPasteboardLink()
