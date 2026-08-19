@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -235,9 +236,16 @@ fun RepliesBadge(replies: Int, delta: Int? = null) {
         Text(
             replies.toString(),
             style = MaterialTheme.typography.labelMedium.copy(
-                fontWeight = if (hot) FontWeight.Bold else FontWeight.Medium,
+                fontWeight = when {
+                    replies >= HotHottestRepliesThreshold -> FontWeight.ExtraBold
+                    hot -> FontWeight.Bold
+                    else -> FontWeight.Medium
+                },
             ),
             color = color,
+            // The digit glyphs sit ~1dp below the glyph center in the line
+            // box, which reads as off-center against the bubble icon.
+            modifier = Modifier.offset(y = (-1).dp),
         )
         if (delta != null) {
             Text(
