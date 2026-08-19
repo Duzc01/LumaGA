@@ -587,6 +587,9 @@ fun TopicListScreen(
                         topic = topic,
                         useTopicPostDate = mode == TopicListMode.RECOMMENDED ||
                             (mode == TopicListMode.NORMAL && orderOrDefault == TopicListOrder.POST_DATE),
+                        // Topics of this very forum name no parent of their
+                        // own; the forum being browsed is the answer for them.
+                        fallbackForumName = forum.name.takeIf { !mock },
                         favoredOverride = favoredOverrides[topic.id],
                         contextMenuTopic = contextMenuTopic,
                         onContextMenu = { contextMenuTopic = it },
@@ -628,6 +631,7 @@ private fun ForumId.idDisplay(): String =
 private fun TopicListItem(
     topic: Topic,
     useTopicPostDate: Boolean,
+    fallbackForumName: String?,
     favoredOverride: Boolean?,
     contextMenuTopic: Topic?,
     onContextMenu: (Topic?) -> Unit,
@@ -679,6 +683,7 @@ private fun TopicListItem(
                     dimmedSubject = true,
                     showIndicators = true,
                     isFavored = favoredOverride,
+                    fallbackForumName = fallbackForumName,
                     onClick = onClick,
                     onLongClick = { onContextMenu(topic) },
                 )

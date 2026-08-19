@@ -23,31 +23,40 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Bookmark
-import androidx.compose.material.icons.outlined.Person
-import androidx.compose.material.icons.outlined.TheaterComedy
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.bugenzhao.mnga.App
+import com.bugenzhao.mnga.model.AvatarUrls
 import com.bugenzhao.mnga.model.NavigationIdentifier
 import com.bugenzhao.mnga.model.display
 import com.bugenzhao.mnga.protos.datamodel.Subject
 import com.bugenzhao.mnga.protos.datamodel.Topic
 import com.bugenzhao.mnga.protos.datamodel.UserName
 import com.bugenzhao.mnga.storage.BlockWordsStorage
+import com.bugenzhao.mnga.ui.components.AvatarImage
 import com.bugenzhao.mnga.ui.components.DateTimeText
-import com.bugenzhao.mnga.ui.components.RepliesNumText
+import com.bugenzhao.mnga.ui.components.RepliesBadge
+import com.bugenzhao.mnga.ui.components.avatarPalette
+import com.bugenzhao.mnga.ui.components.topicMetaColor
 import com.bugenzhao.mnga.util.L
 import com.bugenzhao.mnga.util.URLs
 
@@ -104,12 +113,17 @@ fun TopicSubjectView(
     maxLines: Int = 2,
     showIndicators: Boolean = false,
     dimmed: Boolean = false,
+    /** False where the caller shows the forum and tags itself, as [TopicRow]
+     * does on its metadata line. */
+    tagBar: Boolean = true,
 ) {
     val context = LocalContext.current
     val tags = topicTags(topic)
     val content = topicSubjectContent(topic)
-    val showTagBar = tags.isNotEmpty() || topic.hasParentForum() ||
-        (showIndicators && topic.isFavored)
+    val showTagBar = tagBar && (
+        tags.isNotEmpty() || topic.hasParentForum() ||
+            (showIndicators && topic.isFavored)
+        )
 
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
         if (showTagBar) {
@@ -197,7 +211,11 @@ private fun SubjectContentText(
     Text(
         content,
         style = MaterialTheme.typography.bodyLarge.copy(
-            fontWeight = fontWeight ?: FontWeight.Medium,
+            // One step below `bodyLarge`'s 17sp: a bold two-line headline at
+            // the body size reads too heavy above the 12sp metadata lines.
+            fontSize = 16.sp,
+            lineHeight = 21.sp,
+            fontWeight = fontWeight ?: FontWeight.Bold,
             fontStyle = if (italic) FontStyle.Italic else null,
             textDecoration = if (underline) TextDecoration.Underline else null,
         ),
@@ -226,9 +244,9 @@ fun BlockedSubjectView(modifier: Modifier = Modifier) {
 }
 
 /**
- * The standard topic row, a port of `TopicRowView` + `TopicLikeRowInnerView`:
- * subject with tag bar and replies badge on the first line, authors and
- * timestamp on the adaptive footer line.
+ * The standard topic row: a bold two-line subject headline over one metadata
+ * block — the author's avatar and name with the timestamp opposite, the forum
+ * and tags with the replies badge opposite.
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -239,6 +257,9 @@ fun TopicRow(
     dimmedSubject: Boolean = true,
     showIndicators: Boolean = true,
     isFavored: Boolean? = null,
+    /** Forum shown on the metadata line for topics that name no parent forum
+     * of their own — the forum currently being browsed, where there is one. */
+    fallbackForumName: String? = null,
     onClick: (() -> Unit)? = null,
     onLongClick: (() -> Unit)? = null,
 ) {
@@ -265,75 +286,173 @@ fun TopicRow(
         color = MaterialTheme.colorScheme.surface,
     ) {
         Column(
-            Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+            Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Row(verticalAlignment = Alignment.Top) {
-                Box(Modifier.weight(1f)) {
-                    if (blocked) {
-                        BlockedSubjectView()
-                    } else {
-                        TopicSubjectView(
-                            topic = topic,
-                            maxLines = 2,
-                            showIndicators = showIndicators,
-                            dimmed = shouldDim,
-                        )
-                    }
-                }
-                Spacer(Modifier.width(8.dp))
-                Row(verticalAlignment = Alignment.Top) {
-                    RepliesNumText(replies = num)
-                    if (delta != null) {
-                        Text(
-                            "(+$delta)",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.primary,
-                        )
-                    }
-                }
+            if (blocked) {
+                BlockedSubjectView()
+            } else {
+                TopicSubjectView(
+                    topic = topic,
+                    maxLines = 2,
+                    showIndicators = showIndicators,
+                    dimmed = shouldDim,
+                    // The forum and tags live on the metadata line below.
+                    tagBar = false,
+                )
             }
 
-            // Adaptive footer: leading authors, trailing timestamp.
-            Row(
-                Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Row(
-                    Modifier.weight(1f),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                ) {
-                    AuthorNames(topic = topic)
+            TopicMetaBlock(
+                topic = topic,
+                date = date,
+                replies = num,
+                delta = delta,
+                showFavored = showIndicators && favored,
+                fallbackForumName = fallbackForumName,
+            )
+        }
+    }
+}
+
+/**
+ * The two metadata lines under a subject, sharing one avatar: author name and
+ * timestamp on top, forum and tags with the replies badge below.
+ */
+@Composable
+private fun TopicMetaBlock(
+    topic: Topic,
+    date: Long,
+    replies: Int,
+    delta: Int?,
+    showFavored: Boolean,
+    fallbackForumName: String?,
+) {
+    val name = topicAuthorName(topic)
+    val display = name.display()
+    val anonymous = name.anonymous.isNotEmpty()
+    val meta = topicMetaColor()
+
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        AvatarImage(
+            url = authorAvatarUrl(topic.authorId, anonymous),
+            name = display,
+            size = 32.dp,
+        )
+        Spacer(Modifier.width(8.dp))
+        Column(
+            Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (display.isEmpty()) {
+                    Spacer(Modifier.weight(1f))
+                } else {
+                    Text(
+                        display,
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f),
+                    )
                 }
                 Spacer(Modifier.width(8.dp))
-                DateTimeText(timestampSeconds = date)
+                DateTimeText(timestampSeconds = date, color = meta)
+            }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                TopicOriginLine(
+                    topic = topic,
+                    showFavored = showFavored,
+                    color = meta,
+                    fallbackForumName = fallbackForumName,
+                    modifier = Modifier.weight(1f),
+                )
+                Spacer(Modifier.width(8.dp))
+                RepliesBadge(replies = replies, delta = delta)
             }
         }
     }
 }
 
+/** Favorite marker, parent forum (color-chipped) and subject tags, one line. */
 @Composable
-private fun AuthorNames(topic: Topic) {
-    val name = topicAuthorName(topic)
-    val display = name.display()
-    if (display.isEmpty()) return
-    val anonymous = name.anonymous.isNotEmpty()
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-        Icon(
-            if (anonymous) Icons.Outlined.TheaterComedy else Icons.Outlined.Person,
-            contentDescription = null,
-            modifier = Modifier.size(14.dp),
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Text(
-            display,
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
+private fun TopicOriginLine(
+    topic: Topic,
+    showFavored: Boolean,
+    color: Color,
+    fallbackForumName: String?,
+    modifier: Modifier = Modifier,
+) {
+    val tags = topicTags(topic)
+    val forumName = if (topic.hasParentForum()) {
+        topic.parentForum.name
+    } else {
+        fallbackForumName.orEmpty()
     }
+    Row(
+        modifier = modifier,
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        if (showFavored) {
+            Icon(
+                Icons.Outlined.Bookmark,
+                contentDescription = null,
+                modifier = Modifier.size(13.dp),
+                tint = MaterialTheme.colorScheme.primary,
+            )
+        }
+        if (forumName.isNotEmpty()) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(5.dp),
+                modifier = Modifier.weight(1f, fill = false),
+            ) {
+                ForumColorChip(seed = forumName)
+                Text(
+                    forumName,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = color,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+        if (tags.isNotEmpty()) {
+            Text(
+                tags.joinToString(" ") { "#$it" },
+                style = MaterialTheme.typography.labelMedium,
+                color = color,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f, fill = false),
+            )
+        }
+    }
+}
+
+/** Small rounded chip in the forum's own stable color, keyed by its name. */
+@Composable
+private fun ForumColorChip(seed: String) {
+    val dark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+    val color = remember(seed, dark) { avatarPalette(seed, dark).fill }
+    Box(Modifier.size(8.dp).background(color, RoundedCornerShape(2.dp)))
+}
+
+/**
+ * The author's avatar URL, or null until [AvatarUrls] answers (and forever for
+ * anonymous authors and authors who have none), leaving the caller to draw a
+ * generated disc in the meantime.
+ */
+@Composable
+private fun authorAvatarUrl(authorId: String, anonymous: Boolean): String? {
+    val lookupId = if (anonymous) "" else authorId
+    var url by remember(lookupId) { mutableStateOf<String?>(null) }
+    LaunchedEffect(lookupId) {
+        url = AvatarUrls.resolve(lookupId)
+    }
+    return url
 }
 
 /** Copy [text] onto the system clipboard. */

@@ -16,6 +16,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.outlined.ChatBubbleOutline
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -25,6 +26,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -153,7 +156,10 @@ fun Avatar(url: String?, name: String? = null, size: Int = 40, onClick: (() -> U
 
 /** Timestamp text honoring the user's date-time strategy preference. */
 @Composable
-fun DateTimeText(timestampSeconds: Long) {
+fun DateTimeText(
+    timestampSeconds: Long,
+    color: Color = MaterialTheme.colorScheme.onSurfaceVariant,
+) {
     val context = LocalContext.current
     val strategy = com.bugenzhao.mnga.App.prefs.postRowDateTimeStrategy
     val text = when (strategy) {
@@ -167,8 +173,63 @@ fun DateTimeText(timestampSeconds: Long) {
     Text(
         text,
         style = MaterialTheme.typography.labelMedium,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        color = color,
     )
+}
+
+/**
+ * "Hot topic" highlight of a [RepliesBadge]: a fixed warm orange rather than
+ * the theme accent, so heat still reads as heat next to any user-chosen tint.
+ */
+private val HotRepliesLight = Color(0xFFFD7A19)
+private val HotRepliesDark = Color(0xFFFF9A4D)
+
+/** Replies at or above this many are drawn highlighted. */
+private const val HotRepliesThreshold = 100
+
+/** The muted gray shared by a topic row's metadata line. */
+@Composable
+fun topicMetaColor(): Color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.72f)
+
+/**
+ * Replies count with a leading bubble icon, both highlighted once the topic
+ * gets hot. [delta] is the number of replies added since the last visit,
+ * appended in the accent color when known.
+ */
+@Composable
+fun RepliesBadge(replies: Int, delta: Int? = null) {
+    val dark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+    val hot = replies >= HotRepliesThreshold
+    val color = when {
+        hot && dark -> HotRepliesDark
+        hot -> HotRepliesLight
+        else -> topicMetaColor()
+    }
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        Icon(
+            Icons.Outlined.ChatBubbleOutline,
+            contentDescription = null,
+            modifier = Modifier.size(14.dp),
+            tint = color,
+        )
+        Text(
+            replies.toString(),
+            style = MaterialTheme.typography.labelMedium.copy(
+                fontWeight = if (hot) FontWeight.Bold else FontWeight.Medium,
+            ),
+            color = color,
+        )
+        if (delta != null) {
+            Text(
+                "+$delta",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.primary,
+            )
+        }
+    }
 }
 
 /** Replies count with the tiered font styling of `RepliesNumView`. */
