@@ -34,7 +34,6 @@ object StringsMap {
         "From NGA" to "from_nga",
         "Cancel" to "cancel",
         "Subforums of %@" to "subforums_of_s",
-        "Swipe a forum to mark it as favorite" to "swipe_a_forum_to_mark_it_as_favorite",
         "History" to "history",
         "No History" to "no_history",
         "Hot Topics" to "hot_topics",

@@ -438,7 +438,7 @@ private fun SectionHeader(
     }
 }
 
-/** Empty favorites hint: "No Favorites" + swipe hint (SS1). */
+/** Empty favorites hint: "No Favorites" (SS1). */
 @Composable
 private fun FavoritesEmptyHint() {
     val context = LocalContext.current
@@ -463,11 +463,6 @@ private fun FavoritesEmptyHint() {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-        Text(
-            L.str(context, "Swipe a forum to mark it as favorite"),
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
     }
 }
 

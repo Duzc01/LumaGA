@@ -25,6 +25,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalView
 import androidx.lifecycle.compose.LifecycleResumeEffect
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.bugenzhao.mnga.App
 import com.bugenzhao.mnga.model.NavigationIdentifier
 import com.bugenzhao.mnga.ui.nav.Navigator
@@ -45,6 +46,7 @@ import com.bugenzhao.mnga.ui.screens.topiclist.TopicListScreen
 import com.bugenzhao.mnga.ui.screens.user.UserProfileScreen
 import com.bugenzhao.mnga.ui.theme.LumaGATheme
 import com.bugenzhao.mnga.model.appScope
+import kotlinx.coroutines.flow.filter
 
 /** Root composable: theme, navigation stack and global overlays. */
 @Composable
@@ -72,22 +74,32 @@ fun LumaGARoot(onNewIntent: (android.content.Intent) -> Unit) {
         // Pasteboard deep-link handling: when the newest clipboard entry is a
         // navigable NGA/LumaGA link that has not been jumped to yet, navigate
         // there directly. Android 12+ only lets a *focused* app read the
-        // clipboard, so the check runs both on resume and when the window
-        // gains focus (on a cold start the focus arrives after onResume).
+        // clipboard, and on a cold start onResume fires before the window
+        // focus arrives (the focus-change callback itself can still race the
+        // system's focus check), so the resume check is deferred until the
+        // focus has settled.
         val view = androidx.compose.ui.platform.LocalView.current
         DisposableEffect(view) {
             val listener = android.view.ViewTreeObserver.OnWindowFocusChangeListener { hasFocus ->
-                if (hasFocus) maybeNavigateToPasteboardLink()
+                if (hasFocus) view.post { maybeNavigateToPasteboardLink() }
             }
             view.viewTreeObserver.addOnWindowFocusChangeListener(listener)
             onDispose {
                 view.viewTreeObserver.removeOnWindowFocusChangeListener(listener)
             }
         }
-        LifecycleResumeEffect(Unit) {
-            App.schemes.refreshPasteboardStatus()
-            maybeNavigateToPasteboardLink()
-            onPauseOrDispose { }
+        val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+        LaunchedEffect(lifecycleOwner) {
+            lifecycleOwner.lifecycle.currentStateFlow
+                .filter { it == androidx.lifecycle.Lifecycle.State.RESUMED }
+                .collect {
+                    App.schemes.refreshPasteboardStatus()
+                    // Wait for the window focus (typically well under 350ms)
+                    // before touching the clipboard, otherwise the read is
+                    // denied on Android 12+.
+                    kotlinx.coroutines.delay(350)
+                    maybeNavigateToPasteboardLink()
+                }
         }
     }
 }
