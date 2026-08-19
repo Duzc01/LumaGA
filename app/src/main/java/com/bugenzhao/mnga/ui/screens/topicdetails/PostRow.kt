@@ -295,16 +295,6 @@ fun PostRow(
             // Content (block-words overlay with tap-to-reveal).
             BlockedContent(post = post, user = user, contentActions = contentActions)
 
-            PostRowFooter(
-                post = post,
-                vote = vote,
-                showMenu = showMenu && !dummy,
-                onUpvote = { doVote(PostVoteRequest.Operation.UPVOTE) },
-                onDownvote = { doVote(PostVoteRequest.Operation.DOWNVOTE) },
-                onQuote = { onPostAction?.invoke(PostRowAction.QUOTE, post) },
-                onMenuClick = { menuOpen = true },
-            )
-
             if (post.commentsList.isNotEmpty()) {
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                 Row {
@@ -351,6 +341,17 @@ fun PostRow(
                     )
                 }
             }
+
+            // 操作区（点赞/踩/引用/菜单）永远放在楼层最底部。
+            PostRowFooter(
+                post = post,
+                vote = vote,
+                showMenu = showMenu && !dummy,
+                onUpvote = { doVote(PostVoteRequest.Operation.UPVOTE) },
+                onDownvote = { doVote(PostVoteRequest.Operation.DOWNVOTE) },
+                onQuote = { onPostAction?.invoke(PostRowAction.QUOTE, post) },
+                onMenuClick = { menuOpen = true },
+            )
         }
     }
 
