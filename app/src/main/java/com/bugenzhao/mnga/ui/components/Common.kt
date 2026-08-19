@@ -180,29 +180,46 @@ fun DateTimeText(
 /**
  * "Hot topic" highlight of a [RepliesBadge]: a fixed warm orange rather than
  * the theme accent, so heat still reads as heat next to any user-chosen tint.
+ * The ramp deepens towards dark red as the reply count climbs.
  */
 private val HotRepliesLight = Color(0xFFFD7A19)
 private val HotRepliesDark = Color(0xFFFF9A4D)
 
+/** Deeper "very hot" orange (Material Deep Orange 800 / 400). */
+private val HotDeepLight = Color(0xFFD84315)
+private val HotDeepDark = Color(0xFFFF7043)
+
+/** Deepest "on fire" dark red (Material Red 900 / A200). */
+private val HotHottestLight = Color(0xFFB71C1C)
+private val HotHottestDark = Color(0xFFFF5252)
+
 /** Replies at or above this many are drawn highlighted. */
 private const val HotRepliesThreshold = 100
+
+/** Replies at or above this many move to the deeper orange tier. */
+private const val HotDeepRepliesThreshold = 500
+
+/** Replies at or above this many move to the deepest dark-red tier. */
+private const val HotHottestRepliesThreshold = 1000
 
 /** The muted gray shared by a topic row's metadata line. */
 @Composable
 fun topicMetaColor(): Color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.72f)
 
 /**
- * Replies count with a leading bubble icon, both highlighted once the topic
- * gets hot. [delta] is the number of replies added since the last visit,
- * appended in the accent color when known.
+ * Replies count with a leading bubble icon, highlighted once the topic gets
+ * hot and deepening through orange to dark red as the count climbs. [delta]
+ * is the number of replies added since the last visit, appended in the accent
+ * color when known.
  */
 @Composable
 fun RepliesBadge(replies: Int, delta: Int? = null) {
     val dark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     val hot = replies >= HotRepliesThreshold
     val color = when {
-        hot && dark -> HotRepliesDark
-        hot -> HotRepliesLight
+        replies >= HotHottestRepliesThreshold -> if (dark) HotHottestDark else HotHottestLight
+        replies >= HotDeepRepliesThreshold -> if (dark) HotDeepDark else HotDeepLight
+        hot -> if (dark) HotRepliesDark else HotRepliesLight
         else -> topicMetaColor()
     }
     Row(
