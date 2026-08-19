@@ -1042,8 +1042,19 @@ private fun ReplyRow(
 private fun TopicSubjectHeader(topic: Topic) {
     val context = LocalContext.current
     Column(Modifier.padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 12.dp)) {
+        // 主题标题：大号加粗，置于头部最上方。
+        Text(
+            topic.subject.content.ifEmpty { L.str(context, "Untitled") },
+            style = MaterialTheme.typography.titleLarge.copy(
+                fontWeight = FontWeight.Bold,
+                lineHeight = 34.sp,
+            ),
+        )
+
+        // 话题与版块：位于标题下方，话题以圆角色块展示。
         val tags = topic.subject.tagsList
         if (tags.isNotEmpty() || topic.hasParentForum()) {
+            Spacer(Modifier.height(6.dp))
             Row(
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -1063,23 +1074,21 @@ private fun TopicSubjectHeader(topic: Topic) {
                     )
                 }
                 tags.forEach { tag ->
-                    Text(
-                        tag,
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
+                    Surface(
+                        shape = RoundedCornerShape(50),
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                    ) {
+                        Text(
+                            tag,
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                        )
+                    }
                 }
             }
-            Spacer(Modifier.height(6.dp))
         }
-        // 主题标题：大号加粗，置于头部最上方。
-        Text(
-            topic.subject.content.ifEmpty { L.str(context, "Untitled") },
-            style = MaterialTheme.typography.titleLarge.copy(
-                fontWeight = FontWeight.Bold,
-                lineHeight = 34.sp,
-            ),
-        )
+
         Spacer(Modifier.height(10.dp))
         // 元信息行：回复数、浏览人数、发帖时间（各带小图标）。
         Row(
