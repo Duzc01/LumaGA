@@ -13,6 +13,10 @@
 #   scripts/create-release.sh minor   # 中版本发布
 #   scripts/create-release.sh major   # 大版本发布
 #
+# Release notes 取自 CHANGELOG.md 中对应版本（## [x.y.z]）的章节；
+# 发布前先在 CHANGELOG.md 顶部补好该版本条目并提交。没有条目时回退到
+# GitHub 自动生成的 notes。
+#
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -109,15 +113,42 @@ if ! git -C "$ROOT" rev-parse -q --verify "refs/tags/$TAG" >/dev/null; then
 fi
 
 # 5. 创建 GitHub Release（已存在则仅更新 APK）
-if gh -R "$REMOTE" release create "$TAG" \
-  --title "LumaGA $TAG" \
-  --generate-notes \
-  "$APK"; then
+# 优先使用 CHANGELOG.md 中对应版本章节作为正文；没有该章节则回退到
+# 自动生成的 notes。发布前记得先在 CHANGELOG.md 顶部补好新版本条目
+# 并提交（脚本要求工作区干净）。
+NOTES_FILE=""
+if [ -f "$ROOT/CHANGELOG.md" ]; then
+  NOTES_FILE="$(mktemp)"
+  awk -v ver="$VERSION_NAME" '
+    index($0, "## [" ver "]") == 1 { insec = 1; next }
+    insec && $0 ~ /^## \[/ { exit }
+    insec { print }
+  ' "$ROOT/CHANGELOG.md" > "$NOTES_FILE"
+  if [ ! -s "$NOTES_FILE" ]; then
+    rm -f "$NOTES_FILE"
+    NOTES_FILE=""
+  fi
+fi
+
+RELEASE_ARGS=(--title "LumaGA $TAG")
+if [ -n "$NOTES_FILE" ]; then
+  RELEASE_ARGS+=(--notes-file "$NOTES_FILE")
+  echo "==> 使用 CHANGELOG.md 中 $VERSION_NAME 的条目作为 release notes"
+else
+  RELEASE_ARGS+=(--generate-notes)
+  echo "==> CHANGELOG.md 中没有 $VERSION_NAME 的条目，使用自动生成的 notes"
+fi
+
+if gh -R "$REMOTE" release create "$TAG" "${RELEASE_ARGS[@]}" "$APK"; then
   echo "==> Release 已创建"
 else
   echo "==> Release 已存在，更新 APK"
   gh -R "$REMOTE" release upload "$TAG" "$APK" --clobber
+  if [ -n "$NOTES_FILE" ]; then
+    gh -R "$REMOTE" release edit "$TAG" --notes-file "$NOTES_FILE" >/dev/null || true
+  fi
 fi
+[ -z "$NOTES_FILE" ] || rm -f "$NOTES_FILE"
 
 # 6. 验证
 gh -R "$REMOTE" release view "$TAG" | head -8
