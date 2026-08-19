@@ -2,6 +2,7 @@ package com.bugenzhao.mnga.ui.screens.topicdetails
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -61,6 +62,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -99,6 +101,7 @@ import com.bugenzhao.mnga.util.Constants
 import com.bugenzhao.mnga.util.Haptics
 import com.bugenzhao.mnga.util.L
 import java.util.Date
+import kotlin.math.abs
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -1038,6 +1041,18 @@ private fun ReplyRow(
 }
 
 /** Topic subject with optional tag bar. */
+/** 话题色池：浅底 + 深字/描边；同一话题按 hash 稳定取色。 */
+private val TagChipPalette = listOf(
+    Color(0xFFE8F0FE) to Color(0xFF1A73E8), // 蓝
+    Color(0xFFFCE8E6) to Color(0xFFD93025), // 红
+    Color(0xFFE6F4EA) to Color(0xFF188038), // 绿
+    Color(0xFFFEF7E0) to Color(0xFFB06000), // 琥珀
+    Color(0xFFF3E8FD) to Color(0xFF9334E6), // 紫
+    Color(0xFFE0F7FA) to Color(0xFF00838F), // 青
+    Color(0xFFFBE9E7) to Color(0xFFD84315), // 橙
+    Color(0xFFFCE4EC) to Color(0xFFC2185B), // 粉
+)
+
 @Composable
 private fun TopicSubjectHeader(topic: Topic) {
     val context = LocalContext.current
@@ -1074,14 +1089,17 @@ private fun TopicSubjectHeader(topic: Topic) {
                     )
                 }
                 tags.forEach { tag ->
+                    val (chipBg, chipFg) =
+                        TagChipPalette[abs(tag.hashCode()) % TagChipPalette.size]
                     Surface(
-                        shape = RoundedCornerShape(2.dp),
-                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                        shape = RoundedCornerShape(4.dp),
+                        color = chipBg,
+                        border = BorderStroke(1.dp, chipFg.copy(alpha = 0.45f)),
                     ) {
                         Text(
                             tag,
                             style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.primary,
+                            color = chipFg,
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
                         )
                     }
