@@ -46,6 +46,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -479,8 +480,17 @@ fun TopicDetailsScreen(
         if (forceLocalMode || onlyPostId != null) null else { post -> locatePostInCurrentTopic(post) }
 
     Scaffold(
+        // 正文用亮色背景（与 AppBar 默认色一致，滚动后 AppBar 变暗区分）。
+        containerColor = MaterialTheme.colorScheme.surface,
         topBar = {
             TopAppBar(
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = if (headerScrolledAway) {
+                        MaterialTheme.colorScheme.surfaceVariant
+                    } else {
+                        MaterialTheme.colorScheme.surface
+                    },
+                ),
                 title = {
                     Column(Modifier.alpha(titleAlpha)) {
                         Text(
@@ -592,7 +602,7 @@ fun TopicDetailsScreen(
                 LazyColumn(
                     state = listState,
                     modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                    contentPadding = PaddingValues(vertical = 8.dp),
                 ) {
                     itemsIndexed(rows, key = { _, row -> row.key }) { index, row ->
                         Column {
