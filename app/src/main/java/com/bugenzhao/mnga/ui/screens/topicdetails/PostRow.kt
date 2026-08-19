@@ -419,7 +419,7 @@ private fun PostRowHeader(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        PostRowAvatar(post = post, user = user)
+        PostRowAvatar(post = post, user = user, action = action)
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 PostRowUserName(
@@ -467,13 +467,24 @@ private fun PostRowFloor(post: Post) {
     }
 }
 
-/** Circular author avatar for the post header. */
+/** Circular author avatar for the post header. Tapping opens the profile. */
 @Composable
-private fun PostRowAvatar(post: Post, user: User?, size: Dp = 36.dp) {
+private fun PostRowAvatar(
+    post: Post,
+    user: User?,
+    action: TopicDetailsActionModel?,
+    size: Dp = 36.dp,
+) {
     AvatarImage(
         url = user?.avatarUrl,
         name = user?.name?.display()?.ifEmpty { null } ?: post.authorId,
         size = size,
+        modifier = Modifier
+            .clip(CircleShape)
+            .combinedClickable(
+                onClick = { user?.let { action?.showUserProfile?.value = it } },
+                onLongClick = {},
+            ),
     )
 }
 
@@ -554,7 +565,7 @@ fun PostRowUserView(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        PostRowAvatar(post = post, user = user)
+        PostRowAvatar(post = post, user = user, action = action)
         PostRowUserName(
             post = post,
             user = user,
@@ -843,17 +854,7 @@ private fun PostRowContextMenu(
             HorizontalDivider()
         }
 
-        DropdownMenuItem(
-            text = { Text(L.str(context, "Select Text")) },
-            leadingIcon = { Icon(Icons.Outlined.ContentCopy, null) },
-            onClick = {
-                clipboard.setText(AnnotatedString(post.content.raw.replace("<br/>", "\n")))
-                onDismiss()
-            },
-        )
-
-        if (post.attachmentsList.isNotEmpty()) {
-            DropdownMenuItem(
+        if (post.attachmentsList.isNotEmpty()) {            DropdownMenuItem(
                 text = { Text(L.str(context, "Attachments (%lld)", post.attachmentsList.size)) },
                 leadingIcon = { Icon(Icons.Filled.AttachFile, null) },
                 onClick = {

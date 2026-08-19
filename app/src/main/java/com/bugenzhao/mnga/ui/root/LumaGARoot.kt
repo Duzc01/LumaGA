@@ -153,7 +153,7 @@ private fun routeKey(route: Route): String = when (route) {
     is Route.TopicList ->
         "topic-list-${if (route.forumId.hasFid()) "f${route.forumId.fid}" else "st${route.forumId.stid}"}-${route.mode}"
     is Route.TopicDetails ->
-        "topic-details-${route.topicId}-${route.postId ?: ""}${if (route.anonymousAuthorOnly) "-anon" else ""}"
+        "topic-details-${route.topicId}-${route.postId ?: ""}${if (route.anonymousAuthorOnly) "-anon" else ""}-${route.authorId ?: ""}${if (route.localCache) "-cache" else ""}"
     is Route.UserProfile -> "user-profile-${route.userId ?: route.userName ?: "?"}"
     Route.GlobalSearch -> "global-search"
     is Route.TopicSearch ->

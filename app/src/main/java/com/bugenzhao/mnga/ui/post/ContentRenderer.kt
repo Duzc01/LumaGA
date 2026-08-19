@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -1294,7 +1295,11 @@ fun PostContent(
             LocalContentActions provides env.actions,
             LocalDiceCollapseCounter provides counter,
         ) {
-            RenderNode(node)
+            // Text is freely selectable by default (long-press to select);
+            // taps on links / mentions still work inside the selection scope.
+            SelectionContainer {
+                RenderNode(node)
+            }
         }
     }
 }

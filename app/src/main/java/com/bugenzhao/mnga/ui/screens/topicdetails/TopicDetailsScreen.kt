@@ -647,6 +647,18 @@ fun TopicDetailsScreen(
 
 // region Supporting models
 
+/** Queue an author-only view of the topic for the author of [post]. */
+private fun navigateAuthorOnly(action: TopicDetailsActionModel, post: Post) {
+    val isAnonymous = App.users.localUser(post.authorId)
+        ?.name?.anonymous?.isNotEmpty() == true
+    action.navigateToAuthorOnly.value =
+        if (isAnonymous) {
+            TopicDetailsActionModel.AuthorOnly.Anonymous(post.id)
+        } else {
+            TopicDetailsActionModel.AuthorOnly.ByUID(post.authorId)
+        }
+}
+
 /** Tracks the floors currently visible on screen. */
 class CurrentViewingFloor {
     private val floors = mutableSetOf<Int>()
@@ -863,6 +875,7 @@ private fun TopicDetailsRow(
                             viewingImage = viewingImage,
                             enableAuthorOnly = enableAuthorOnly,
                             onPostAction = onPostAction,
+                            onNavigateAuthorOnly = { navigateAuthorOnly(action, it) },
                         )
                     }
                 }
@@ -883,6 +896,7 @@ private fun TopicDetailsRow(
                     viewingImage = viewingImage,
                     enableAuthorOnly = enableAuthorOnly,
                     onPostAction = onPostAction,
+                    onNavigateAuthorOnly = { navigateAuthorOnly(action, it) },
                 )
             }
         }
@@ -977,6 +991,7 @@ private fun ReplyRow(
             shouldHighlight = scrollToPid == post.id.pid,
             onHighlightConsumed = { action.scrollToPid.value = null },
             onPostAction = onPostAction,
+            onNavigateAuthorOnly = { navigateAuthorOnly(action, it) },
             modifier = Modifier.padding(16.dp),
         )
     }
