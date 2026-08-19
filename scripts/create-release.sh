@@ -59,7 +59,7 @@ APK="$ROOT/app/build/outputs/apk/release/app-release.apk"
 BUILT=0
 
 if [ -f "$SIGNING_DIR/$PROPS_NAME" ] && [ -f "$SIGNING_DIR/$KEYSTORE_NAME" ]; then
-  echo "==> 本地构建（使用 $SIGNING_DIR）"
+  echo "==> 本地构建（使用 ${SIGNING_DIR}）"
   cp "$SIGNING_DIR/$PROPS_NAME" "$ROOT/app/$PROPS_NAME"
   cp "$SIGNING_DIR/$KEYSTORE_NAME" "$ROOT/app/$KEYSTORE_NAME"
   GRADLE_ARGS=("$ROOT/gradlew" -p "$ROOT" :app:assembleRelease --offline -x lint)
