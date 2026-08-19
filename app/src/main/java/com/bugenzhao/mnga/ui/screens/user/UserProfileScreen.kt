@@ -68,7 +68,7 @@ import com.bugenzhao.mnga.protos.service.UserTopicListRequest
 import com.bugenzhao.mnga.protos.service.UserTopicListResponse
 import com.bugenzhao.mnga.storage.BlockWordsStorage
 import com.bugenzhao.mnga.ui.components.DateTimeText
-import com.bugenzhao.mnga.ui.components.RepliesNumText
+import com.bugenzhao.mnga.ui.components.RepliesBadge
 import com.bugenzhao.mnga.ui.nav.Navigator
 import com.bugenzhao.mnga.ui.nav.Route
 import com.bugenzhao.mnga.util.L
@@ -562,7 +562,7 @@ private fun UserTopicRow(topic: Topic, onClick: () -> Unit) {
                 DateTimeText(topic.postDate)
             }
         }
-        RepliesNumText(topic.repliesNum)
+        RepliesBadge(replies = topic.repliesNum)
     }
 }
 

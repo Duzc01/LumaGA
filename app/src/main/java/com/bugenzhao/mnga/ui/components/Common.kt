@@ -232,24 +232,6 @@ fun RepliesBadge(replies: Int, delta: Int? = null) {
     }
 }
 
-/** Replies count with the tiered font styling of `RepliesNumView`. */
-@Composable
-fun RepliesNumText(replies: Int) {
-    val style = when {
-        replies >= 1000 -> MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
-        replies >= 300 -> MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
-        replies >= 100 -> MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold)
-        replies >= 40 -> MaterialTheme.typography.bodyMedium
-        else -> MaterialTheme.typography.labelMedium
-    }
-    val color = when {
-        replies >= 1000 -> MaterialTheme.colorScheme.primary
-        replies >= 100 -> MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
-        else -> MaterialTheme.colorScheme.onSurfaceVariant
-    }
-    Text(replies.toString(), style = style, color = color)
-}
-
 /** Placeholder for never-loaded/empty/error list states. */
 @Composable
 fun ListPlaceholder(text: String) {

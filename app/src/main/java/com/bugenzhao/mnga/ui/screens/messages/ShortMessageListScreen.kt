@@ -45,7 +45,7 @@ import com.bugenzhao.mnga.protos.service.AsyncRequest
 import com.bugenzhao.mnga.protos.service.ShortMessageListRequest
 import com.bugenzhao.mnga.protos.service.ShortMessageListResponse
 import com.bugenzhao.mnga.ui.components.PagedList
-import com.bugenzhao.mnga.ui.components.RepliesNumText
+import com.bugenzhao.mnga.ui.components.RepliesBadge
 import com.bugenzhao.mnga.ui.nav.Navigator
 import com.bugenzhao.mnga.ui.nav.Route
 import com.bugenzhao.mnga.ui.screens.user.checkPlusFeature
@@ -161,7 +161,7 @@ internal fun ShortMessageRow(
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f),
                 )
-                RepliesNumText(message.postNum)
+                RepliesBadge(replies = message.postNum)
             }
             Row(
                 verticalAlignment = Alignment.CenterVertically,
