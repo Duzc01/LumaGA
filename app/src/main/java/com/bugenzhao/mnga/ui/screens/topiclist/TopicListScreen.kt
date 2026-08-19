@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ArrowForward
 import androidx.compose.material.icons.outlined.Category
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.DateRange
@@ -440,6 +441,15 @@ fun TopicListScreen(
                                 maxLines = 1,
                             )
                         }
+                    }
+                },
+                navigationIcon = {
+                    // 与详情页一致的返回按钮。
+                    IconButton(onClick = { navigator.pop() }) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = null,
+                        )
                     }
                 },
                 actions = {
