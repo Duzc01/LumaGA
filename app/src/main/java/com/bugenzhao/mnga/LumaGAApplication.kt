@@ -12,6 +12,7 @@ import com.bugenzhao.mnga.model.OpenURLModel
 import com.bugenzhao.mnga.model.PlusModel
 import com.bugenzhao.mnga.model.SchemesModel
 import com.bugenzhao.mnga.model.ToastModel
+import com.bugenzhao.mnga.model.UpdateModel
 import com.bugenzhao.mnga.model.UsersModel
 import com.bugenzhao.mnga.storage.AuthStorage
 import com.bugenzhao.mnga.storage.BlockWordsStorage
@@ -33,6 +34,7 @@ object App {
     lateinit var schemes: SchemesModel
     lateinit var openURL: OpenURLModel
     lateinit var plus: PlusModel
+    lateinit var update: UpdateModel
     lateinit var sharedPreferences: SharedPreferences
 
     val isInitialized: Boolean
@@ -69,6 +71,7 @@ class LumaGAApplication : Application() {
                 getSystemService(Context.CLIPBOARD_SERVICE) as? android.content.ClipboardManager,
             )
         App.openURL = OpenURLModel(this)
+        App.update = UpdateModel(appScope, this)
 
         // Configure the Rust logic layer with an app-local writable directory.
         logicInitialConfigure(filesDir.path, isEmulator = isEmulator())

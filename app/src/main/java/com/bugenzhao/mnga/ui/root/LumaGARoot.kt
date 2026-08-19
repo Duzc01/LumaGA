@@ -36,6 +36,7 @@ import com.bugenzhao.mnga.ui.screens.forumlist.ForumListScreen
 import com.bugenzhao.mnga.ui.screens.history.HistoryScreen
 import com.bugenzhao.mnga.ui.screens.messages.ShortMessageDetailsScreen
 import com.bugenzhao.mnga.ui.screens.messages.ShortMessageListScreen
+import com.bugenzhao.mnga.ui.screens.misc.AboutScreen
 import com.bugenzhao.mnga.ui.screens.misc.BlockWordsScreen
 import com.bugenzhao.mnga.ui.screens.misc.CacheScreen
 import com.bugenzhao.mnga.ui.screens.search.GlobalSearchScreen
@@ -168,6 +169,7 @@ private fun routeKey(route: Route): String = when (route) {
     is Route.UnknownForum -> "unknown-forum"
     Route.CacheSettings -> "cache-settings"
     Route.BlockWords -> "block-words"
+    Route.About -> "about"
 }
 
 /** Maps a route to its screen. */
@@ -208,6 +210,7 @@ fun RouteDispatcher(
         is Route.SubforumList -> SubforumListScreen(navigator, route.forumId)
         is Route.CacheSettings -> CacheScreen(navigator)
         is Route.BlockWords -> BlockWordsScreen(navigator)
+        is Route.About -> AboutScreen(navigator)
         else -> RoutePlaceholderScreen(navigator, route)
     }
 }

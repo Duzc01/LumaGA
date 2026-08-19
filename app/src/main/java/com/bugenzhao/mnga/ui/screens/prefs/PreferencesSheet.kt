@@ -19,7 +19,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ChevronRight
@@ -97,6 +96,8 @@ import com.bugenzhao.mnga.ui.components.GroupedList
 import com.bugenzhao.mnga.ui.components.GroupedRow
 import com.bugenzhao.mnga.ui.nav.Navigator
 import com.bugenzhao.mnga.ui.nav.Route
+import com.bugenzhao.mnga.ui.screens.misc.CheckForUpdatesRow
+import com.bugenzhao.mnga.ui.screens.misc.UpdateFlowDialogs
 import com.bugenzhao.mnga.util.L
 import kotlinx.coroutines.launch
 
@@ -457,10 +458,14 @@ fun PreferencesSheet(onDismiss: () -> Unit, navigator: Navigator? = null) {
                             header = "LumaGA ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
                         ) {
                             NavigationRow(
-                                icon = Icons.Filled.AutoAwesome,
-                                title = L.str(context, "About & Feedback"),
-                                onClick = { pushAboutTopic() },
+                                icon = Icons.Filled.Info,
+                                title = L.str(context, "About"),
+                                onClick = {
+                                    navigator?.push(Route.About)
+                                    dismiss()
+                                },
                             )
+                            CheckForUpdatesRow()
                             NavigationRow(
                                 icon = Icons.Filled.Check,
                                 title = L.str(context, "Acknowledgements"),
@@ -564,6 +569,10 @@ fun PreferencesSheet(onDismiss: () -> Unit, navigator: Navigator? = null) {
         null -> {}
     }
     // endregion
+
+    // The update flow's dialogs, so a check started here stays visible while
+    // the settings sheet is open.
+    UpdateFlowDialogs()
 }
 
 // region row components

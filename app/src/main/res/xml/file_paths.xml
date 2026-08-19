@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <paths>
     <cache-path name="shared" path="shared/" />
+    <!-- Downloaded update APKs, granted to the package installer. -->
+    <cache-path name="updates" path="updates/" />
     <files-path name="files" path="." />
 </paths>

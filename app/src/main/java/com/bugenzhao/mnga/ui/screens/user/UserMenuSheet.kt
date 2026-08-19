@@ -22,7 +22,6 @@ import androidx.compose.material.icons.filled.PersonAddAlt1
 import androidx.compose.material.icons.filled.PersonRemoveAlt1
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.outlined.Badge
-import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -201,7 +200,7 @@ fun UserMenuSheet(
                 }
             }
 
-            // App links.
+            // App settings entry.
             item(key = "section-links") {
                 MenuCard {
                     MenuRow(
@@ -210,13 +209,6 @@ fun UserMenuSheet(
                     ) {
                         App.prefs.showing.value = true
                         onDismiss()
-                    }
-                    MenuRow(
-                        icon = Icons.Outlined.Info,
-                        title = L.str(context, "About & Feedback"),
-                    ) {
-                        onDismiss()
-                        navigator.push(Route.TopicDetails(topicId = "mnga_about_feedback"))
                     }
                 }
             }

@@ -370,5 +370,27 @@
     <string name="pink">Pink</string>
     <string name="brown">Brown</string>
     <string name="gray">Gray</string>
+    <string name="about">About</string>
+    <string name="check_for_updates">Check for Updates</string>
+    <string name="you_re_up_to_date">You\'re up to date</string>
+    <string name="new_version_available">New Version Available</string>
+    <string name="download_and_install">Download &amp; Install</string>
+    <string name="later">Later</string>
+    <string name="downloading_update">Downloading Update</string>
+    <string name="download_complete">Download Complete</string>
+    <string name="install">Install</string>
+    <string name="permission_required">Permission Required</string>
+    <string name="allow_install_apps">Allow LumaGA to install apps, then tap Install again.</string>
+    <string name="open_settings">Open Settings</string>
+    <string name="update_check_failed">Update Check Failed</string>
+    <string name="download_failed">Download Failed</string>
+    <string name="release_has_no_apk">This release has no APK to download.</string>
+    <string name="release_page">Release Page</string>
+    <string name="release_notes">Release Notes</string>
+    <string name="retry">Retry</string>
+    <string name="close">Close</string>
+    <string name="ok">OK</string>
+    <string name="source_code">Source Code</string>
+    <string name="an_nga_forum_client">An NGA forum client, ported from MNGA.</string>
     <string name="app_name">LumaGA</string>
 </resources>

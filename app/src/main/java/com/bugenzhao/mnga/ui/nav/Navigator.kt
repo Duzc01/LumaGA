@@ -91,6 +91,7 @@ sealed class Route {
     data class UnknownForum(val name: String?) : Route()
     data object CacheSettings : Route()
     data object BlockWords : Route()
+    data object About : Route()
 }
 
 enum class TopicListMode { NORMAL, HOT, RECOMMENDED }
