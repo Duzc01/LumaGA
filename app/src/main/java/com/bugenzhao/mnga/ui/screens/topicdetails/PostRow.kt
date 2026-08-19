@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -816,7 +817,12 @@ private fun BlockedContent(
             onLongClick = {},
         ),
     ) {
-        PostContent(post = post, env = ContentEnv(actions = contentActions))
+        // 正文最小高度：两行正文（16sp × 行高 1.5），避免单行内容显得局促。
+        PostContent(
+            post = post,
+            env = ContentEnv(actions = contentActions),
+            modifier = Modifier.heightIn(min = 48.dp),
+        )
         if (blocked && !revealed) {
             // Dimming overlay hides the blocked content until revealed.
             Box(
