@@ -438,12 +438,17 @@ fun TopicDetailsScreen(
         else -> null
     }
 
-    // AppBar 标题随滚动渐显：主题头部（列表 index 0）滚出视口后淡入。
+    // AppBar 标题随滚动渐显：头部一滚动就开始淡入（前 80px 内线性），
+    // 完全滚出视口（index >= 1）后全亮。
     val headerScrolledAway by remember {
         derivedStateOf { listState.firstVisibleItemIndex >= 1 }
     }
     val titleAlpha by animateFloatAsState(
-        targetValue = if (headerScrolledAway) 1f else 0f,
+        targetValue = if (headerScrolledAway) {
+            1f
+        } else {
+            (listState.firstVisibleItemScrollOffset / 80f).coerceIn(0f, 1f)
+        },
         animationSpec = tween(200),
         label = "appBarTitleAlpha",
     )
@@ -588,39 +593,49 @@ fun TopicDetailsScreen(
                     state = listState,
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     itemsIndexed(rows, key = { _, row -> row.key }) { index, row ->
-                        TopicDetailsRow(
-                            row = row,
-                            index = index,
-                            isLoading = state.isLoading,
-                            topic = topic,
-                            action = action,
-                            votes = votes,
-                            quotedPosts = quotedPosts,
-                            viewingImage = viewingImage,
-                            enableAuthorOnly = enableAuthorOnly,
-                            scrollToPid = scrollToPid,
-                            locateFloor = childLocateFloor,
-                            dataSource = dataSource,
-                            currentViewingFloor = currentViewingFloor,
-                            onPostAction = onPostAction,
-                            onLoadBack = { prevPage ->
-                                val currFirst = items.minByOrNull { it.floor }
-                                if (currFirst != null) action.scrollToFloor.value = currFirst.floor
-                                dataSource.reload(page = prevPage, evenIfNotLoaded = true) {
-                                    val floor = dataSource.itemsAtPage(prevPage)
-                                        .maxOfOrNull { it.floor }
-                                    if (floor != null) action.scrollToFloor.value = floor
-                                }
-                            },
-                            onLoadNewReplies = {
-                                dataSource.reloadLastPage(evenIfNotLoaded = true) {
-                                    Haptics.vibrate(context, Haptics.NotificationType.SUCCESS)
-                                }
-                            },
-                        )
+                        Column {
+                            TopicDetailsRow(
+                                row = row,
+                                index = index,
+                                isLoading = state.isLoading,
+                                topic = topic,
+                                action = action,
+                                votes = votes,
+                                quotedPosts = quotedPosts,
+                                viewingImage = viewingImage,
+                                enableAuthorOnly = enableAuthorOnly,
+                                scrollToPid = scrollToPid,
+                                locateFloor = childLocateFloor,
+                                dataSource = dataSource,
+                                currentViewingFloor = currentViewingFloor,
+                                onPostAction = onPostAction,
+                                onLoadBack = { prevPage ->
+                                    val currFirst = items.minByOrNull { it.floor }
+                                    if (currFirst != null) action.scrollToFloor.value = currFirst.floor
+                                    dataSource.reload(page = prevPage, evenIfNotLoaded = true) {
+                                        val floor = dataSource.itemsAtPage(prevPage)
+                                            .maxOfOrNull { it.floor }
+                                        if (floor != null) action.scrollToFloor.value = floor
+                                    }
+                                },
+                                onLoadNewReplies = {
+                                    dataSource.reloadLastPage(evenIfNotLoaded = true) {
+                                        Haptics.vibrate(context, Haptics.NotificationType.SUCCESS)
+                                    }
+                                },
+                            )
+                            // 楼层之间用与内容同宽的浅色分割线分隔（无卡片背景）。
+                            if (index < rows.lastIndex) {
+                                Spacer(Modifier.height(8.dp))
+                                HorizontalDivider(
+                                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                                    modifier = Modifier.padding(horizontal = 16.dp),
+                                )
+                                Spacer(Modifier.height(8.dp))
+                            }
+                        }
                     }
                 }
             }
@@ -880,39 +895,34 @@ private fun TopicDetailsRow(
 
     when (row) {
         RowSpec.Header -> {
-            Surface(color = MaterialTheme.colorScheme.surface) {
-                Column {
-                    TopicSubjectHeader(topic = topic)
-                    // 屏宽浅色分割线：分隔主题头部与帖子流。
-                    HorizontalDivider(
-                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+            Column {
+                TopicSubjectHeader(topic = topic)
+                // 屏宽浅色分割线：分隔主题头部与帖子流。
+                HorizontalDivider(
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                )
+                val items = dataSource.items
+                val first = remember(items) {
+                    items.minByOrNull { it.floor }?.takeIf { it.id.pid == "0" }
+                }
+                if (first != null) {
+                    PostRow(
+                        post = first,
+                        isAuthor = first.authorId == topic.authorId,
+                        action = action,
+                        votes = votes,
+                        quotedResolver = quotedPosts,
+                        viewingImage = viewingImage,
+                        enableAuthorOnly = enableAuthorOnly,
+                        onPostAction = onPostAction,
+                        onNavigateAuthorOnly = { navigateAuthorOnly(action, it) },
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                     )
-                    val items = dataSource.items
-                    val first = remember(items) {
-                        items.minByOrNull { it.floor }?.takeIf { it.id.pid == "0" }
-                    }
-                    if (first != null) {
-                        PostRow(
-                            post = first,
-                            isAuthor = first.authorId == topic.authorId,
-                            action = action,
-                            votes = votes,
-                            quotedResolver = quotedPosts,
-                            viewingImage = viewingImage,
-                            enableAuthorOnly = enableAuthorOnly,
-                            onPostAction = onPostAction,
-                            onNavigateAuthorOnly = { navigateAuthorOnly(action, it) },
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                        )
-                    }
                 }
             }
         }
 
-        is RowSpec.HotReply -> Surface(
-            color = MaterialTheme.colorScheme.surface,
-        ) {
-            Column(Modifier.padding(16.dp)) {
+        is RowSpec.HotReply -> Column(Modifier.padding(16.dp)) {
                 PostRow(
                     post = row.post,
                     isAuthor = row.post.authorId == topic.authorId,
@@ -924,7 +934,6 @@ private fun TopicDetailsRow(
                     onPostAction = onPostAction,
                     onNavigateAuthorOnly = { navigateAuthorOnly(action, it) },
                 )
-            }
         }
 
         is RowSpec.LoadBack -> {
@@ -959,11 +968,10 @@ private fun TopicDetailsRow(
 
         RowSpec.Tail -> {
             val loading = isLoading
-            Surface(color = MaterialTheme.colorScheme.surface) {
-                Row(
-                    Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
+            Row(
+                Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
                     TextButton(onClick = { if (!loading) onLoadNewReplies() }, enabled = !loading) {
                         Icon(Icons.Filled.Refresh, null, Modifier.size(18.dp))
                         Spacer(Modifier.size(6.dp))
@@ -972,7 +980,6 @@ private fun TopicDetailsRow(
                     Spacer(Modifier.weight(1f))
                     if (loading) CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
                 }
-            }
         }
     }
 }
@@ -1004,23 +1011,21 @@ private fun ReplyRow(
         onDispose { }
     }
 
-    Surface(color = MaterialTheme.colorScheme.surface) {
-        PostRow(
-            post = post,
-            isAuthor = post.authorId == topic.authorId,
-            action = action,
-            votes = votes,
-            quotedResolver = quotedPosts,
-            viewingImage = viewingImage,
-            enableAuthorOnly = enableAuthorOnly,
-            locateFloor = locateFloor,
-            shouldHighlight = scrollToPid == post.id.pid,
-            onHighlightConsumed = { action.scrollToPid.value = null },
-            onPostAction = onPostAction,
-            onNavigateAuthorOnly = { navigateAuthorOnly(action, it) },
-            modifier = Modifier.padding(16.dp),
-        )
-    }
+    PostRow(
+        post = post,
+        isAuthor = post.authorId == topic.authorId,
+        action = action,
+        votes = votes,
+        quotedResolver = quotedPosts,
+        viewingImage = viewingImage,
+        enableAuthorOnly = enableAuthorOnly,
+        locateFloor = locateFloor,
+        shouldHighlight = scrollToPid == post.id.pid,
+        onHighlightConsumed = { action.scrollToPid.value = null },
+        onPostAction = onPostAction,
+        onNavigateAuthorOnly = { navigateAuthorOnly(action, it) },
+        modifier = Modifier.padding(16.dp),
+    )
 }
 
 /** Topic subject with optional tag bar. */
