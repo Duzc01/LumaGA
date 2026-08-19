@@ -207,8 +207,8 @@ fun UserMenuSheet(
                         icon = Icons.Filled.Settings,
                         title = L.str(context, "Settings"),
                     ) {
-                        App.prefs.showing.value = true
                         onDismiss()
+                        navigator.push(Route.Settings)
                     }
                 }
             }

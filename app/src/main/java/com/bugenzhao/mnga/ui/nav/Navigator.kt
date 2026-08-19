@@ -92,6 +92,7 @@ sealed class Route {
     data object CacheSettings : Route()
     data object BlockWords : Route()
     data object About : Route()
+    data object Settings : Route()
 }
 
 enum class TopicListMode { NORMAL, HOT, RECOMMENDED }

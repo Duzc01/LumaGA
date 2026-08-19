@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -60,6 +61,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -81,8 +83,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
 import com.bugenzhao.mnga.App
 import com.bugenzhao.mnga.BuildConfig
 import com.bugenzhao.mnga.protos.datamodel.Device
@@ -100,9 +100,6 @@ import com.bugenzhao.mnga.ui.screens.misc.CheckForUpdatesRow
 import com.bugenzhao.mnga.ui.screens.misc.UpdateFlowDialogs
 import com.bugenzhao.mnga.util.L
 import kotlinx.coroutines.launch
-
-/** The mock topic id that backs the about & acknowledgements page. */
-private const val ABOUT_TOPIC_ID = "mnga_about_feedback"
 
 /** Which picker dialog is currently presented. */
 private enum class PickerKind {
@@ -125,8 +122,11 @@ private data class PickerOption<T>(
 )
 
 /**
- * The full-screen settings sheet, ported from `Views/PreferencesView.swift`.
- * Every preference of `PreferencesStorage` is wired to its `Pref` here.
+ * The full-screen settings page, ported from `Views/PreferencesView.swift`.
+ * Every preference of `PreferencesStorage` is wired to its `Pref` here. It
+ * lives on the navigation stack (see [Route.Settings]), so pushing a settings
+ * screen (block words, cache, about) slides it in like any other page, and
+ * popping returns here with the list state restored.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -175,13 +175,14 @@ fun PreferencesSheet(onDismiss: () -> Unit, navigator: Navigator? = null) {
     }
 
     fun dismiss() {
-        prefs.showing.value = false
         onDismiss()
     }
 
-    fun pushAboutTopic() {
-        navigator?.push(Route.TopicDetails(topicId = ABOUT_TOPIC_ID))
-        dismiss()
+    val listState = rememberLazyListState()
+
+    /** Open a settings screen; coming back is a plain pop. */
+    fun pushScreen(route: Route) {
+        navigator?.push(route)
     }
 
     val themeColor = ThemeColor.fromRaw(themeColorRaw)
@@ -191,294 +192,277 @@ fun PreferencesSheet(onDismiss: () -> Unit, navigator: Navigator? = null) {
     val resumeFrom = TopicResumeFrom.fromRaw(resumeFromRaw)
     val dateTimeStrategy = DateTimeStrategy.fromRaw(dateTimeStrategyRaw)
 
-    Dialog(
-        onDismissRequest = { dismiss() },
-        properties = DialogProperties(usePlatformDefaultWidth = false),
-    ) {
-        Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-            Column(Modifier.fillMaxSize()) {
-                TopAppBar(
-                    title = { Text(L.str(context, "Settings")) },
-                    actions = {
-                        TextButton(onClick = { dismiss() }) {
-                            Icon(
-                                Icons.Filled.Check,
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp),
-                            )
-                            Spacer(Modifier.size(4.dp))
-                            Text(L.str(context, "Done"))
-                        }
-                    },
-                )
-                LazyColumn(
-                    Modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                ) {
-                    // region General
-                    item(key = "general") {
-                        Section(header = L.str(context, "General")) {
-                            PickerRow(
-                                icon = Icons.Filled.Contrast,
-                                title = L.str(context, "Color Scheme"),
-                                valueLabel = colorSchemeLabel(context, colorScheme),
-                                onClick = { picker = PickerKind.COLOR_SCHEME },
-                            )
-                            PickerRow(
-                                icon = Icons.Filled.Palette,
-                                title = L.str(context, "Theme Color"),
-                                valueLabel = L.str(context, themeColor.label),
-                                dot = themeColorDot(themeColor),
-                                onClick = { picker = PickerKind.THEME_COLOR },
-                            )
-                            SwitchRow(
-                                icon = Icons.Filled.PhoneIphone,
-                                title = L.str(context, "Lock Screen Rotation"),
-                                checked = alwaysPortrait,
-                                onChange = { prefs.alwaysPortraitOnPhone.value = it },
-                            )
-                            SwitchRow(
-                                icon = Icons.Filled.Public,
-                                title = L.str(context, "Always Use In-App Safari"),
-                                checked = useInAppSafari,
-                                onChange = { prefs.useInAppSafari.value = it },
-                            )
-                            NavigationRow(
-                                icon = Icons.Outlined.FrontHand,
-                                title = L.str(context, "Block Contents"),
-                                onClick = {
-                                    navigator?.push(Route.BlockWords)
-                                    dismiss()
-                                },
-                            )
-                            NavigationRow(
-                                icon = Icons.Filled.CleaningServices,
-                                title = L.str(context, "Cache Management"),
-                                onClick = {
-                                    navigator?.push(Route.CacheSettings)
-                                    dismiss()
-                                },
-                            )
-                            SwitchRow(
-                                icon = Icons.Filled.CloudQueue,
-                                title = L.str(context, "Sync Favorites"),
-                                checked = useRemote,
-                                onChange = { next ->
-                                    App.favoriteForums.useRemote.value = next
-                                    scope.launch { App.favoriteForums.sync() }
-                                },
-                            )
-                        }
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text(L.str(context, "Settings")) },
+                actions = {
+                    TextButton(onClick = { dismiss() }) {
+                        Icon(
+                            Icons.Filled.Check,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                        )
+                        Spacer(Modifier.size(4.dp))
+                        Text(L.str(context, "Done"))
                     }
-                    // endregion
-
-                    // region Topic List
-                    item(key = "topic-list") {
-                        Section(header = L.str(context, "Topic List")) {
-                            PickerRow(
-                                icon = Icons.Filled.Refresh,
-                                title = L.str(context, "Default Order"),
-                                valueLabel = orderLabel(context, defaultOrder),
-                                onClick = { picker = PickerKind.ORDER },
-                            )
-                            PickerRow(
-                                icon = Icons.Filled.VisibilityOff,
-                                title = L.str(context, "Blocked Topics Style"),
-                                valueLabel = if (hideBlocked) {
-                                    L.str(context, "Hide Topic")
-                                } else {
-                                    L.str(context, "Redact Subject")
-                                },
-                                onClick = { picker = PickerKind.HIDE_BLOCKED },
-                            )
-                            SwitchRow(
-                                icon = Icons.Filled.Refresh,
-                                title = L.str(context, "Refresh Button"),
-                                checked = showRefreshButton,
-                                onChange = { prefs.topicListShowRefreshButton.value = it },
-                            )
-                            SwitchRow(
-                                icon = Icons.Filled.Link,
-                                title = L.str(context, "Show Forum Shortcuts"),
-                                checked = showForumShortcut,
-                                onChange = { prefs.topicListShowForumShortcut.value = it },
-                            )
-                            SwitchRow(
-                                icon = Icons.Filled.Palette,
-                                title = L.str(context, "Multicolor Subject"),
-                                checked = subjectMulticolor,
-                                onChange = { prefs.topicListSubjectMulticolor.value = it },
-                            )
-                        }
-                    }
-                    // endregion
-
-                    // region Topic Details
-                    item(key = "topic-details") {
-                        Section(
-                            header = L.str(context, "Topic Details"),
-                            footer = L.str(context, "Web API Explained"),
-                        ) {
-                            SwitchRow(
-                                icon = Icons.Filled.Layers,
-                                title = L.str(context, "Paginated Reading"),
-                                checked = usePaginatedDetails,
-                                onChange = { prefs.usePaginatedDetails.value = it },
-                            )
-                            PickerRow(
-                                icon = Icons.Filled.Lan,
-                                title = L.str(context, "Web API"),
-                                valueLabel = webApiStrategyLabel(context, webApiStrategy),
-                                onClick = { picker = PickerKind.WEB_API },
-                            )
-                            PickerRow(
-                                icon = Icons.Filled.RestartAlt,
-                                title = L.str(context, "Resume Reading Progress"),
-                                valueLabel = resumeFromLabel(context, resumeFrom),
-                                onClick = { picker = PickerKind.RESUME },
-                            )
-                            SwitchRow(
-                                icon = Icons.Filled.OpenInBrowser,
-                                title = L.str(context, "Auto Open in Browser when Banned"),
-                                checked = autoOpenInBrowserWhenBanned,
-                                onChange = { prefs.autoOpenInBrowserWhenBanned.value = it },
-                            )
-                        }
-                    }
-                    // endregion
-
-                    // region Post Row
-                    item(key = "post-row") {
-                        Section(header = L.str(context, "Post Row")) {
-                            PickerRow(
-                                icon = Icons.Filled.Event,
-                                title = L.str(context, "Date Display"),
-                                valueLabel = dateTimeStrategyLabel(context, dateTimeStrategy),
-                                onClick = { picker = PickerKind.DATE_TIME },
-                            )
-                            SwitchRow(
-                                icon = Icons.Outlined.Edit,
-                                title = L.str(context, "Show Signature"),
-                                checked = showSignature,
-                                onChange = { prefs.showSignature.value = it },
-                            )
-                            SwitchRow(
-                                icon = Icons.Filled.Person,
-                                title = L.str(context, "Show Author Indicator"),
-                                checked = showAuthorIndicator,
-                                onChange = { prefs.postRowShowAuthorIndicator.value = it },
-                            )
-                            SwitchRow(
-                                icon = Icons.Filled.CalendarMonth,
-                                title = L.str(context, "Show User Register Date"),
-                                checked = showUserRegDate,
-                                onChange = { prefs.postRowShowUserRegDate.value = it },
-                            )
-                            SwitchRow(
-                                icon = Icons.Filled.DarkMode,
-                                title = L.str(context, "Dim Images in Dark Mode"),
-                                checked = dimImages,
-                                onChange = { prefs.postRowDimImagesInDarkMode.value = it },
-                            )
-                        }
-                    }
-                    // endregion
-
-                    // region Appearance
-                    item(key = "appearance") {
-                        Section(header = L.str(context, "Appearance")) {
-                            SwitchRow(
-                                icon = Icons.Filled.Share,
-                                title = L.str(context, "Always Share Image as File"),
-                                checked = alwaysShareImageAsFile,
-                                onChange = { prefs.alwaysShareImageAsFile.value = it },
-                            )
-                        }
-                    }
-                    // endregion
-
-                    // region Backend
-                    item(key = "backend") {
-                        Section(header = L.str(context, "Backend")) {
-                            Column(Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
-                                OutlinedTextField(
-                                    value = baseURLText,
-                                    onValueChange = { baseURLText = it },
-                                    label = { Text(L.str(context, "LumaGA Backend")) },
-                                    singleLine = true,
-                                    modifier = Modifier.fillMaxWidth(),
-                                )
-                                TextButton(
-                                    onClick = { prefs.setBaseURL(baseURLText.trim()) },
-                                    enabled = baseURLText.trim() != requestOption.baseUrlV2,
-                                ) { Text(L.str(context, "Apply")) }
-                            }
-                            PickerRow(
-                                icon = Icons.Filled.Devices,
-                                title = L.str(context, "Device Identity"),
-                                valueLabel = deviceLabel(context, device),
-                                onClick = { picker = PickerKind.DEVICE },
-                            )
-                            if (device == Device.CUSTOM) {
-                                Column(Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
-                                    OutlinedTextField(
-                                        value = customUAText,
-                                        onValueChange = { customUAText = it },
-                                        label = { Text(L.str(context, "Custom User-Agent")) },
-                                        singleLine = true,
-                                        modifier = Modifier.fillMaxWidth(),
-                                    )
-                                    TextButton(
-                                        onClick = { prefs.setCustomUA(customUAText.trim()) },
-                                        enabled = customUAText.trim() != requestOption.customUa,
-                                    ) { Text(L.str(context, "Apply")) }
-                                }
-                            }
-                        }
-                    }
-                    // endregion
-
-                    // region Debug
-                    item(key = "debug") {
-                        Section(header = L.str(context, "Debug")) {
-                            SwitchRow(
-                                icon = Icons.Filled.Notifications,
-                                title = L.str(context, "Always Show Notification Badge"),
-                                checked = debugBadge,
-                                onChange = { prefs.debugAlwaysShowNotificationBadge.value = it },
-                            )
-                        }
-                    }
-                    // endregion
-
-                    // region About
-                    item(key = "about") {
-                        Section(
-                            header = "LumaGA ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
-                        ) {
-                            NavigationRow(
-                                icon = Icons.Filled.Info,
-                                title = L.str(context, "About"),
-                                onClick = {
-                                    navigator?.push(Route.About)
-                                    dismiss()
-                                },
-                            )
-                            CheckForUpdatesRow()
-                            NavigationRow(
-                                icon = Icons.Filled.Check,
-                                title = L.str(context, "Acknowledgements"),
-                                onClick = { pushAboutTopic() },
-                            )
-                        }
-                    }
-                    // endregion
+                },
+            )
+        },
+    ) { padding ->
+        LazyColumn(
+            Modifier.fillMaxSize().padding(padding),
+            state = listState,
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+        ) {
+            // region General
+            item(key = "general") {
+                Section(header = L.str(context, "General")) {
+                    PickerRow(
+                        icon = Icons.Filled.Contrast,
+                        title = L.str(context, "Color Scheme"),
+                        valueLabel = colorSchemeLabel(context, colorScheme),
+                        onClick = { picker = PickerKind.COLOR_SCHEME },
+                    )
+                    PickerRow(
+                        icon = Icons.Filled.Palette,
+                        title = L.str(context, "Theme Color"),
+                        valueLabel = L.str(context, themeColor.label),
+                        dot = themeColorDot(themeColor),
+                        onClick = { picker = PickerKind.THEME_COLOR },
+                    )
+                    SwitchRow(
+                        icon = Icons.Filled.PhoneIphone,
+                        title = L.str(context, "Lock Screen Rotation"),
+                        checked = alwaysPortrait,
+                        onChange = { prefs.alwaysPortraitOnPhone.value = it },
+                    )
+                    SwitchRow(
+                        icon = Icons.Filled.Public,
+                        title = L.str(context, "Always Use In-App Safari"),
+                        checked = useInAppSafari,
+                        onChange = { prefs.useInAppSafari.value = it },
+                    )
+                    NavigationRow(
+                        icon = Icons.Outlined.FrontHand,
+                        title = L.str(context, "Block Contents"),
+                        onClick = { pushScreen(Route.BlockWords) },
+                    )
+                    NavigationRow(
+                        icon = Icons.Filled.CleaningServices,
+                        title = L.str(context, "Cache Management"),
+                        onClick = { pushScreen(Route.CacheSettings) },
+                    )
+                    SwitchRow(
+                        icon = Icons.Filled.CloudQueue,
+                        title = L.str(context, "Sync Favorites"),
+                        checked = useRemote,
+                        onChange = { next ->
+                            App.favoriteForums.useRemote.value = next
+                            scope.launch { App.favoriteForums.sync() }
+                        },
+                    )
                 }
             }
-        }
-    }
+            // endregion
 
+            // region Topic List
+            item(key = "topic-list") {
+                Section(header = L.str(context, "Topic List")) {
+                    PickerRow(
+                        icon = Icons.Filled.Refresh,
+                        title = L.str(context, "Default Order"),
+                        valueLabel = orderLabel(context, defaultOrder),
+                        onClick = { picker = PickerKind.ORDER },
+                    )
+                    PickerRow(
+                        icon = Icons.Filled.VisibilityOff,
+                        title = L.str(context, "Blocked Topics Style"),
+                        valueLabel = if (hideBlocked) {
+                            L.str(context, "Hide Topic")
+                        } else {
+                            L.str(context, "Redact Subject")
+                        },
+                        onClick = { picker = PickerKind.HIDE_BLOCKED },
+                    )
+                    SwitchRow(
+                        icon = Icons.Filled.Refresh,
+                        title = L.str(context, "Refresh Button"),
+                        checked = showRefreshButton,
+                        onChange = { prefs.topicListShowRefreshButton.value = it },
+                    )
+                    SwitchRow(
+                        icon = Icons.Filled.Link,
+                        title = L.str(context, "Show Forum Shortcuts"),
+                        checked = showForumShortcut,
+                        onChange = { prefs.topicListShowForumShortcut.value = it },
+                    )
+                    SwitchRow(
+                        icon = Icons.Filled.Palette,
+                        title = L.str(context, "Multicolor Subject"),
+                        checked = subjectMulticolor,
+                        onChange = { prefs.topicListSubjectMulticolor.value = it },
+                    )
+                }
+            }
+            // endregion
+
+            // region Topic Details
+            item(key = "topic-details") {
+                Section(
+                    header = L.str(context, "Topic Details"),
+                    footer = L.str(context, "Web API Explained"),
+                ) {
+                    SwitchRow(
+                        icon = Icons.Filled.Layers,
+                        title = L.str(context, "Paginated Reading"),
+                        checked = usePaginatedDetails,
+                        onChange = { prefs.usePaginatedDetails.value = it },
+                    )
+                    PickerRow(
+                        icon = Icons.Filled.Lan,
+                        title = L.str(context, "Web API"),
+                        valueLabel = webApiStrategyLabel(context, webApiStrategy),
+                        onClick = { picker = PickerKind.WEB_API },
+                    )
+                    PickerRow(
+                        icon = Icons.Filled.RestartAlt,
+                        title = L.str(context, "Resume Reading Progress"),
+                        valueLabel = resumeFromLabel(context, resumeFrom),
+                        onClick = { picker = PickerKind.RESUME },
+                    )
+                    SwitchRow(
+                        icon = Icons.Filled.OpenInBrowser,
+                        title = L.str(context, "Auto Open in Browser when Banned"),
+                        checked = autoOpenInBrowserWhenBanned,
+                        onChange = { prefs.autoOpenInBrowserWhenBanned.value = it },
+                    )
+                }
+            }
+            // endregion
+
+            // region Post Row
+            item(key = "post-row") {
+                Section(header = L.str(context, "Post Row")) {
+                    PickerRow(
+                        icon = Icons.Filled.Event,
+                        title = L.str(context, "Date Display"),
+                        valueLabel = dateTimeStrategyLabel(context, dateTimeStrategy),
+                        onClick = { picker = PickerKind.DATE_TIME },
+                    )
+                    SwitchRow(
+                        icon = Icons.Outlined.Edit,
+                        title = L.str(context, "Show Signature"),
+                        checked = showSignature,
+                        onChange = { prefs.showSignature.value = it },
+                    )
+                    SwitchRow(
+                        icon = Icons.Filled.Person,
+                        title = L.str(context, "Show Author Indicator"),
+                        checked = showAuthorIndicator,
+                        onChange = { prefs.postRowShowAuthorIndicator.value = it },
+                    )
+                    SwitchRow(
+                        icon = Icons.Filled.CalendarMonth,
+                        title = L.str(context, "Show User Register Date"),
+                        checked = showUserRegDate,
+                        onChange = { prefs.postRowShowUserRegDate.value = it },
+                    )
+                    SwitchRow(
+                        icon = Icons.Filled.DarkMode,
+                        title = L.str(context, "Dim Images in Dark Mode"),
+                        checked = dimImages,
+                        onChange = { prefs.postRowDimImagesInDarkMode.value = it },
+                    )
+                }
+            }
+            // endregion
+
+            // region Appearance
+            item(key = "appearance") {
+                Section(header = L.str(context, "Appearance")) {
+                    SwitchRow(
+                        icon = Icons.Filled.Share,
+                        title = L.str(context, "Always Share Image as File"),
+                        checked = alwaysShareImageAsFile,
+                        onChange = { prefs.alwaysShareImageAsFile.value = it },
+                    )
+                }
+            }
+            // endregion
+
+            // region Backend
+            item(key = "backend") {
+                Section(header = L.str(context, "Backend")) {
+                    Column(Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
+                        OutlinedTextField(
+                            value = baseURLText,
+                            onValueChange = { baseURLText = it },
+                            label = { Text(L.str(context, "LumaGA Backend")) },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        TextButton(
+                            onClick = { prefs.setBaseURL(baseURLText.trim()) },
+                            enabled = baseURLText.trim() != requestOption.baseUrlV2,
+                        ) { Text(L.str(context, "Apply")) }
+                    }
+                    PickerRow(
+                        icon = Icons.Filled.Devices,
+                        title = L.str(context, "Device Identity"),
+                        valueLabel = deviceLabel(context, device),
+                        onClick = { picker = PickerKind.DEVICE },
+                    )
+                    if (device == Device.CUSTOM) {
+                        Column(Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
+                            OutlinedTextField(
+                                value = customUAText,
+                                onValueChange = { customUAText = it },
+                                label = { Text(L.str(context, "Custom User-Agent")) },
+                                singleLine = true,
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                            TextButton(
+                                onClick = { prefs.setCustomUA(customUAText.trim()) },
+                                enabled = customUAText.trim() != requestOption.customUa,
+                            ) { Text(L.str(context, "Apply")) }
+                        }
+                    }
+                }
+            }
+            // endregion
+
+            // region Debug
+            item(key = "debug") {
+                Section(header = L.str(context, "Debug")) {
+                    SwitchRow(
+                        icon = Icons.Filled.Notifications,
+                        title = L.str(context, "Always Show Notification Badge"),
+                        checked = debugBadge,
+                        onChange = { prefs.debugAlwaysShowNotificationBadge.value = it },
+                    )
+                }
+            }
+            // endregion
+
+            // region About
+            item(key = "about") {
+                Section(
+                    header = "LumaGA ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
+                ) {
+                    NavigationRow(
+                        icon = Icons.Filled.Info,
+                        title = L.str(context, "About"),
+                        onClick = { pushScreen(Route.About) },
+                    )
+                    CheckForUpdatesRow()
+                }
+            }
+            // endregion
+        }
+
+    }
     // region picker dialogs
     val currentPicker = picker
     when (currentPicker) {

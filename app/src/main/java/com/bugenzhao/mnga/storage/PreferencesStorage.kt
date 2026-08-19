@@ -239,9 +239,6 @@ class PreferencesStorage(private val prefs: SharedPreferences) {
 
     // endregion
 
-    /** Presentation flag of the preferences sheet (not persisted). */
-    val showing = MutableStateFlow(false)
-
     init {
         _requestOption.value = loadRequestOption()
         syncRequestOptionWithLogic()
