@@ -47,6 +47,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -357,8 +358,12 @@ fun TopicListScreen(
         }
     }
 
-    // -- Toolbar-triggered refresh (SS0.6): refresh then success haptic.
+    // -- Toolbar-triggered refresh (SS0.6): refresh then success haptic. The
+    // refresh also resets the scroll to the top (via scrollToTopSignal) so
+    // the newest items are visible.
+    var refreshScrollEpoch by remember { mutableIntStateOf(0) }
     fun triggerRefresh() {
+        refreshScrollEpoch++
         scope.launch {
             dataSource.refreshAsync(sleepMillis = 0).join()
             Haptics.play(view, Haptics.NotificationType.SUCCESS)
@@ -576,6 +581,7 @@ fun TopicListScreen(
                 // the saveable scroll position would otherwise be restored
                 // from the route registry even though the data was reloaded.
                 freshEntry = savedItemsB64.isEmpty(),
+                scrollToTopSignal = refreshScrollEpoch,
                 itemContent = { _, topic ->
                     TopicListItem(
                         topic = topic,

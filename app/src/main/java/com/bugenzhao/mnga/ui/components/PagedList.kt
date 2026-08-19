@@ -39,6 +39,9 @@ fun <Item : Any> PagedList(
      * registry even after a fresh push, so it is explicitly reset to the top
      * in that case. */
     freshEntry: Boolean = false,
+    /** Bump to reset the scroll position to the top (e.g. a toolbar
+     * "refresh" action that also wants to show the newest items). */
+    scrollToTopSignal: Int = 0,
     itemContent: @Composable (Int, Item) -> Unit,
 ) {
     val state by dataSource.state.collectAsState()
@@ -48,6 +51,10 @@ fun <Item : Any> PagedList(
     // Reset the scroll position on a fresh entry.
     LaunchedEffect(freshEntry) {
         if (freshEntry) listState.scrollToItem(0)
+    }
+    // Reset the scroll position when the host signals a refresh.
+    LaunchedEffect(scrollToTopSignal) {
+        if (scrollToTopSignal > 0) listState.scrollToItem(0)
     }
 
     // Prefetch when approaching the end.
