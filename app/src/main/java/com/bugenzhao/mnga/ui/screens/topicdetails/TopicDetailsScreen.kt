@@ -636,12 +636,11 @@ fun TopicDetailsScreen(
                                     }
                                 },
                             )
-                            // 楼层之间用与内容同宽的浅色分割线分隔（无卡片背景）。
+                            // 楼层之间用撑满全屏的浅色分割线分隔（无卡片背景）。
                             if (index < rows.lastIndex) {
                                 Spacer(Modifier.height(8.dp))
                                 HorizontalDivider(
                                     color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
-                                    modifier = Modifier.padding(horizontal = 16.dp),
                                 )
                                 Spacer(Modifier.height(8.dp))
                             }

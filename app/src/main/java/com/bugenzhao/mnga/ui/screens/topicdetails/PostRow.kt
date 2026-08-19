@@ -78,6 +78,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.bugenzhao.mnga.App
 import com.bugenzhao.mnga.logicCallAsync
 import com.bugenzhao.mnga.model.NavigationIdentifier
@@ -319,12 +320,29 @@ fun PostRow(
             if (showSignature) {
                 val sig = user?.signature
                 if (sig != null && sig.spansList.isNotEmpty()) {
-                    // 签名分隔线：主题色、更粗，与帖子分割线区分；两侧各留 48dp。
-                    HorizontalDivider(
-                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.4f),
-                        thickness = 2.dp,
-                        modifier = Modifier.padding(horizontal = 48.dp),
-                    )
+                    // 签名分隔线：浅金色、更粗，两侧各留 20dp，中间标注"签名"。
+                    val sigColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)
+                    Row(
+                        Modifier.fillMaxWidth().padding(horizontal = 20.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        HorizontalDivider(
+                            color = sigColor,
+                            thickness = 2.dp,
+                            modifier = Modifier.weight(1f),
+                        )
+                        Text(
+                            "签名",
+                            fontSize = 6.sp,
+                            color = sigColor,
+                            modifier = Modifier.padding(horizontal = 6.dp),
+                        )
+                        HorizontalDivider(
+                            color = sigColor,
+                            thickness = 2.dp,
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
                     PostContent(
                         content = sig,
                         env = ContentEnv(actions = contentActions),
