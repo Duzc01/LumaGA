@@ -1042,7 +1042,7 @@ private fun ReplyRow(
 @Composable
 private fun TopicSubjectHeader(topic: Topic) {
     val context = LocalContext.current
-    Column(Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
+    Column(Modifier.padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 12.dp)) {
         val tags = topic.subject.tagsList
         if (tags.isNotEmpty() || topic.hasParentForum()) {
             Row(
