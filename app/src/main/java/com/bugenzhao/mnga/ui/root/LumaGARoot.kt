@@ -67,9 +67,12 @@ fun LumaGARoot(onNewIntent: (android.content.Intent) -> Unit) {
         }
         GlobalOverlays(navigator, editor)
 
-        // Clipboard deep-link affordance refresh on resume.
+        // Pasteboard deep-link handling on resume: when the newest clipboard
+        // entry is a navigable NGA/LumaGA link that has not been jumped to
+        // yet, navigate there directly.
         LifecycleResumeEffect(Unit) {
             App.schemes.refreshPasteboardStatus()
+            maybeNavigateToPasteboardLink()
             onPauseOrDispose { }
         }
     }
@@ -294,5 +297,33 @@ private fun InAppBrowserOverlay() {
     val current = url ?: return
     com.bugenzhao.mnga.ui.components.InAppBrowserSheet(uri = current) {
         App.openURL.dismissInApp()
+    }
+}
+
+// -- Pasteboard deep-link auto-jump -------------------------------------------
+//
+// On resume the app checks the newest clipboard entry; if it is a navigable
+// NGA/LumaGA link that has not been jumped to yet, it navigates there and
+// records the link as "jumped" so the same link is never auto-jumped again.
+
+private const val JumpedPasteboardLinksKey = "jumpedPasteboardLinks"
+
+private fun jumpedPasteboardLinks(): Set<String> =
+    App.sharedPreferences.getStringSet(JumpedPasteboardLinksKey, emptySet()) ?: emptySet()
+
+private fun recordJumpedPasteboardLink(link: String) {
+    val set = jumpedPasteboardLinks().toMutableSet()
+    set.add(link)
+    App.sharedPreferences.edit().putStringSet(JumpedPasteboardLinksKey, set).apply()
+}
+
+private fun maybeNavigateToPasteboardLink() {
+    val link = App.schemes.pasteboardLink() ?: return
+    if (link in jumpedPasteboardLinks()) return
+    // Only record the link once a jump actually happened (an invalid
+    // clipboard entry is reported by navigateToPasteboardURL and returns
+    // false, leaving the link eligible for the next resume).
+    if (App.schemes.navigateToPasteboardURL()) {
+        recordJumpedPasteboardLink(link)
     }
 }

@@ -141,6 +141,14 @@ class SchemesModel(
         _canTryNavigateToPasteboardURL.value = clipHasUrl(clipboard?.primaryClip)
     }
 
+    /** The navigable deep link currently in the pasteboard, or null. */
+    fun pasteboardLink(): String? {
+        val clip = clipboard?.primaryClip?.getItemAt(0) ?: return null
+        val text = clip.text?.toString()
+        val uri = clip.uri ?: text?.let { runCatching { Uri.parse(it) }.getOrNull() } ?: return null
+        return if (canNavigateTo(uri)) uri.toString() else null
+    }
+
     private fun clipHasUrl(clip: android.content.ClipData?): Boolean {
         val item = clip?.getItemAt(0) ?: return false
         return item.uri != null || (item.text?.toString()?.startsWith("http") == true) ||
@@ -152,6 +160,10 @@ class SchemesModel(
     fun navigateTo(url: Uri) {
         val id = NavigationIdentifier.parse(url) ?: return
         ToastModel.showAuto(ToastModel.Message.OpenURL(url.toString()))
+        present(id)
+    }
+
+    private fun present(id: NavigationIdentifier) {
         scope.launch {
             // Dismiss any current destination, then present fresh (mirrors the
             // iOS re-presentation hop; the delay also lets the toast settle).
@@ -169,16 +181,22 @@ class SchemesModel(
         _navID.value = null
     }
 
-    fun navigateToPasteboardURL() {
+    /** Navigate to the pasteboard link; true when a jump actually happened. */
+    fun navigateToPasteboardURL(): Boolean {
         val clip = clipboard?.primaryClip?.getItemAt(0)
         val text = clip?.text?.toString()
         val uri = clip?.uri ?: text?.let { runCatching { Uri.parse(it) }.getOrNull() }
-        if (uri == null || !canNavigateTo(uri)) {
+        if (uri == null) return false
+        val id = NavigationIdentifier.parse(uri)
+        if (id == null) {
             ToastModel.showAuto(
                 ToastModel.Message.Error("Not a valid NGA or LumaGA link in the pasteboard.")
             )
-        } else {
-            navigateTo(uri)
+            return false
         }
+        // No "opening link" toast here: this path runs automatically on
+        // resume, where a toast in the middle of the screen is noise.
+        present(id)
+        return true
     }
 }

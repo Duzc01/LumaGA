@@ -26,7 +26,6 @@ import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.CloudDone
 import androidx.compose.material.icons.outlined.CloudQueue
 import androidx.compose.material.icons.outlined.ContentCopy
-import androidx.compose.material.icons.outlined.ContentPasteGo
 import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.ExpandLess
 import androidx.compose.material.icons.outlined.ExpandMore
@@ -41,7 +40,6 @@ import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
-import androidx.compose.material3.Button
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -100,8 +98,7 @@ private const val FavoritesSectionID = "LumaGA-Favorites"
 /**
  * The root forum sidebar, a port of `ForumListView`: favorite forums on top,
  * collapsible per-category sections below, plus the root toolbar (user menu,
- * notifications, paywall, search, filter, settings) and the clipboard
- * deep-link "Navigate" affordance.
+ * notifications, paywall, search, filter, settings).
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -169,7 +166,6 @@ fun ForumListScreen(
     val currentUser by App.currentUser.user.collectAsState()
     val unreadCount by App.notis.unreadCountAnimated.collectAsState()
     val debugBadge by App.prefs.debugAlwaysShowNotificationBadge.flow.collectAsState()
-    val canPaste by App.schemes.canTryNavigateToPasteboardURL.collectAsState()
     var editMode by remember { mutableStateOf(false) }
     var moreMenuExpanded by remember { mutableStateOf(false) }
     var filterSubmenuExpanded by remember { mutableStateOf(false) }
@@ -287,26 +283,6 @@ fun ForumListScreen(
                     }
                 },
             )
-        },
-        bottomBar = {
-            if (canPaste) {
-                Surface(tonalElevation = 3.dp) {
-                    Row(
-                        Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp),
-                        horizontalArrangement = Arrangement.Center,
-                    ) {
-                        Button(onClick = { App.schemes.navigateToPasteboardURL() }) {
-                            Icon(
-                                Icons.Outlined.ContentPasteGo,
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp),
-                            )
-                            Spacer(Modifier.width(6.dp))
-                            Text(L.str(context, "Navigate"))
-                        }
-                    }
-                }
-            }
         },
     ) { padding ->
         PullToRefreshBox(
