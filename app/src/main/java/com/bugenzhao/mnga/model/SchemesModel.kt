@@ -71,17 +71,15 @@ sealed class NavigationIdentifier {
                         NavigationIdentifier.TopicID(path, firstQuery("fav"))
                     full.startsWith(Constants.MNGA.postBase) ->
                         NavigationIdentifier.PostID(path)
-                    // Accept both "mnga://forum/f722" and "mnga://forum/f/722".
-                    full.startsWith("mnga://forum/f") -> {
-                        val fid = full.removePrefix("mnga://forum/f").trimStart('/').substringBefore('?')
+                    full.startsWith(Constants.MNGA.forumFBase) -> {
+                        val fid = full.removePrefix(Constants.MNGA.forumFBase).substringBefore('?')
                         if (fid.isEmpty()) null
                         else NavigationIdentifier.ForumID(
                             ForumId.newBuilder().setFid(fid).build()
                         )
                     }
-                    // Accept both "mnga://forum/st-123" and "mnga://forum/st/-123".
-                    full.startsWith("mnga://forum/st") -> {
-                        val stid = full.removePrefix("mnga://forum/st").trimStart('/').substringBefore('?')
+                    full.startsWith(Constants.MNGA.forumSTBase) -> {
+                        val stid = full.removePrefix(Constants.MNGA.forumSTBase).substringBefore('?')
                         if (stid.isEmpty()) null
                         else NavigationIdentifier.ForumID(
                             ForumId.newBuilder().setStid(stid).build()
