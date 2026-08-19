@@ -53,12 +53,14 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -127,6 +129,38 @@ fun ForumListScreen(
     val state by dataSource.state.collectAsState()
     val categories = state.items
 
+    // -- Keep the loaded forum list across navigation: when this screen is
+    // pushed away (e.g. into a topic list) and popped back, restore the
+    // previous items instead of refetching (the screen is recreated by the
+    // navigation host, which would otherwise reload and flash).
+    var savedItemsB64 by rememberSaveable { mutableStateOf<List<String>>(emptyList()) }
+    var savedRefreshTime by rememberSaveable { mutableStateOf(0L) }
+    LaunchedEffect(dataSource) {
+        if (savedItemsB64.isNotEmpty()) {
+            dataSource.restoreItems(
+                items = savedItemsB64.map {
+                    Category.parseFrom(android.util.Base64.decode(it, android.util.Base64.NO_WRAP))
+                },
+                loadedPage = 1,
+                totalPages = 1,
+                lastRefreshTime = savedRefreshTime.takeIf { it > 0 }?.let { java.util.Date(it) },
+            )
+        } else {
+            dataSource.initialLoad()
+            App.favoriteForums.initialSync()
+        }
+    }
+    DisposableEffect(Unit) {
+        onDispose {
+            if (dataSource.items.isNotEmpty()) {
+                savedItemsB64 = dataSource.items.map {
+                    android.util.Base64.encodeToString(it.toByteArray(), android.util.Base64.NO_WRAP)
+                }
+                savedRefreshTime = state.lastRefreshTime?.time ?: 0L
+            }
+        }
+    }
+
     // -- Favorites & filter mode.
     val favoriteForums by App.favoriteForums.forumsFlow().collectAsState()
     val showAllRaw by App.favoriteForums.showAll.flow.collectAsState()
@@ -155,10 +189,6 @@ fun ForumListScreen(
     }
 
     // -- Initial load, favorites sync on auth change.
-    LaunchedEffect(Unit) {
-        dataSource.initialLoad()
-        App.favoriteForums.initialSync()
-    }
     val authInfo by App.authStorage.authInfo.collectAsState()
     LaunchedEffect(authInfo) { App.favoriteForums.sync() }
 

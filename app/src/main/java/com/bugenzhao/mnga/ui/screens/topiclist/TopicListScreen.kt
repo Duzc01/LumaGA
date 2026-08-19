@@ -572,6 +572,10 @@ fun TopicListScreen(
                 showInitialLoading = false,
                 emptyPlaceholder = L.str(context, "No Results"),
                 header = header,
+                // A fresh entry (no restored snapshot) must start at the top:
+                // the saveable scroll position would otherwise be restored
+                // from the route registry even though the data was reloaded.
+                freshEntry = savedItemsB64.isEmpty(),
                 itemContent = { _, topic ->
                     TopicListItem(
                         topic = topic,
