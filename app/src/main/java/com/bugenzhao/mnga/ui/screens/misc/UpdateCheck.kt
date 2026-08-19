@@ -3,18 +3,13 @@ package com.bugenzhao.mnga.ui.screens.misc
 import android.text.format.Formatter
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -22,15 +17,14 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.bugenzhao.mnga.App
 import com.bugenzhao.mnga.model.UpdateModel
 import com.bugenzhao.mnga.model.UpdateState
 import com.bugenzhao.mnga.ui.components.GroupedRow
+import com.bugenzhao.mnga.ui.components.RowChevron
 import com.bugenzhao.mnga.util.AppUpdate
 import com.bugenzhao.mnga.util.L
 
@@ -45,54 +39,24 @@ fun CheckForUpdatesRow() {
     val model = App.update
     val state by model.state.collectAsState()
 
+    // The subtitle carries the flow's state, so the row alone tells the user
+    // where the check stands without opening a dialog.
+    val subtitle = when (val current = state) {
+        is UpdateState.Downloading -> "${((current.fraction ?: 0f) * 100).toInt()}%"
+        is UpdateState.Available -> "${AppUpdate.currentVersion}  →  ${current.release.version}"
+        else -> AppUpdate.currentVersion
+    }
+
     GroupedRow(
         onClick = { if (!model.isBusy) model.check() },
-        leading = {
-            Icon(
-                Icons.Filled.SystemUpdate,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        },
         title = L.str(context, "Check for Updates"),
+        subtitle = subtitle,
         trailing = {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-            ) {
-                when (val current = state) {
-                    is UpdateState.Checking ->
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(16.dp),
-                            strokeWidth = 2.dp,
-                        )
-                    is UpdateState.Downloading ->
-                        Text(
-                            "${((current.fraction ?: 0f) * 100).toInt()}%",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.primary,
-                        )
-                    is UpdateState.Available ->
-                        Text(
-                            current.release.version,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.primary,
-                        )
-                    else ->
-                        Text(
-                            AppUpdate.currentVersion,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                }
-                Icon(
-                    Icons.Filled.ChevronRight,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(18.dp),
-                )
+            // A check in flight replaces the chevron rather than adding to it.
+            if (state is UpdateState.Checking) {
+                CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+            } else {
+                RowChevron()
             }
         },
     )

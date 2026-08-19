@@ -14,9 +14,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material.icons.filled.Code
-import androidx.compose.material.icons.filled.NewReleases
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -38,6 +35,7 @@ import com.bugenzhao.mnga.BuildConfig
 import com.bugenzhao.mnga.R
 import com.bugenzhao.mnga.ui.components.GroupedList
 import com.bugenzhao.mnga.ui.components.GroupedRow
+import com.bugenzhao.mnga.ui.components.RowChevron
 import com.bugenzhao.mnga.ui.nav.Navigator
 import com.bugenzhao.mnga.util.Constants
 import com.bugenzhao.mnga.util.L
@@ -109,28 +107,14 @@ fun AboutScreen(navigator: Navigator? = null) {
                     Column {
                         GroupedRow(
                             onClick = { open(Constants.GitHub.repoUrl) },
-                            leading = {
-                                Icon(
-                                    Icons.Filled.Code,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                            },
                             title = L.str(context, "Source Code"),
                             subtitle = Constants.GitHub.repo,
-                            trailing = { LinkChevron() },
+                            trailing = { RowChevron() },
                         )
                         GroupedRow(
                             onClick = { open(Constants.GitHub.releasesUrl) },
-                            leading = {
-                                Icon(
-                                    Icons.Filled.NewReleases,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                            },
                             title = L.str(context, "Release Notes"),
-                            trailing = { LinkChevron() },
+                            trailing = { RowChevron() },
                         )
                     }
                 }
@@ -149,14 +133,4 @@ fun AboutScreen(navigator: Navigator? = null) {
     }
 
     UpdateFlowDialogs()
-}
-
-@Composable
-private fun LinkChevron() {
-    Icon(
-        Icons.Filled.ChevronRight,
-        contentDescription = null,
-        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.size(18.dp),
-    )
 }

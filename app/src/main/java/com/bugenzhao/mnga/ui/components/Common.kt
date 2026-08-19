@@ -14,7 +14,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -25,6 +28,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.bugenzhao.mnga.LogicException
 import com.bugenzhao.mnga.util.DateFormatters
 import com.bugenzhao.mnga.util.L
@@ -79,44 +83,56 @@ fun GroupedList(
     }
 }
 
-/** One inset-grouped row with optional leading/trailing/accessory slots. */
+/**
+ * One inset-grouped settings row: the title carries an optional subtitle
+ * underneath showing the current value, and the trailing slot holds at most
+ * one accessory — a [RowChevron] or a switch. Deliberately has no leading
+ * icon slot; the settings pages read as plain text lists.
+ */
 @Composable
 fun GroupedRow(
     onClick: (() -> Unit)? = null,
-    leading: (@Composable () -> Unit)? = null,
     title: String,
     subtitle: String? = null,
     trailing: (@Composable () -> Unit)? = null,
 ) {
-    // Uniform 72dp row height so switch rows (Material switch carries a 48dp
-    // minimum interactive size) and picker/navigation rows keep the same
-    // vertical rhythm.
-    var rowModifier =
-        Modifier
-            .fillMaxWidth()
-            .heightIn(min = 72.dp)
-            .padding(horizontal = 16.dp, vertical = 12.dp)
+    // 56dp keeps single-line rows compact while still clearing the 48dp
+    // minimum interactive size a Material switch brings along; rows with a
+    // subtitle grow past it on their own.
+    var rowModifier = Modifier.fillMaxWidth()
     if (onClick != null) {
         rowModifier = rowModifier.then(Modifier.clickable { onClick() })
     }
     Row(
-        rowModifier,
+        rowModifier
+            .heightIn(min = 56.dp)
+            .padding(horizontal = 16.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        leading?.invoke()
-        Column(Modifier.weight(1f)) {
-            Text(title, style = MaterialTheme.typography.bodyLarge)
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(title, style = MaterialTheme.typography.bodyLarge.copy(fontSize = 17.sp))
             if (subtitle != null) {
                 Text(
                     subtitle,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp),
+                    color = MaterialTheme.colorScheme.primary,
                 )
             }
         }
         trailing?.invoke()
     }
+}
+
+/** The disclosure chevron of a [GroupedRow] that opens something. */
+@Composable
+fun RowChevron() {
+    Icon(
+        Icons.Filled.ChevronRight,
+        contentDescription = null,
+        tint = MaterialTheme.colorScheme.outline,
+        modifier = Modifier.size(18.dp),
+    )
 }
 
 /**

@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -20,49 +19,18 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CalendarMonth
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material.icons.filled.CleaningServices
-import androidx.compose.material.icons.filled.CloudQueue
-import androidx.compose.material.icons.filled.Contrast
-import androidx.compose.material.icons.filled.Devices
-import androidx.compose.material.icons.filled.DarkMode
-import androidx.compose.material.icons.filled.Event
-import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Lan
-import androidx.compose.material.icons.filled.Layers
-import androidx.compose.material.icons.filled.Link
-import androidx.compose.material.icons.filled.ListAlt
-import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.NotificationsOff
-import androidx.compose.material.icons.filled.OpenInBrowser
-import androidx.compose.material.icons.filled.Palette
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.PhoneIphone
-import androidx.compose.material.icons.filled.Public
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.RestartAlt
 import androidx.compose.material.icons.filled.Science
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Share
-import androidx.compose.material.icons.filled.Storage
-import androidx.compose.material.icons.filled.Swipe
-import androidx.compose.material.icons.filled.TextFields
-import androidx.compose.material.icons.filled.ThumbUp
-import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material.icons.outlined.AccountCircle
-import androidx.compose.material.icons.outlined.Edit
-import androidx.compose.material.icons.outlined.FrontHand
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -81,7 +49,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.bugenzhao.mnga.App
 import com.bugenzhao.mnga.BuildConfig
@@ -94,6 +61,7 @@ import com.bugenzhao.mnga.storage.TopicResumeFrom
 import com.bugenzhao.mnga.storage.WebApiStrategy
 import com.bugenzhao.mnga.ui.components.GroupedList
 import com.bugenzhao.mnga.ui.components.GroupedRow
+import com.bugenzhao.mnga.ui.components.RowChevron
 import com.bugenzhao.mnga.ui.nav.Navigator
 import com.bugenzhao.mnga.ui.nav.Route
 import com.bugenzhao.mnga.ui.screens.misc.CheckForUpdatesRow
@@ -145,7 +113,6 @@ fun PreferencesSheet(onDismiss: () -> Unit, navigator: Navigator? = null) {
 
     val defaultOrderRaw by prefs.defaultTopicListOrderRaw.flow.collectAsState()
     val hideBlocked by prefs.topicListHideBlocked.flow.collectAsState()
-    val showRefreshButton by prefs.topicListShowRefreshButton.flow.collectAsState()
     val showForumShortcut by prefs.topicListShowForumShortcut.flow.collectAsState()
     val subjectMulticolor by prefs.topicListSubjectMulticolor.flow.collectAsState()
 
@@ -196,15 +163,12 @@ fun PreferencesSheet(onDismiss: () -> Unit, navigator: Navigator? = null) {
         topBar = {
             TopAppBar(
                 title = { Text(L.str(context, "Settings")) },
-                actions = {
-                    TextButton(onClick = { dismiss() }) {
+                navigationIcon = {
+                    IconButton(onClick = { dismiss() }) {
                         Icon(
-                            Icons.Filled.Check,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp),
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = L.str(context, "Done"),
                         )
-                        Spacer(Modifier.size(4.dp))
-                        Text(L.str(context, "Done"))
                     }
                 },
             )
@@ -213,49 +177,37 @@ fun PreferencesSheet(onDismiss: () -> Unit, navigator: Navigator? = null) {
         LazyColumn(
             Modifier.fillMaxSize().padding(padding),
             state = listState,
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(20.dp),
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
         ) {
             // region General
             item(key = "general") {
                 Section(header = L.str(context, "General")) {
                     PickerRow(
-                        icon = Icons.Filled.Contrast,
                         title = L.str(context, "Color Scheme"),
                         valueLabel = colorSchemeLabel(context, colorScheme),
                         onClick = { picker = PickerKind.COLOR_SCHEME },
                     )
                     PickerRow(
-                        icon = Icons.Filled.Palette,
                         title = L.str(context, "Theme Color"),
                         valueLabel = L.str(context, themeColor.label),
-                        dot = themeColorDot(themeColor),
                         onClick = { picker = PickerKind.THEME_COLOR },
                     )
                     SwitchRow(
-                        icon = Icons.Filled.PhoneIphone,
                         title = L.str(context, "Lock Screen Rotation"),
                         checked = alwaysPortrait,
                         onChange = { prefs.alwaysPortraitOnPhone.value = it },
                     )
                     SwitchRow(
-                        icon = Icons.Filled.Public,
                         title = L.str(context, "Always Use In-App Safari"),
                         checked = useInAppSafari,
                         onChange = { prefs.useInAppSafari.value = it },
                     )
                     NavigationRow(
-                        icon = Icons.Outlined.FrontHand,
                         title = L.str(context, "Block Contents"),
                         onClick = { pushScreen(Route.BlockWords) },
                     )
-                    NavigationRow(
-                        icon = Icons.Filled.CleaningServices,
-                        title = L.str(context, "Cache Management"),
-                        onClick = { pushScreen(Route.CacheSettings) },
-                    )
                     SwitchRow(
-                        icon = Icons.Filled.CloudQueue,
                         title = L.str(context, "Sync Favorites"),
                         checked = useRemote,
                         onChange = { next ->
@@ -271,13 +223,11 @@ fun PreferencesSheet(onDismiss: () -> Unit, navigator: Navigator? = null) {
             item(key = "topic-list") {
                 Section(header = L.str(context, "Topic List")) {
                     PickerRow(
-                        icon = Icons.Filled.Refresh,
                         title = L.str(context, "Default Order"),
                         valueLabel = orderLabel(context, defaultOrder),
                         onClick = { picker = PickerKind.ORDER },
                     )
                     PickerRow(
-                        icon = Icons.Filled.VisibilityOff,
                         title = L.str(context, "Blocked Topics Style"),
                         valueLabel = if (hideBlocked) {
                             L.str(context, "Hide Topic")
@@ -287,19 +237,11 @@ fun PreferencesSheet(onDismiss: () -> Unit, navigator: Navigator? = null) {
                         onClick = { picker = PickerKind.HIDE_BLOCKED },
                     )
                     SwitchRow(
-                        icon = Icons.Filled.Refresh,
-                        title = L.str(context, "Refresh Button"),
-                        checked = showRefreshButton,
-                        onChange = { prefs.topicListShowRefreshButton.value = it },
-                    )
-                    SwitchRow(
-                        icon = Icons.Filled.Link,
                         title = L.str(context, "Show Forum Shortcuts"),
                         checked = showForumShortcut,
                         onChange = { prefs.topicListShowForumShortcut.value = it },
                     )
                     SwitchRow(
-                        icon = Icons.Filled.Palette,
                         title = L.str(context, "Multicolor Subject"),
                         checked = subjectMulticolor,
                         onChange = { prefs.topicListSubjectMulticolor.value = it },
@@ -315,25 +257,21 @@ fun PreferencesSheet(onDismiss: () -> Unit, navigator: Navigator? = null) {
                     footer = L.str(context, "Web API Explained"),
                 ) {
                     SwitchRow(
-                        icon = Icons.Filled.Layers,
                         title = L.str(context, "Paginated Reading"),
                         checked = usePaginatedDetails,
                         onChange = { prefs.usePaginatedDetails.value = it },
                     )
                     PickerRow(
-                        icon = Icons.Filled.Lan,
                         title = L.str(context, "Web API"),
                         valueLabel = webApiStrategyLabel(context, webApiStrategy),
                         onClick = { picker = PickerKind.WEB_API },
                     )
                     PickerRow(
-                        icon = Icons.Filled.RestartAlt,
                         title = L.str(context, "Resume Reading Progress"),
                         valueLabel = resumeFromLabel(context, resumeFrom),
                         onClick = { picker = PickerKind.RESUME },
                     )
                     SwitchRow(
-                        icon = Icons.Filled.OpenInBrowser,
                         title = L.str(context, "Auto Open in Browser when Banned"),
                         checked = autoOpenInBrowserWhenBanned,
                         onChange = { prefs.autoOpenInBrowserWhenBanned.value = it },
@@ -346,31 +284,26 @@ fun PreferencesSheet(onDismiss: () -> Unit, navigator: Navigator? = null) {
             item(key = "post-row") {
                 Section(header = L.str(context, "Post Row")) {
                     PickerRow(
-                        icon = Icons.Filled.Event,
                         title = L.str(context, "Date Display"),
                         valueLabel = dateTimeStrategyLabel(context, dateTimeStrategy),
                         onClick = { picker = PickerKind.DATE_TIME },
                     )
                     SwitchRow(
-                        icon = Icons.Outlined.Edit,
                         title = L.str(context, "Show Signature"),
                         checked = showSignature,
                         onChange = { prefs.showSignature.value = it },
                     )
                     SwitchRow(
-                        icon = Icons.Filled.Person,
                         title = L.str(context, "Show Author Indicator"),
                         checked = showAuthorIndicator,
                         onChange = { prefs.postRowShowAuthorIndicator.value = it },
                     )
                     SwitchRow(
-                        icon = Icons.Filled.CalendarMonth,
                         title = L.str(context, "Show User Register Date"),
                         checked = showUserRegDate,
                         onChange = { prefs.postRowShowUserRegDate.value = it },
                     )
                     SwitchRow(
-                        icon = Icons.Filled.DarkMode,
                         title = L.str(context, "Dim Images in Dark Mode"),
                         checked = dimImages,
                         onChange = { prefs.postRowDimImagesInDarkMode.value = it },
@@ -383,7 +316,6 @@ fun PreferencesSheet(onDismiss: () -> Unit, navigator: Navigator? = null) {
             item(key = "appearance") {
                 Section(header = L.str(context, "Appearance")) {
                     SwitchRow(
-                        icon = Icons.Filled.Share,
                         title = L.str(context, "Always Share Image as File"),
                         checked = alwaysShareImageAsFile,
                         onChange = { prefs.alwaysShareImageAsFile.value = it },
@@ -409,7 +341,6 @@ fun PreferencesSheet(onDismiss: () -> Unit, navigator: Navigator? = null) {
                         ) { Text(L.str(context, "Apply")) }
                     }
                     PickerRow(
-                        icon = Icons.Filled.Devices,
                         title = L.str(context, "Device Identity"),
                         valueLabel = deviceLabel(context, device),
                         onClick = { picker = PickerKind.DEVICE },
@@ -437,7 +368,6 @@ fun PreferencesSheet(onDismiss: () -> Unit, navigator: Navigator? = null) {
             item(key = "debug") {
                 Section(header = L.str(context, "Debug")) {
                     SwitchRow(
-                        icon = Icons.Filled.Notifications,
                         title = L.str(context, "Always Show Notification Badge"),
                         checked = debugBadge,
                         onChange = { prefs.debugAlwaysShowNotificationBadge.value = it },
@@ -452,7 +382,6 @@ fun PreferencesSheet(onDismiss: () -> Unit, navigator: Navigator? = null) {
                     header = "LumaGA ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
                 ) {
                     NavigationRow(
-                        icon = Icons.Filled.Info,
                         title = L.str(context, "About"),
                         onClick = { pushScreen(Route.About) },
                     )
@@ -575,7 +504,7 @@ private fun Section(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 // Left edge aligned with the grouped card below (the list's
                 // 16dp content padding applies to both).
-                modifier = Modifier.padding(bottom = 6.dp),
+                modifier = Modifier.padding(start = 4.dp, bottom = 8.dp),
             )
         }
         GroupedList { Column { content() } }
@@ -592,89 +521,40 @@ private fun Section(
 
 @Composable
 private fun SwitchRow(
-    icon: ImageVector,
     title: String,
     checked: Boolean,
     onChange: (Boolean) -> Unit,
 ) {
     GroupedRow(
-        leading = {
-            Icon(
-                icon,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        },
         title = title,
         trailing = { Switch(checked = checked, onCheckedChange = onChange) },
     )
 }
 
+/** A row whose current value sits in the subtitle; tapping opens a picker. */
 @Composable
 private fun PickerRow(
-    icon: ImageVector,
     title: String,
     valueLabel: String,
     onClick: () -> Unit,
-    dot: Color? = null,
 ) {
     GroupedRow(
         onClick = onClick,
-        leading = {
-            Icon(
-                icon,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        },
         title = title,
-        trailing = {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                if (dot != null) {
-                    Box(Modifier.size(14.dp).background(dot, CircleShape))
-                }
-                Text(
-                    valueLabel,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Icon(
-                    Icons.Filled.ChevronRight,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(18.dp),
-                )
-            }
-        },
+        subtitle = valueLabel,
+        trailing = { RowChevron() },
     )
 }
 
 @Composable
 private fun NavigationRow(
-    icon: ImageVector,
     title: String,
     onClick: () -> Unit,
 ) {
     GroupedRow(
         onClick = onClick,
-        leading = {
-            Icon(
-                icon,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        },
         title = title,
-        trailing = {
-            Icon(
-                Icons.Filled.ChevronRight,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(18.dp),
-            )
-        },
+        trailing = { RowChevron() },
     )
 }
 
