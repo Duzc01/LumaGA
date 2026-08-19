@@ -5,7 +5,6 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,6 +20,7 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Check
@@ -29,7 +29,6 @@ import androidx.compose.material.icons.outlined.CloudDone
 import androidx.compose.material.icons.outlined.CloudQueue
 import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.ChevronRight
-import androidx.compose.material.icons.outlined.DragHandle
 import androidx.compose.material.icons.outlined.ExpandLess
 import androidx.compose.material.icons.outlined.ExpandMore
 import androidx.compose.material.icons.outlined.FilterList
@@ -60,8 +59,6 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -71,18 +68,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.PointerInputScope
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.zIndex
 import com.bugenzhao.mnga.App
 import com.bugenzhao.mnga.model.NavigationIdentifier
 import com.bugenzhao.mnga.model.PagingDataSource
@@ -102,11 +94,13 @@ import com.bugenzhao.mnga.ui.screens.topiclist.shareText
 import com.bugenzhao.mnga.storage.FilterMode
 import com.bugenzhao.mnga.util.Haptics
 import com.bugenzhao.mnga.util.L
-import kotlin.math.roundToInt
 import kotlinx.coroutines.launch
 
 private const val CollapsedCategoriesKey = "collapsedCategories"
 private const val FavoritesSectionID = "LumaGA-Favorites"
+
+/** Lazy-grid item key of a favorite cell, also its drag-reorder identity. */
+private fun favoriteGridKey(forum: Forum): String = "fav-${forumIdKey(forum.id)}"
 
 /**
  * The root forum sidebar, a port of `ForumListView`: favorite forums on top,
@@ -211,10 +205,20 @@ fun ForumListScreen(
     var filterSubmenuExpanded by remember { mutableStateOf(false) }
     var contextMenuForum by remember { mutableStateOf<Forum?>(null) }
 
-    // -- Drag-reorder state for the favorites grid (edit mode).
-    var draggingIndex by remember { mutableIntStateOf(-1) }
-    var dragCellHeightPx by remember { mutableFloatStateOf(0f) }
-    LaunchedEffect(editMode) { if (!editMode) draggingIndex = -1 }
+    // -- Drag-reorder state for the favorites grid (edit mode). Cells are
+    // addressed by their lazy-grid key so the lifted cell always stays the one
+    // the finger picked up, however often the list is reordered under it.
+    val gridState = rememberLazyGridState()
+    val favoriteKeys = remember(favoriteForums) { favoriteForums.map { favoriteGridKey(it) } }
+    val reorder = rememberGridReorderState(
+        gridState = gridState,
+        keys = favoriteKeys,
+        onMove = { from, to -> App.favoriteForums.move(from, to) },
+        onSwap = { Haptics.lightImpact(view) },
+    )
+    // Leaving edit mode removes the drag modifiers, which can swallow the
+    // gesture's own end event; drop the lift explicitly.
+    LaunchedEffect(editMode) { if (!editMode) reorder.onDragEnd() }
 
     val refresh: () -> Unit = {
         scope.launch {
@@ -337,6 +341,7 @@ fun ForumListScreen(
         ) {
             LazyVerticalGrid(
                 columns = GridCells.Fixed(3),
+                state = gridState,
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
@@ -385,10 +390,9 @@ fun ForumListScreen(
                         }
                         items(
                             favoriteForums,
-                            key = { forum -> "fav-${forumIdKey(forum.id)}" },
+                            key = { forum -> favoriteGridKey(forum) },
                         ) { forum ->
-                            val index = favoriteForums.indexOf(forum)
-                            val dragging = draggingIndex == index
+                            val key = favoriteGridKey(forum)
                             ForumGridCellWithMenu(
                                 forum = forum,
                                 isFavorite = true,
@@ -400,35 +404,18 @@ fun ForumListScreen(
                                 onToggleFavorite = { toggleFavorite(forum) },
                                 onRemove = { toggleFavorite(forum) },
                                 modifier = Modifier
-                                    // Other cells glide into place while the
-                                    // dragged one snaps under the finger.
-                                    .then(if (dragging) Modifier else Modifier.animateItem())
+                                    // Other cells glide into their new slots
+                                    // while the lifted one tracks the finger.
+                                    .then(
+                                        if (reorder.isActive(key)) {
+                                            Modifier
+                                        } else {
+                                            Modifier.animateItem()
+                                        }
+                                    )
                                     .then(
                                         if (editMode) {
-                                            Modifier
-                                                .zIndex(if (dragging) 1f else 0f)
-                                                .scale(if (dragging) 1.08f else 1f)
-                                                .onSizeChanged {
-                                                    if (dragCellHeightPx <= 0f) {
-                                                        dragCellHeightPx = it.height.toFloat()
-                                                    }
-                                                }
-                                                .pointerInput(forum.id) {
-                                                    dragGridReorder(
-                                                        originIndex = index,
-                                                        itemCount = favoriteForums.size,
-                                                        columns = 3,
-                                                        cellHeight = { dragCellHeightPx },
-                                                        onStart = {
-                                                            draggingIndex = it
-                                                            Haptics.lightImpact(view)
-                                                        },
-                                                        onEnd = { draggingIndex = -1 },
-                                                        onMove = { from, to ->
-                                                            App.favoriteForums.move(from, to)
-                                                        },
-                                                    )
-                                                }
+                                            Modifier.reorderableGridCell(reorder, key)
                                         } else {
                                             Modifier
                                         }
@@ -562,50 +549,6 @@ private fun FavoritesEmptyHint() {
 }
 
 /**
- * Long-press drag reorder for the favorites grid. While dragging, the item
- * jumps row by row (fixed [columns]) towards the finger; the accumulated
- * offset is compensated by the rows the item itself moved, so the crossing
- * thresholds stay relative to the item under the finger.
- */
-@OptIn(ExperimentalFoundationApi::class)
-private suspend fun PointerInputScope.dragGridReorder(
-    originIndex: Int,
-    itemCount: Int,
-    columns: Int,
-    cellHeight: () -> Float,
-    onStart: (index: Int) -> Unit,
-    onEnd: () -> Unit,
-    onMove: (from: Int, to: Int) -> Unit,
-) {
-    var currentIndex = -1
-    var dragOffsetY = 0f
-    detectDragGesturesAfterLongPress(
-        onDragStart = {
-            currentIndex = originIndex
-            dragOffsetY = 0f
-            onStart(originIndex)
-        },
-        onDrag = { change, amount ->
-            change.consume()
-            val height = cellHeight()
-            if (height <= 0f || currentIndex < 0) return@detectDragGesturesAfterLongPress
-            dragOffsetY += amount.y
-            val from = currentIndex
-            val fromRow = from / columns
-            val targetRow = fromRow + (dragOffsetY / height).roundToInt()
-            val target = (targetRow * columns + from % columns).coerceIn(0, itemCount - 1)
-            if (target != from) {
-                onMove(from, target)
-                currentIndex = target
-                dragOffsetY -= (target / columns - from / columns) * height
-            }
-        },
-        onDragEnd = onEnd,
-        onDragCancel = onEnd,
-    )
-}
-
-/**
  * A grid cell (icon + name) with a long-press context menu (favorite toggle,
  * copy link, share) and an edit-mode remove badge.
  */
@@ -679,15 +622,6 @@ private fun ForumGridCell(
             )
         }
         if (editMode) {
-            Icon(
-                Icons.Outlined.DragHandle,
-                contentDescription = null,
-                modifier = Modifier
-                    .align(Alignment.TopStart)
-                    .size(20.dp)
-                    .padding(2.dp),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
             IconButton(
                 onClick = onRemove,
                 modifier = Modifier
