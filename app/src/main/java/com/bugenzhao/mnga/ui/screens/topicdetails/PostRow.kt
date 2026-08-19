@@ -310,10 +310,10 @@ fun PostRow(
             if (showSignature) {
                 val sig = user?.signature
                 if (sig != null && sig.spansList.isNotEmpty()) {
-                    // 签名分隔线：浅金色、更粗，两侧各留 20dp，中间标注"签名"。
+                    // 签名分隔线：浅金色、更粗，与签名内容同宽，中间标注"签名"。
                     val sigColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)
                     Row(
-                        Modifier.fillMaxWidth().padding(horizontal = 20.dp),
+                        Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         HorizontalDivider(
