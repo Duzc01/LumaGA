@@ -206,7 +206,6 @@ fun ForumListScreen(
     // -- Toolbar state.
     val currentUser by App.currentUser.user.collectAsState()
     val unreadCount by App.notis.unreadCountAnimated.collectAsState()
-    val debugBadge by App.prefs.debugAlwaysShowNotificationBadge.flow.collectAsState()
     var editMode by remember { mutableStateOf(false) }
     var moreMenuExpanded by remember { mutableStateOf(false) }
     var filterSubmenuExpanded by remember { mutableStateOf(false) }
@@ -276,7 +275,7 @@ fun ForumListScreen(
                         }
                         return@CenterAlignedTopAppBar
                     }
-                    val showBell = unreadCount > 0 || debugBadge
+                    val showBell = unreadCount > 0
                     if (showBell) {
                         IconButton(onClick = { App.notis.showingSheet.value = true }) {
                             BadgedBox(badge = { Badge { Text(unreadCount.toString()) } }) {

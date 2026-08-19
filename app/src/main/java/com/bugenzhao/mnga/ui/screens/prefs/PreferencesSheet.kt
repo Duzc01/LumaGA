@@ -127,8 +127,6 @@ fun PreferencesSheet(onDismiss: () -> Unit, navigator: Navigator? = null) {
     val showUserRegDate by prefs.postRowShowUserRegDate.flow.collectAsState()
     val dimImages by prefs.postRowDimImagesInDarkMode.flow.collectAsState()
 
-    val debugBadge by prefs.debugAlwaysShowNotificationBadge.flow.collectAsState()
-
     val requestOption by prefs.requestOption.collectAsState()
     val device = requestOption.device
 
@@ -360,18 +358,6 @@ fun PreferencesSheet(onDismiss: () -> Unit, navigator: Navigator? = null) {
                             ) { Text(L.str(context, "Apply")) }
                         }
                     }
-                }
-            }
-            // endregion
-
-            // region Debug
-            item(key = "debug") {
-                Section(header = L.str(context, "Debug")) {
-                    SwitchRow(
-                        title = L.str(context, "Always Show Notification Badge"),
-                        checked = debugBadge,
-                        onChange = { prefs.debugAlwaysShowNotificationBadge.value = it },
-                    )
                 }
             }
             // endregion

@@ -157,7 +157,6 @@ class PreferencesStorage(private val prefs: SharedPreferences) {
     val postRowDimImagesInDarkMode = boolPref("postRowDimImagesInDarkMode", false)
     val autoOpenInBrowserWhenBanned = boolPref("autoOpenInBrowserWhenBannedNew", false)
     val alwaysShareImageAsFile = boolPref("alwaysShareImageAsFile", false)
-    val debugAlwaysShowNotificationBadge = boolPref("debugAlwaysShowNotificationBadge", false)
 
     val defaultTopicListOrderRaw = intPref("defaultTopicListOrder", 0)
     val themeColorRaw = intPref("themeColorNew", 0)
