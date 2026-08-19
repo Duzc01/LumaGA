@@ -319,7 +319,11 @@ fun PostRow(
             if (showSignature) {
                 val sig = user?.signature
                 if (sig != null && sig.spansList.isNotEmpty()) {
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                    // 签名分隔线：与帖子分割线不同色、不满屏。
+                    HorizontalDivider(
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.25f),
+                        modifier = Modifier.width(96.dp),
+                    )
                     PostContent(
                         content = sig,
                         env = ContentEnv(actions = contentActions),

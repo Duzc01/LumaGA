@@ -1,5 +1,7 @@
 package com.bugenzhao.mnga.ui.screens.topicdetails
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -8,6 +10,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -26,6 +29,8 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.SubdirectoryArrowRight
 import androidx.compose.material.icons.filled.SwapVert
+import androidx.compose.material.icons.outlined.ChatBubbleOutline
+import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.CircularProgressIndicator
@@ -46,6 +51,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -53,9 +59,11 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.bugenzhao.mnga.App
 import com.bugenzhao.mnga.logicCall
 import com.bugenzhao.mnga.model.GenericPostModel
@@ -80,6 +88,7 @@ import com.bugenzhao.mnga.protos.service.TopicDetailsRequest
 import com.bugenzhao.mnga.protos.service.TopicDetailsResponse
 import com.bugenzhao.mnga.protos.service.UpdateTopicProgressRequest
 import com.bugenzhao.mnga.storage.TopicResumeFrom
+import com.bugenzhao.mnga.ui.components.DateTimeText
 import com.bugenzhao.mnga.ui.components.imageviewer.ImageViewerDialog
 import com.bugenzhao.mnga.ui.editor.EditorController
 import com.bugenzhao.mnga.ui.editor.PostReplyTask
@@ -255,6 +264,9 @@ fun TopicDetailsScreen(
             if (newTopic.hasParentForum()) setParentForum(newTopic.parentForum)
             setAuthorId(newTopic.authorId)
             setSubject(newTopic.subject)
+            setPostDate(newTopic.postDate)
+            setLastPostDate(newTopic.lastPostDate)
+            setRepliesNum(newTopic.repliesNum)
             if (newTopic.hasRepliesNumLastVisit()) setRepliesNumLastVisit(newTopic.repliesNumLastVisit)
             if (newTopic.hasHighestViewedFloor()) setHighestViewedFloor(newTopic.highestViewedFloor)
             if (newTopic.hasLastViewingFloor()) setLastViewingFloor(newTopic.lastViewingFloor)
@@ -426,6 +438,16 @@ fun TopicDetailsScreen(
         else -> null
     }
 
+    // AppBar 标题随滚动渐显：主题头部（列表 index 0）滚出视口后淡入。
+    val headerScrolledAway by remember {
+        derivedStateOf { listState.firstVisibleItemIndex >= 1 }
+    }
+    val titleAlpha by animateFloatAsState(
+        targetValue = if (headerScrolledAway) 1f else 0f,
+        animationSpec = tween(200),
+        label = "appBarTitleAlpha",
+    )
+
     // Locate a post within this topic (from rows' "Locate This Floor").
     fun locatePostInCurrentTopic(post: Post) {
         scope.launch {
@@ -455,7 +477,7 @@ fun TopicDetailsScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Column {
+                    Column(Modifier.alpha(titleAlpha)) {
                         Text(
                             title,
                             style = MaterialTheme.typography.titleMedium,
@@ -858,9 +880,13 @@ private fun TopicDetailsRow(
 
     when (row) {
         RowSpec.Header -> {
-            Surface(shape = RoundedCornerShape(12.dp), color = MaterialTheme.colorScheme.surface) {
-                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Surface(color = MaterialTheme.colorScheme.surface) {
+                Column {
                     TopicSubjectHeader(topic = topic)
+                    // 屏宽浅色分割线：分隔主题头部与帖子流。
+                    HorizontalDivider(
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                    )
                     val items = dataSource.items
                     val first = remember(items) {
                         items.minByOrNull { it.floor }?.takeIf { it.id.pid == "0" }
@@ -876,6 +902,7 @@ private fun TopicDetailsRow(
                             enableAuthorOnly = enableAuthorOnly,
                             onPostAction = onPostAction,
                             onNavigateAuthorOnly = { navigateAuthorOnly(action, it) },
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                         )
                     }
                 }
@@ -883,7 +910,6 @@ private fun TopicDetailsRow(
         }
 
         is RowSpec.HotReply -> Surface(
-            shape = RoundedCornerShape(12.dp),
             color = MaterialTheme.colorScheme.surface,
         ) {
             Column(Modifier.padding(16.dp)) {
@@ -933,7 +959,7 @@ private fun TopicDetailsRow(
 
         RowSpec.Tail -> {
             val loading = isLoading
-            Surface(shape = RoundedCornerShape(12.dp), color = MaterialTheme.colorScheme.surface) {
+            Surface(color = MaterialTheme.colorScheme.surface) {
                 Row(
                     Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically,
@@ -978,7 +1004,7 @@ private fun ReplyRow(
         onDispose { }
     }
 
-    Surface(shape = RoundedCornerShape(12.dp), color = MaterialTheme.colorScheme.surface) {
+    Surface(color = MaterialTheme.colorScheme.surface) {
         PostRow(
             post = post,
             isAuthor = post.authorId == topic.authorId,
@@ -1000,7 +1026,8 @@ private fun ReplyRow(
 /** Topic subject with optional tag bar. */
 @Composable
 private fun TopicSubjectHeader(topic: Topic) {
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    val context = LocalContext.current
+    Column(Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
         val tags = topic.subject.tagsList
         if (tags.isNotEmpty() || topic.hasParentForum()) {
             Row(
@@ -1029,12 +1056,51 @@ private fun TopicSubjectHeader(topic: Topic) {
                     )
                 }
             }
+            Spacer(Modifier.height(6.dp))
         }
+        // 主题标题：大号加粗，置于头部最上方。
         Text(
-            topic.subject.content.ifEmpty { L.str(LocalContext.current, "Untitled") },
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Medium,
+            topic.subject.content.ifEmpty { L.str(context, "Untitled") },
+            style = MaterialTheme.typography.titleLarge.copy(
+                fontWeight = FontWeight.Bold,
+                lineHeight = 34.sp,
+            ),
         )
+        Spacer(Modifier.height(10.dp))
+        // 元信息行：回复数、浏览人数、发帖时间（各带小图标）。
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                Icon(
+                    Icons.Outlined.ChatBubbleOutline,
+                    contentDescription = null,
+                    modifier = Modifier.size(15.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Text(
+                    topic.repliesNum.toString(),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                Icon(
+                    Icons.Outlined.Schedule,
+                    contentDescription = null,
+                    modifier = Modifier.size(15.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                DateTimeText(timestampSeconds = topic.postDate)
+            }
+        }
     }
 }
 
