@@ -17,10 +17,10 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.automirrored.filled.Reply
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.ThumbUp
 import androidx.compose.material.icons.outlined.AddComment
@@ -34,11 +34,11 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -154,90 +154,90 @@ fun NotificationListSheet(
 
     val unreadCount = state.items.count { isRead(it).not() }
 
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-    ) {
-        Column(Modifier.fillMaxSize()) {
-            Surface(color = MaterialTheme.colorScheme.surface) {
-                Column {
-                    Row(
-                        Modifier.fillMaxWidth().padding(
-                            start = 8.dp, end = 8.dp, top = 6.dp, bottom = 2.dp,
-                        ),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        IconButton(onClick = onDismiss) {
-                            Icon(Icons.Filled.Close, contentDescription = null)
-                        }
-                        Column(Modifier.weight(1f)) {
-                            Text(
-                                L.str(context, "Notifications"),
-                                style = MaterialTheme.typography.titleMedium,
-                            )
-                            Text(
-                                if (unreadCount > 0) L.str(context, "%lld Unread", unreadCount)
-                                else L.str(context, "All Read"),
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                        IconButton(
-                            onClick = {
-                                mark(
-                                    state.items.filter { !isRead(it) }.map { it.id },
-                                    read = true,
-                                ) { Haptics.play(view, Haptics.NotificationType.SUCCESS) }
-                            },
-                            enabled = unreadCount > 0,
-                        ) {
-                            Icon(
-                                Icons.Filled.Check,
-                                contentDescription = L.str(context, "Mark All as Read"),
-                            )
-                        }
+    // 页面形式（与设置页一致的 AppBar），不再是底部弹窗。
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    Column {
+                        Text(
+                            L.str(context, "Notifications"),
+                            style = MaterialTheme.typography.titleMedium,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        Text(
+                            if (unreadCount > 0) L.str(context, "%lld Unread", unreadCount)
+                            else L.str(context, "All Read"),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
                     }
-                }
-            }
-
-            PullToRefreshBox(
-                isRefreshing = state.isRefreshing,
-                onRefresh = { dataSource.refreshAsync(sleepMillis = 500) },
-                modifier = Modifier.fillMaxSize(),
-            ) {
-                when {
-                    dataSource.isInitialLoading || dataSource.notLoaded ->
-                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            CircularProgressIndicator()
-                        }
-                    state.items.isEmpty() ->
-                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Text(
-                                L.str(context, "All Read"),
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                },
+                navigationIcon = {
+                    IconButton(onClick = onDismiss) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = null,
+                        )
+                    }
+                },
+                actions = {
+                    IconButton(
+                        onClick = {
+                            mark(
+                                state.items.filter { !isRead(it) }.map { it.id },
+                                read = true,
+                            ) { Haptics.play(view, Haptics.NotificationType.SUCCESS) }
+                        },
+                        enabled = unreadCount > 0,
+                    ) {
+                        Icon(
+                            Icons.Filled.Check,
+                            contentDescription = L.str(context, "Mark All as Read"),
+                        )
+                    }
+                },
+            )
+        },
+    ) { padding ->
+        PullToRefreshBox(
+            isRefreshing = state.isRefreshing,
+            onRefresh = { dataSource.refreshAsync(sleepMillis = 500) },
+            modifier = Modifier.fillMaxSize().padding(padding),
+        ) {
+            when {
+                dataSource.isInitialLoading || dataSource.notLoaded ->
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator()
+                    }
+                state.items.isEmpty() ->
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text(
+                            L.str(context, "All Read"),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                else -> {
+                    val listState = rememberLazyListState()
+                    LazyColumn(
+                        state = listState,
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        itemsIndexed(state.items, key = { _, n -> n.id }) { _, noti ->
+                            val read = isRead(noti)
+                            NotificationRow(
+                                noti = noti,
+                                read = read,
+                                onClick = {
+                                    mark(listOf(noti.id), read = true)
+                                    navigateForNotification(navigator, noti)
+                                    onDismiss()
+                                },
+                                onToggleRead = { mark(listOf(noti.id), read = !read) },
                             )
-                        }
-                    else -> {
-                        val listState = rememberLazyListState()
-                        LazyColumn(
-                            state = listState,
-                            modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            itemsIndexed(state.items, key = { _, n -> n.id }) { _, noti ->
-                                val read = isRead(noti)
-                                NotificationRow(
-                                    noti = noti,
-                                    read = read,
-                                    onClick = {
-                                        mark(listOf(noti.id), read = true)
-                                        navigateForNotification(navigator, noti)
-                                        onDismiss()
-                                    },
-                                    onToggleRead = { mark(listOf(noti.id), read = !read) },
-                                )
-                            }
                         }
                     }
                 }

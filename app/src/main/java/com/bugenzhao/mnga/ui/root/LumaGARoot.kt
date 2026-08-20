@@ -170,6 +170,7 @@ private fun routeKey(route: Route): String = when (route) {
     Route.BlockWords -> "block-words"
     Route.About -> "about"
     Route.Settings -> "settings"
+    Route.Notifications -> "notifications"
 }
 
 /** Maps a route to its screen. */
@@ -215,6 +216,11 @@ fun RouteDispatcher(
             com.bugenzhao.mnga.ui.screens.prefs.PreferencesSheet(
                 onDismiss = { navigator.pop() },
                 navigator = navigator,
+            )
+        is Route.Notifications ->
+            com.bugenzhao.mnga.ui.screens.notifications.NotificationListSheet(
+                navigator = navigator,
+                onDismiss = { navigator.pop() },
             )
         else -> RoutePlaceholderScreen(navigator, route)
     }
@@ -283,14 +289,6 @@ private fun GlobalSheets(
         com.bugenzhao.mnga.ui.screens.login.LoginSheet(onDismiss = {
             App.authStorage.setIsSigning(false)
         })
-    }
-
-    val showingNotis by App.notis.showingSheet.collectAsState()
-    if (showingNotis) {
-        com.bugenzhao.mnga.ui.screens.notifications.NotificationListSheet(
-            navigator = navigator,
-            onDismiss = { App.notis.showingSheet.value = false },
-        )
     }
 }
 

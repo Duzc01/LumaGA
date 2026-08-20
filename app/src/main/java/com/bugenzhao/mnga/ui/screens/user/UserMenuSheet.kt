@@ -121,7 +121,7 @@ fun UserMenuSheet(
                             },
                         ) {
                             onDismiss()
-                            App.notis.showingSheet.value = true
+                            navigator.push(Route.Notifications)
                         }
                         MenuRow(
                             icon = Icons.AutoMirrored.Filled.Chat,

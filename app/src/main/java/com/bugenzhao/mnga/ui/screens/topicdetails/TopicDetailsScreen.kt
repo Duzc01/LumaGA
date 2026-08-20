@@ -534,7 +534,7 @@ fun TopicDetailsScreen(
                         Spacer(Modifier.size(12.dp))
                     }
                     val unread by App.notis.unreadCountAnimated.collectAsState()
-                    IconButton(onClick = { App.notis.showingSheet.value = true }) {
+                    IconButton(onClick = { navigator.push(Route.Notifications) }) {
                         BadgedBox(badge = {
                             if (unread > 0) Badge { Text(unread.toString()) }
                         }) {

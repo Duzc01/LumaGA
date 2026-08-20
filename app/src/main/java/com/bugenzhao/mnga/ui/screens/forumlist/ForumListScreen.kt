@@ -281,7 +281,7 @@ fun ForumListScreen(
                     }
                     val showBell = unreadCount > 0
                     if (showBell) {
-                        IconButton(onClick = { App.notis.showingSheet.value = true }) {
+                        IconButton(onClick = { navigator.push(Route.Notifications) }) {
                             BadgedBox(badge = { Badge { Text(unreadCount.toString()) } }) {
                                 Icon(
                                     Icons.Outlined.Notifications,
