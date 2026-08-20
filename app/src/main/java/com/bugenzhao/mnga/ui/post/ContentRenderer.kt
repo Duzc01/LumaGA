@@ -765,7 +765,12 @@ internal class ContentCombiner(
             ?: tagged.spansList.firstOrNull()?.takeIf { it.hasPlain() }?.plain?.text
 
         appendOther(ContentNode.View {
-            ContentButton(icon = icon, title = inner?.let { node -> { RenderNode(node) } }, inQuote = inQuote) {
+            // 按钮内的文字禁用自身的点击检测（否则会拦截按钮整体的点击）。
+            ContentButton(
+                icon = icon,
+                title = inner?.let { node -> { RenderNode(node, clicksEnabled = false) } },
+                inQuote = inQuote,
+            ) {
                 if (urlString != null) host.open(urlString)
             }
         })
@@ -1061,7 +1066,10 @@ private fun toSpanStyle(spec: StyleSpec): SpanStyle = SpanStyle(
 
 /** Renders one merged text paragraph with inline stickers/icons and tap zones. */
 @Composable
-internal fun ParagraphText(paragraph: ContentNode.Paragraph) {
+internal fun ParagraphText(
+    paragraph: ContentNode.Paragraph,
+    clicksEnabled: Boolean = true,
+) {
     var layoutResult by remember { mutableStateOf<TextLayoutResult?>(null) }
 
     val annotated = remember(paragraph) {
@@ -1142,28 +1150,32 @@ internal fun ParagraphText(paragraph: ContentNode.Paragraph) {
             onTextLayout = { layoutResult = it },
             maxLines = paragraph.maxLines ?: Int.MAX_VALUE,
             overflow = if (paragraph.maxLines != null) TextOverflow.Ellipsis else TextOverflow.Clip,
-            modifier = Modifier.pointerInput(annotated) {
-                detectTapGestures { position ->
-                    val layout = layoutResult ?: return@detectTapGestures
-                    // 按链接的 bounding box 做矩形命中：getOffsetForPosition 在
-                    // 含 inlineContent（图标/贴图）的段落里字符偏移会偏，导致
-                    // 只有链接最左边能点中。
-                    val ranges = annotated.getStringAnnotations(CLICK_TAG, 0, annotated.length)
-                    for (range in ranges) {
-                        val startBox = layout.getBoundingBox(range.start)
-                        val endBox = layout.getBoundingBox(
-                            (range.end - 1).coerceAtLeast(range.start)
-                        )
-                        if (position.x >= minOf(startBox.left, endBox.left) &&
-                            position.x <= maxOf(startBox.right, endBox.right) &&
-                            position.y >= minOf(startBox.top, endBox.top) &&
-                            position.y <= maxOf(startBox.bottom, endBox.bottom)
-                        ) {
-                            dispatchClick(range.item, actions)
-                            break
+            modifier = if (clicksEnabled) {
+                Modifier.pointerInput(annotated) {
+                    detectTapGestures { position ->
+                        val layout = layoutResult ?: return@detectTapGestures
+                        // 按链接的 bounding box 做矩形命中：getOffsetForPosition 在
+                        // 含 inlineContent（图标/贴图）的段落里字符偏移会偏，导致
+                        // 只有链接最左边能点中。
+                        val ranges = annotated.getStringAnnotations(CLICK_TAG, 0, annotated.length)
+                        for (range in ranges) {
+                            val startBox = layout.getBoundingBox(range.start)
+                            val endBox = layout.getBoundingBox(
+                                (range.end - 1).coerceAtLeast(range.start)
+                            )
+                            if (position.x >= minOf(startBox.left, endBox.left) &&
+                                position.x <= maxOf(startBox.right, endBox.right) &&
+                                position.y >= minOf(startBox.top, endBox.top) &&
+                                position.y <= maxOf(startBox.bottom, endBox.bottom)
+                            ) {
+                                dispatchClick(range.item, actions)
+                                break
+                            }
                         }
                     }
                 }
+            } else {
+                Modifier
             },
         )
     }
@@ -1171,10 +1183,10 @@ internal fun ParagraphText(paragraph: ContentNode.Paragraph) {
 
 /** Renders the combiner output tree. */
 @Composable
-internal fun RenderNode(node: ContentNode?) {
+internal fun RenderNode(node: ContentNode?, clicksEnabled: Boolean = true) {
     when (node) {
         null -> {}
-        is ContentNode.Paragraph -> ParagraphText(node)
+        is ContentNode.Paragraph -> ParagraphText(node, clicksEnabled)
         is ContentNode.View -> node.content()
         is ContentNode.Container -> {
             when (node.tableContext) {
@@ -1187,7 +1199,7 @@ internal fun RenderNode(node: ContentNode?) {
                             HAlign.END -> Alignment.End
                         },
                     ) {
-                        node.items.forEach { RenderNode(it) }
+                        node.items.forEach { RenderNode(it, clicksEnabled) }
                     }
                 TableContext.TABLE ->
                     // 表格：竖排行，行间加浅色分割线（无圆角、线撑满边框内）；
@@ -1203,7 +1215,7 @@ internal fun RenderNode(node: ContentNode?) {
                                     color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f),
                                 )
                             }
-                            RenderNode(row)
+                            RenderNode(row, clicksEnabled)
                         }
                     }
                 TableContext.ROW ->
@@ -1222,7 +1234,7 @@ internal fun RenderNode(node: ContentNode?) {
                             if (item is ContentNode.View && item.weight != null) {
                                 Box(Modifier.weight(item.weight!!)) { item.content() }
                             } else {
-                                RenderNode(item)
+                                RenderNode(item, clicksEnabled)
                             }
                         }
                     }
