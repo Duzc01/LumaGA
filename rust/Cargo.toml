@@ -14,9 +14,13 @@ members = [
 serde = { version = "1", features = ["derive"] }
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "time"] }
 
-# Local vendored sled (upstream rev 95a883f) with a fix for the IVec alignment
-# assert reading the wrong byte, which panics on Android's top-byte-tagged
-# heap pointers and poisons the CACHE lazy_static for the whole session.
+# Local vendored sled (upstream rev 95a883f) with two Android fixes:
+#  - the IVec alignment assert read the wrong byte, which panics on Android's
+#    top-byte-tagged heap pointers and poisons the CACHE lazy_static for the
+#    whole session;
+#  - `android` was missing from the cfg allowlist that starts the periodic log
+#    flusher, so `flush_every_ms` never flushed and writes were lost whenever
+#    the app process was killed. See the comment above `mod flusher` in lib.rs.
 [patch."https://github.com/spacejam/sled"]
 sled = { path = "logic/sled" }
 

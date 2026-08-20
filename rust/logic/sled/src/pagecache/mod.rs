@@ -1104,6 +1104,7 @@ impl PageCacheInner {
         not(miri),
         any(
             windows,
+            target_os = "android",
             target_os = "linux",
             target_os = "macos",
             target_os = "dragonfly",

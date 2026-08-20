@@ -224,10 +224,18 @@ pub mod fail;
 #[cfg(feature = "docs")]
 pub mod doc;
 
+// `android` is absent from this allowlist upstream, so the periodic log
+// flusher (and with it segment GC) never starts there: `flush_every_ms` is
+// silently a no-op and writes live in the in-memory iobuf until something
+// calls `flush()` explicitly or a 512 KiB segment happens to roll. Android
+// kills app processes without warning, so that lost every small write --
+// reading history included. The same gate is repeated in `db.rs`,
+// `context.rs`, and `pagecache/mod.rs`; all five carry `android` now.
 #[cfg(all(
     not(miri),
     any(
         windows,
+        target_os = "android",
         target_os = "linux",
         target_os = "macos",
         target_os = "dragonfly",
