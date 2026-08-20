@@ -15,6 +15,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.Create
@@ -55,6 +56,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.bugenzhao.mnga.logicCallAsync
 import com.bugenzhao.mnga.model.PagingDataSource
@@ -193,14 +195,23 @@ fun FavoritesScreen(navigator: Navigator, initialFolderId: String? = null) {
                     Column {
                         Text(
                             L.str(context, "Favorite Topics"),
-                            fontWeight = FontWeight.SemiBold,
+                            style = MaterialTheme.typography.titleMedium,
                             maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
                         )
                         Text(
                             currentFolder?.name ?: L.str(context, "Default Folder"),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 1,
+                        )
+                    }
+                },
+                navigationIcon = {
+                    IconButton(onClick = { navigator.pop() }) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = null,
                         )
                     }
                 },
