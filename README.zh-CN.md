@@ -19,9 +19,9 @@ NGA（bbs.nga.cn）论坛的 Android 第三方客户端，[MNGA](https://github.
 
 ## 示例
 
-主页 | 列表页 | 帖子页
---- | --- | ---
-![主页](docs/screenshots/mnga_home.jpg) | ![列表页](docs/screenshots/mnga_list.jpg) | ![帖子页](docs/screenshots/mnga_post.jpg)
+主页 | 列表页 | 帖子页 | 帖子页
+--- | --- | --- | ---
+![主页](docs/screenshots/mnga_home.jpg) | ![列表页](docs/screenshots/lumaga_list.jpg) | ![帖子页](docs/screenshots/lumaga_post.jpg) | ![帖子页](docs/screenshots/lumaga_post_2.jpg)
 
 ## 使用说明
 

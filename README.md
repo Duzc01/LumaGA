@@ -8,9 +8,9 @@ MNGA uses, linked in as `liblogic.so` over JNI.
 
 ## Screenshots
 
-Home | Topic list | Topic detail
---- | --- | ---
-![Home](docs/screenshots/mnga_home.jpg) | ![Topic list](docs/screenshots/mnga_list.jpg) | ![Topic detail](docs/screenshots/mnga_post.jpg)
+Home | Topic list | Topic detail | Topic detail
+--- | --- | --- | ---
+![Home](docs/screenshots/mnga_home.jpg) | ![Topic list](docs/screenshots/lumaga_list.jpg) | ![Topic detail](docs/screenshots/lumaga_post.jpg) | ![Topic detail](docs/screenshots/lumaga_post_2.jpg)
 
 ## Usage
 
