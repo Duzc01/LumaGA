@@ -4,11 +4,14 @@ import android.content.Context
 import android.net.Uri
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -25,6 +28,7 @@ import androidx.compose.material.icons.outlined.Link
 import androidx.compose.material.icons.outlined.Movie
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.VerticalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -952,7 +956,7 @@ internal class ContentCombiner(
         val cell = combiner.build()
         appendOther(
             ContentNode.View(weight = (colSpan ?: 1).toFloat()) {
-                Box(Modifier.padding(end = 8.dp)) { RenderNode(cell) }
+                Box(Modifier.padding(horizontal = 8.dp)) { RenderNode(cell) }
             }
         )
     }
@@ -1170,14 +1174,35 @@ internal fun RenderNode(node: ContentNode?) {
                         node.items.forEach { RenderNode(it) }
                     }
                 TableContext.TABLE ->
-                    Row(Modifier.horizontalScroll(rememberScrollState())) {
-                        Column(verticalArrangement = Arrangement.spacedBy(node.spacing)) {
-                            node.items.forEach { RenderNode(it) }
+                    // 表格：竖排行，行间加浅色分割线（无圆角、线撑满边框内）；
+                    // 不放在横向滚动容器里——无界宽度会让行内 weight 单元格塌缩。
+                    Column(
+                        Modifier
+                            .fillMaxWidth()
+                            .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f)),
+                    ) {
+                        node.items.forEachIndexed { index, row ->
+                            if (index > 0) {
+                                HorizontalDivider(
+                                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f),
+                                )
+                            }
+                            RenderNode(row)
                         }
                     }
                 TableContext.ROW ->
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        node.items.forEach { item ->
+                    Row(
+                        Modifier
+                            .fillMaxWidth()
+                            .height(IntrinsicSize.Max),
+                    ) {
+                        node.items.forEachIndexed { index, item ->
+                            if (index > 0) {
+                                VerticalDivider(
+                                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f),
+                                    modifier = Modifier.fillMaxHeight(),
+                                )
+                            }
                             if (item is ContentNode.View && item.weight != null) {
                                 Box(Modifier.weight(item.weight!!)) { item.content() }
                             } else {
