@@ -42,7 +42,7 @@
     <string name="select_a_topic">选择一个话题</string>
     <string name="post_by">发表自</string>
     <string name="filters">过滤</string>
-    <string name="hot_replies">热门回复</string>
+    <string name="hot_replies">热点回复</string>
     <string name="load_new_replies">加载新回复</string>
     <string name="collapsed_content">折叠的内容</string>
     <string name="favorite_topics">收藏话题</string>

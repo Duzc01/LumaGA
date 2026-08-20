@@ -3,6 +3,7 @@ package com.bugenzhao.mnga.ui.screens.topicdetails
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -23,6 +25,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Reply
 import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.OpenInBrowser
@@ -62,7 +65,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -92,6 +100,7 @@ import com.bugenzhao.mnga.protos.service.TopicDetailsResponse
 import com.bugenzhao.mnga.protos.service.UpdateTopicProgressRequest
 import com.bugenzhao.mnga.storage.TopicResumeFrom
 import com.bugenzhao.mnga.ui.components.DateTimeText
+import com.bugenzhao.mnga.ui.components.hotAccentColor
 import com.bugenzhao.mnga.ui.components.imageviewer.ImageViewerDialog
 import com.bugenzhao.mnga.ui.editor.EditorController
 import com.bugenzhao.mnga.ui.editor.PostReplyTask
@@ -640,7 +649,10 @@ fun TopicDetailsScreen(
                                 },
                             )
                             // 楼层之间用撑满全屏的浅色分割线分隔（无卡片背景）。
-                            if (index < rows.lastIndex) {
+                            // 热点回复区自带热色底纹作为边界，共用分割线不再切进去。
+                            val bordersHotBand = row.paintsOwnEdges ||
+                                rows.getOrNull(index + 1)?.paintsOwnEdges == true
+                            if (index < rows.lastIndex && !bordersHotBand) {
                                 Spacer(Modifier.height(8.dp))
                                 HorizontalDivider(
                                     color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
@@ -732,13 +744,36 @@ sealed interface RowSpec {
     val floor: Int? get() = null
     val pid: String? get() = null
 
+    /**
+     * True for the rows of the hot-reply band, which paint their own edges —
+     * the stream's shared rule must not cut into the block, from either side.
+     */
+    val paintsOwnEdges: Boolean get() = false
+
     data object Header : RowSpec {
         override val key: String = "header"
     }
 
-    data class HotReply(val post: Post) : RowSpec {
+    /** Opens the hot-reply band: the flame marker over [count] replies. */
+    data class HotHeader(val count: Int) : RowSpec {
+        override val key: String = "hot_header"
+        override val paintsOwnEdges: Boolean = true
+    }
+
+    /**
+     * A hot reply, [index] of [count] — its place in the band, so the row can
+     * paint its slice of the one rail that fades down the whole block.
+     */
+    data class HotReply(val post: Post, val index: Int, val count: Int) : RowSpec {
         override val key: String = "hot_${post.id.pid}"
         override val pid: String get() = post.id.pid
+        override val paintsOwnEdges: Boolean = true
+
+        val isLast: Boolean get() = index == count - 1
+
+        /** The rail's opacity where this row starts, then where it ends. */
+        val railFrom: Float get() = 1f - index.toFloat() / count
+        val railTo: Float get() = 1f - (index + 1).toFloat() / count
     }
 
     data class LoadBack(val page: Int) : RowSpec {
@@ -768,7 +803,12 @@ private fun buildRows(
     showTail: Boolean,
 ): List<RowSpec> {
     val rows = mutableListOf<RowSpec>(RowSpec.Header)
-    first?.hotRepliesList?.takeIf { it.isNotEmpty() }?.forEach { rows += RowSpec.HotReply(it) }
+    first?.hotRepliesList?.takeIf { it.isNotEmpty() }?.let { hot ->
+        rows += RowSpec.HotHeader(hot.size)
+        hot.forEachIndexed { index, post ->
+            rows += RowSpec.HotReply(post, index = index, count = hot.size)
+        }
+    }
 
     val paged = run {
         val byPage = items.groupBy { it.atPage }
@@ -934,18 +974,32 @@ private fun TopicDetailsRow(
             }
         }
 
-        is RowSpec.HotReply -> Column(Modifier.padding(16.dp)) {
-                PostRow(
-                    post = row.post,
-                    isAuthor = row.post.authorId == topic.authorId,
-                    action = action,
-                    votes = votes,
-                    quotedResolver = quotedPosts,
-                    viewingImage = viewingImage,
-                    enableAuthorOnly = enableAuthorOnly,
-                    onPostAction = onPostAction,
-                    onNavigateAuthorOnly = { navigateAuthorOnly(action, it) },
-                )
+        is RowSpec.HotHeader -> HotBandHeader(count = row.count)
+
+        is RowSpec.HotReply -> Box(
+            Modifier.hotBand(
+                railFrom = row.railFrom,
+                railTo = row.railTo,
+                separated = !row.isLast,
+            ),
+        ) {
+            PostRow(
+                post = row.post,
+                isAuthor = row.post.authorId == topic.authorId,
+                action = action,
+                votes = votes,
+                quotedResolver = quotedPosts,
+                viewingImage = viewingImage,
+                enableAuthorOnly = enableAuthorOnly,
+                onPostAction = onPostAction,
+                onNavigateAuthorOnly = { navigateAuthorOnly(action, it) },
+                modifier = Modifier.padding(
+                    start = 16.dp,
+                    end = 16.dp,
+                    top = 10.dp,
+                    bottom = if (row.isLast) 14.dp else 12.dp,
+                ),
+            )
         }
 
         is RowSpec.LoadBack -> {
@@ -995,6 +1049,111 @@ private fun TopicDetailsRow(
         }
     }
 }
+
+// region Hot-reply band
+
+/** Width of the ember rail down the hot band's left edge. */
+private val HotRailWidth = 3.dp
+
+/**
+ * The warm band a hot-reply row sits on: a soft heat wash over the otherwise
+ * white stream, an inset hairline between rows, and — down the left edge — this
+ * row's slice of a single rail that burns opaque at the top of the block and
+ * fades to nothing by its end, the way the replies themselves cool off as they
+ * go. [railFrom] and [railTo] are that rail's opacity where the row starts and
+ * where it ends; row *n*'s [railTo] is row *n+1*'s [railFrom], so the segments
+ * join without a seam. The wash lifting is the block's only closing edge —
+ * nothing is ruled off against the numbered floors that follow.
+ */
+@Composable
+private fun Modifier.hotBand(
+    railFrom: Float = 1f,
+    railTo: Float = 1f,
+    separated: Boolean = false,
+): Modifier {
+    val heat = hotAccentColor()
+    val dark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+    // Dark surfaces swallow a tint, so the wash there is twice as strong.
+    val wash = heat.copy(alpha = if (dark) 0.10f else 0.05f)
+    return this
+        .fillMaxWidth()
+        .drawBehind {
+            drawRect(wash)
+
+            // Both stops are a *heat* — the tail is transparent orange, never
+            // transparent black, which the unpremultiplied blend would gray.
+            val rail = HotRailWidth.toPx()
+            drawRect(
+                brush = Brush.verticalGradient(
+                    listOf(heat.copy(alpha = railFrom), heat.copy(alpha = railTo)),
+                    startY = 0f,
+                    endY = size.height,
+                ),
+                size = Size(rail, size.height),
+            )
+
+            if (separated) {
+                val inset = 16.dp.toPx()
+                drawLine(
+                    color = heat.copy(alpha = 0.2f),
+                    start = Offset(inset, size.height),
+                    end = Offset(size.width - inset, size.height),
+                    strokeWidth = 1f,
+                )
+            }
+        }
+}
+
+/**
+ * Opens the hot-reply band: a flame, the label, how many replies made the cut,
+ * and a hairline that fades out to the right the way an editorial rule does.
+ */
+@Composable
+private fun HotBandHeader(count: Int) {
+    val context = LocalContext.current
+    val heat = hotAccentColor()
+    Row(
+        Modifier
+            .hotBand()
+            .padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            Icons.Filled.LocalFireDepartment,
+            contentDescription = null,
+            modifier = Modifier.size(15.dp),
+            tint = heat,
+        )
+        Spacer(Modifier.width(5.dp))
+        Text(
+            L.str(context, "Hot Replies"),
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.Bold,
+            color = heat,
+        )
+        if (count > 1) {
+            Spacer(Modifier.width(6.dp))
+            Text(
+                count.toString(),
+                style = MaterialTheme.typography.labelSmall,
+                color = heat.copy(alpha = 0.6f),
+            )
+        }
+        Spacer(Modifier.width(10.dp))
+        Box(
+            Modifier
+                .weight(1f)
+                .height(1.dp)
+                .background(
+                    Brush.horizontalGradient(
+                        listOf(heat.copy(alpha = 0.3f), heat.copy(alpha = 0f)),
+                    )
+                ),
+        )
+    }
+}
+
+// endregion
 
 @Composable
 private fun ReplyRow(

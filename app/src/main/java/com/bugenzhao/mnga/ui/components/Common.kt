@@ -208,6 +208,15 @@ private const val HotHottestRepliesThreshold = 1000
 fun topicMetaColor(): Color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.72f)
 
 /**
+ * The app's "heat" accent — the same warm orange a hot [RepliesBadge] uses,
+ * fixed rather than themed so heat reads as heat beside any user tint. Shared
+ * so every hot marker in the app burns the same color.
+ */
+@Composable
+fun hotAccentColor(): Color =
+    if (MaterialTheme.colorScheme.surface.luminance() < 0.5f) HotRepliesDark else HotRepliesLight
+
+/**
  * Replies count with a leading bubble icon, highlighted once the topic gets
  * hot and deepening through orange to dark red as the count climbs. [delta]
  * is the number of replies added since the last visit, appended in the accent
@@ -220,7 +229,7 @@ fun RepliesBadge(replies: Int, delta: Int? = null) {
     val color = when {
         replies >= HotHottestRepliesThreshold -> if (dark) HotHottestDark else HotHottestLight
         replies >= HotDeepRepliesThreshold -> if (dark) HotDeepDark else HotDeepLight
-        hot -> if (dark) HotRepliesDark else HotRepliesLight
+        hot -> hotAccentColor()
         else -> topicMetaColor()
     }
     Row(
