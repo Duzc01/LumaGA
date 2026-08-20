@@ -89,8 +89,11 @@ class PagingDataSource<Res : Message, Item : Any>(
         lastRefreshTime: Date?,
         latestResponse: Any? = null,
     ) {
+        // 快照可能携带重复 id（保存前一刻的异常数据），去重避免 LazyColumn
+        // "Key was already used" 崩溃。
+        val deduped = dedupe(items)
         itemToIndexAndPage.clear()
-        items.forEachIndexed { index, item ->
+        deduped.forEachIndexed { index, item ->
             itemToIndexAndPage[id(item)] = Pair(index, loadedPage)
         }
         loadedPageInternal = loadedPage
@@ -98,7 +101,7 @@ class PagingDataSource<Res : Message, Item : Any>(
         dataFlowId = UUID.randomUUID()
         _state.value =
             _state.value.copy(
-                items = items,
+                items = deduped,
                 isLoading = false,
                 isRefreshing = false,
                 latestResponse = latestResponse,
@@ -132,12 +135,14 @@ class PagingDataSource<Res : Message, Item : Any>(
 
     private fun upsertItems(new: List<Item>, page: Int) {
         val list = _state.value.items.toMutableList()
+        // 防御：map 与列表异常不同步时，按列表现存 id 兜底查重。
+        val existingIds = list.mapTo(HashSet(list.size)) { id(it) }
         for (item in new) {
             val key = id(item)
             val existing = itemToIndexAndPage[key]
             if (existing != null) {
                 list[existing.first] = item
-            } else {
+            } else if (existingIds.add(key)) {
                 list.add(item)
                 itemToIndexAndPage[key] = Pair(list.size - 1, page)
             }
@@ -148,14 +153,24 @@ class PagingDataSource<Res : Message, Item : Any>(
 
     private fun replaceItems(new: List<Item>, page: Int) {
         if (!neverRemove) {
+            // 服务端一页内可能出现重复（如置顶帖），去重避免 LazyColumn
+            // "Key was already used" 崩溃。
+            val deduped = dedupe(new)
             itemToIndexAndPage.clear()
-            _state.value = _state.value.copy(items = new)
-            new.forEachIndexed { index, item ->
+            _state.value = _state.value.copy(items = deduped)
+            deduped.forEachIndexed { index, item ->
                 itemToIndexAndPage[id(item)] = Pair(index, page)
             }
         } else {
             upsertItems(new, page)
         }
+    }
+
+    /** 去掉列表中重复的 id，保留首次出现。 */
+    private fun dedupe(items: List<Item>): List<Item> {
+        if (items.size <= 1) return items
+        val seen = HashSet<String>(items.size)
+        return items.filter { seen.add(id(it)) }
     }
 
     private fun reindex() {
