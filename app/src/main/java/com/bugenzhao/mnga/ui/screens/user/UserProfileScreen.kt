@@ -302,8 +302,8 @@ fun UserProfileScreen(
             ) {
                 item(key = "header") {
                     Column {
-                        // 原「用户档案」标题位：文字已移除，空间保留，卡片位置不变。
-                        Spacer(Modifier.height(20.dp))
+                        // 原「用户档案」标题位：文字已移除，空间保留。
+                        Spacer(Modifier.height(14.dp))
                         UserProfileHeader(
                             user = resolvedUser,
                             blocked = blocked,
