@@ -19,6 +19,7 @@ import com.bugenzhao.mnga.storage.AuthStorage
 import com.bugenzhao.mnga.storage.BlockWordsStorage
 import com.bugenzhao.mnga.storage.FavoriteForumsStorage
 import com.bugenzhao.mnga.storage.PreferencesStorage
+import com.bugenzhao.mnga.storage.SearchHistoryStorage
 import com.bugenzhao.mnga.logicInitialConfigure
 import com.bugenzhao.mnga.model.appScope
 import kotlinx.coroutines.launch
@@ -29,6 +30,7 @@ object App {
     lateinit var authStorage: AuthStorage
     lateinit var blockWords: BlockWordsStorage
     lateinit var favoriteForums: FavoriteForumsStorage
+    lateinit var searchHistory: SearchHistoryStorage
     lateinit var users: UsersModel
     lateinit var currentUser: CurrentUserModel
     lateinit var notis: NotificationModel
@@ -69,6 +71,8 @@ class LumaGAApplication : Application() {
         App.blockWords = BlockWordsStorage(prefs).also { BlockWordsStorage.shared = it }
         App.favoriteForums =
             FavoriteForumsStorage(this, prefs).also { FavoriteForumsStorage.shared = it }
+        App.searchHistory =
+            SearchHistoryStorage(prefs).also { SearchHistoryStorage.shared = it }
         App.users = UsersModel().also { UsersModel.shared = it }
         App.currentUser = CurrentUserModel(appScope, App.authStorage)
         App.notis = NotificationModel(appScope).also { NotificationModel.shared = it }

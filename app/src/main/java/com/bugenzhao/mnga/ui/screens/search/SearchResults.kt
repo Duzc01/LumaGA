@@ -1,6 +1,6 @@
 package com.bugenzhao.mnga.ui.screens.search
 
-import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,45 +15,26 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.outlined.Article
-import androidx.compose.material.icons.outlined.Close
-import androidx.compose.material.icons.outlined.Dashboard
 import androidx.compose.material.icons.outlined.Layers
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.bugenzhao.mnga.App
@@ -75,140 +56,11 @@ import com.bugenzhao.mnga.util.errorLocalized
 import kotlinx.coroutines.CoroutineScope
 
 /**
- * Global search, a consolidation of `GlobalSearchView.swift` + `ForumSearchView`
- * into a single screen with two modes: forum search (`forumSearch` request,
- * rows push `TopicList`) and topic search across all forums (`topicSearch`).
- * The query commits on the search IME action, mirroring `SearchModel.commit()`.
+ * Shared search plumbing: the two `AsyncRequest` data sources (`forumSearch`,
+ * `topicSearch`) and the result lists they feed, used by both tabs of
+ * [SearchScreen]. Ported from `GlobalSearchView.swift` + `ForumSearchView` +
+ * `TopicSearchView`.
  */
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun GlobalSearchScreen(navigator: Navigator) {
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    val keyboard = LocalSoftwareKeyboardController.current
-
-    var text by remember { mutableStateOf("") }
-    var commitedText by remember { mutableStateOf<String?>(null) }
-    var mode by remember { mutableStateOf(GlobalSearchMode.FORUMS) }
-
-    BackHandler(enabled = navigator.size > 1) { navigator.pop() }
-
-    // Data sources are rebuilt whenever the committed text changes, exactly
-    // like `SearchModel`'s `commitedText -> dataSource` mapping.
-    val forumDataSource = remember(commitedText) {
-        commitedText?.let { buildForumSearchDataSource(scope, it) }
-    }
-    val topicDataSource = remember(commitedText) {
-        commitedText?.let { buildTopicSearchDataSource(scope, it, forumId = null) }
-    }
-
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(L.str(context, "Search")) },
-                navigationIcon = {
-                    IconButton(onClick = { navigator.pop() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
-                    }
-                },
-            )
-        },
-    ) { padding ->
-        Column(
-            Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(horizontal = 16.dp),
-        ) {
-            SearchField(
-                text = text,
-                prompt = L.str(context, "Search"),
-                onTextChange = { value ->
-                    text = value
-                    // Clearing the field clears the committed query.
-                    if (value.isEmpty()) commitedText = null
-                },
-                onCommit = {
-                    // Hide the keyboard: while it is open the window is
-                    // resized, and a results list swapped in at that moment
-                    // can measure with a zero-size viewport.
-                    keyboard?.hide()
-                    commitedText = text.ifEmpty { null }
-                },
-            )
-
-            if (commitedText != null) {
-                Text(
-                    L.str(context, "Search \"%@\" in...", commitedText ?: ""),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 10.dp),
-                )
-
-                SingleChoiceSegmentedButtonRow(
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp),
-                ) {
-                    SegmentedButton(
-                        selected = mode == GlobalSearchMode.FORUMS,
-                        onClick = { mode = GlobalSearchMode.FORUMS },
-                        shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
-                        icon = { Icon(Icons.Outlined.Dashboard, contentDescription = null, Modifier.size(18.dp)) },
-                        label = { Text(L.str(context, "All Forums")) },
-                    )
-                    SegmentedButton(
-                        selected = mode == GlobalSearchMode.TOPICS,
-                        onClick = { mode = GlobalSearchMode.TOPICS },
-                        shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
-                        icon = { Icon(Icons.Outlined.Article, contentDescription = null, Modifier.size(18.dp)) },
-                        label = { Text(L.str(context, "All Topics")) },
-                    )
-                }
-            }
-
-            val activeForumDS = forumDataSource
-            val activeTopicDS = topicDataSource
-            when {
-                commitedText == null -> SearchIdleHint()
-                mode == GlobalSearchMode.FORUMS && activeForumDS != null ->
-                    ForumResultsList(activeForumDS, navigator)
-                mode == GlobalSearchMode.TOPICS && activeTopicDS != null ->
-                    TopicResultsList(activeTopicDS, navigator)
-            }
-        }
-    }
-}
-
-/** The two global search scopes, mirroring the "All Forums"/"All Topics" rows. */
-private enum class GlobalSearchMode { FORUMS, TOPICS }
-
-/** Search field with commit-on-search-IME semantics, shared by both screens. */
-@Composable
-internal fun SearchField(
-    text: String,
-    prompt: String,
-    onTextChange: (String) -> Unit,
-    onCommit: () -> Unit,
-) {
-    OutlinedTextField(
-        value = text,
-        onValueChange = onTextChange,
-        modifier = Modifier.fillMaxWidth(),
-        placeholder = { Text(prompt) },
-        leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null) },
-        trailingIcon = {
-            if (text.isNotEmpty()) {
-                IconButton(onClick = { onTextChange("") }) {
-                    Icon(Icons.Outlined.Close, contentDescription = null)
-                }
-            }
-        },
-        singleLine = true,
-        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-        keyboardActions = KeyboardActions(onSearch = { onCommit() }),
-    )
-}
 
 // region Data source builders
 
@@ -238,7 +90,6 @@ internal fun buildTopicSearchDataSource(
     text: String,
     forumId: ForumId?,
     searchContent: Boolean = true,
-    recommendedOnly: Boolean = false,
 ): PagingDataSource<TopicSearchResponse, Topic> =
     PagingDataSource(
         scope = scope,
@@ -248,7 +99,6 @@ internal fun buildTopicSearchDataSource(
                 .setKey(text)
                 .setPage(page)
                 .setSearchContent(searchContent)
-                .setRecommendedOnly(recommendedOnly)
             forumId?.let { request.setId(it) }
             AsyncRequest.newBuilder().setTopicSearch(request.build()).build()
         },
@@ -473,48 +323,47 @@ internal fun CenteredSpinner() {
 @Composable
 internal fun EmptyResultsState() {
     val context = LocalContext.current
-    Column(
-        Modifier
-            .fillMaxWidth()
-            .padding(vertical = 48.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(10.dp),
-    ) {
-        Icon(
-            Icons.Outlined.Search,
-            contentDescription = null,
-            modifier = Modifier.size(40.dp),
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Text(
-            L.str(context, "No Results"),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-    }
+    PlaceholderState(L.str(context, "No Results"))
 }
 
 /** Idle hint shown before any query is committed. */
 @Composable
 internal fun SearchIdleHint() {
     val context = LocalContext.current
+    PlaceholderState(L.str(context, "Search"))
+}
+
+/**
+ * The shared empty state: the magnifier set in a soft disc so the placeholder
+ * reads as a deliberate mark rather than as a stray glyph on the page.
+ */
+@Composable
+private fun PlaceholderState(message: String) {
     Column(
         Modifier
             .fillMaxWidth()
-            .padding(vertical = 48.dp),
+            .padding(top = 64.dp, bottom = 48.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(10.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-        Icon(
-            Icons.Outlined.Search,
-            contentDescription = null,
-            modifier = Modifier.size(40.dp),
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        Box(
+            Modifier
+                .size(56.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.surfaceContainerHigh),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                Icons.Outlined.Search,
+                contentDescription = null,
+                modifier = Modifier.size(26.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+            )
+        }
         Text(
-            L.str(context, "Search"),
+            message,
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.85f),
         )
     }
 }

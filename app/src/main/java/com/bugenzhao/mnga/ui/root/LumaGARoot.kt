@@ -39,8 +39,7 @@ import com.bugenzhao.mnga.ui.screens.messages.ShortMessageListScreen
 import com.bugenzhao.mnga.ui.screens.misc.AboutScreen
 import com.bugenzhao.mnga.ui.screens.misc.BlockWordsScreen
 import com.bugenzhao.mnga.ui.screens.misc.CacheScreen
-import com.bugenzhao.mnga.ui.screens.search.GlobalSearchScreen
-import com.bugenzhao.mnga.ui.screens.search.TopicSearchScreen
+import com.bugenzhao.mnga.ui.screens.search.SearchScreen
 import com.bugenzhao.mnga.ui.screens.subforums.SubforumListScreen
 import com.bugenzhao.mnga.ui.screens.topicdetails.TopicDetailsScreen
 import com.bugenzhao.mnga.ui.screens.topiclist.TopicListScreen
@@ -202,8 +201,8 @@ fun RouteDispatcher(
                 userName = route.userName,
                 user = route.user,
             )
-        is Route.GlobalSearch -> GlobalSearchScreen(navigator)
-        is Route.TopicSearch -> TopicSearchScreen(navigator, route.forumId)
+        is Route.GlobalSearch -> SearchScreen(navigator)
+        is Route.TopicSearch -> SearchScreen(navigator, route.forumId)
         is Route.Favorites -> FavoritesScreen(navigator)
         is Route.History -> HistoryScreen(navigator)
         is Route.ShortMessages -> ShortMessageListScreen(navigator)

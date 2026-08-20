@@ -192,6 +192,8 @@
     <string name="user">User</string>
     <string name="forum_search">Forum Search</string>
     <string name="topic_search">Topic Search</string>
+    <string name="current_forum">Current Forum</string>
+    <string name="search_content">Search Content</string>
     <string name="user_search">User Search</string>
     <string name="anonymous">Anonymous</string>
     <string name="anonymous_user">Anonymous User</string>

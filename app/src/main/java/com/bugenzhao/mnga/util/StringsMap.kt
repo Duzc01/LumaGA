@@ -195,6 +195,8 @@ object StringsMap {
         "User" to "user",
         "Forum Search" to "forum_search",
         "Topic Search" to "topic_search",
+        "Current Forum" to "current_forum",
+        "Search Content" to "search_content",
         "User Search" to "user_search",
         "Anonymous" to "anonymous",
         "Anonymous User" to "anonymous_user",
