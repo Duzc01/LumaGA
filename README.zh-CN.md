@@ -1,5 +1,9 @@
 # LumaGA
 
+<p align="center">
+  <img src="docs/logo.png" width="128" alt="LumaGA logo">
+</p>
+
 [English](README.md) | **简体中文**
 
 NGA（bbs.nga.cn）论坛的 Android 第三方客户端，[MNGA](https://github.com/BugenZhao/MNGA) 的 Android 移植版。UI 使用 **Jetpack Compose** 构建，核心业务逻辑复用 MNGA 的 **Rust** 后端，通过 JNI 以 `liblogic.so` 方式接入。

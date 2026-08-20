@@ -1,5 +1,9 @@
 # LumaGA
 
+<p align="center">
+  <img src="docs/logo.png" width="128" alt="LumaGA logo">
+</p>
+
 **English** | [简体中文](README.zh-CN.md)
 
 Android port of [MNGA](https://github.com/BugenZhao/MNGA), an NGA (bbs.nga.cn)
