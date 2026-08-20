@@ -1144,9 +1144,25 @@ internal fun ParagraphText(paragraph: ContentNode.Paragraph) {
             overflow = if (paragraph.maxLines != null) TextOverflow.Ellipsis else TextOverflow.Clip,
             modifier = Modifier.pointerInput(annotated) {
                 detectTapGestures { position ->
-                    val offset = layoutResult?.getOffsetForPosition(position) ?: return@detectTapGestures
-                    annotated.getStringAnnotations(CLICK_TAG, offset, offset)
-                        .firstOrNull()?.let { dispatchClick(it.item, actions) }
+                    val layout = layoutResult ?: return@detectTapGestures
+                    // 按链接的 bounding box 做矩形命中：getOffsetForPosition 在
+                    // 含 inlineContent（图标/贴图）的段落里字符偏移会偏，导致
+                    // 只有链接最左边能点中。
+                    val ranges = annotated.getStringAnnotations(CLICK_TAG, 0, annotated.length)
+                    for (range in ranges) {
+                        val startBox = layout.getBoundingBox(range.start)
+                        val endBox = layout.getBoundingBox(
+                            (range.end - 1).coerceAtLeast(range.start)
+                        )
+                        if (position.x >= minOf(startBox.left, endBox.left) &&
+                            position.x <= maxOf(startBox.right, endBox.right) &&
+                            position.y >= minOf(startBox.top, endBox.top) &&
+                            position.y <= maxOf(startBox.bottom, endBox.bottom)
+                        ) {
+                            dispatchClick(range.item, actions)
+                            break
+                        }
+                    }
                 }
             },
         )
