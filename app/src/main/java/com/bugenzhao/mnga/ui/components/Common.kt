@@ -261,6 +261,8 @@ fun RepliesBadge(replies: Int, delta: Int? = null) {
                 "+$delta",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.primary,
+                // 与主数字一致：小号字形的视觉中心偏低约 1dp。
+                modifier = Modifier.offset(y = (-1).dp),
             )
         }
     }
