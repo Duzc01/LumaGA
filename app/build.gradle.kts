@@ -27,6 +27,12 @@ android {
         targetSdk = 36
         versionCode = 114
         versionName = "1.1.4"
+
+        // 腾讯 Bugly 崩溃监控。AppID 通过 gradle 属性注入（本地
+        // gradle.properties 或 CI secrets），未配置时监控不启用。
+        val buglyAppId = (project.findProperty("buglyAppId") as? String).orEmpty()
+        buildConfigField("String", "BUGLY_APP_ID", "\"$buglyAppId\"")
+        buildConfigField("boolean", "BUGLY_ENABLED", "${buglyAppId.isNotEmpty()}")
     }
 
     signingConfigs {
@@ -97,6 +103,8 @@ dependencies {
     implementation(libs.androidx.compose.material.icons)
     implementation(libs.coil.compose)
     implementation(libs.coil.gif)
+    implementation(libs.bugly.crashreport)
+    implementation(libs.bugly.nativecrashreport)
     implementation(libs.kotlinx.coroutines.android)
     debugImplementation(libs.androidx.compose.ui.tooling)
 }

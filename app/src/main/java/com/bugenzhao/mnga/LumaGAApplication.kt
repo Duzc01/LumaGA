@@ -6,6 +6,7 @@ import android.content.SharedPreferences
 import coil.Coil
 import coil.ImageLoader
 import coil.decode.GifDecoder
+import com.tencent.bugly.crashreport.CrashReport
 import com.bugenzhao.mnga.model.CurrentUserModel
 import com.bugenzhao.mnga.model.NotificationModel
 import com.bugenzhao.mnga.model.OpenURLModel
@@ -45,6 +46,12 @@ class LumaGAApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
+
+        // 腾讯 Bugly 崩溃监控（AppID 配置在 gradle.properties 的 buglyAppId）。
+        // 覆盖 Java/Kotlin 崩溃与 Rust liblogic.so 的 native 崩溃。
+        if (BuildConfig.BUGLY_ENABLED) {
+            CrashReport.initCrashReport(applicationContext, BuildConfig.BUGLY_APP_ID, BuildConfig.DEBUG)
+        }
 
         // Global Coil image loader with GIF support (coil-gif). Without the
         // decoder, animated GIFs fail to render in posts and the viewer.

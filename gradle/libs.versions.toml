@@ -9,6 +9,8 @@ coil = "2.7.0"
 protobuf = "4.35.1"
 coroutines = "1.10.2"
 annotation = "1.9.1"
+buglyCrash = "4.1.9"
+buglyNative = "3.9.2"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -26,6 +28,8 @@ androidx-compose-material-icons = { group = "androidx.compose.material", name = 
 androidx-annotation = { group = "androidx.annotation", name = "annotation", version.ref = "annotation" }
 coil-compose = { group = "io.coil-kt", name = "coil-compose", version.ref = "coil" }
 coil-gif = { group = "io.coil-kt", name = "coil-gif", version.ref = "coil" }
+bugly-crashreport = { group = "com.tencent.bugly", name = "crashreport", version.ref = "buglyCrash" }
+bugly-nativecrashreport = { group = "com.tencent.bugly", name = "nativecrashreport", version.ref = "buglyNative" }
 protobuf-java = { group = "com.google.protobuf", name = "protobuf-java", version.ref = "protobuf" }
 protobuf-kotlin = { group = "com.google.protobuf", name = "protobuf-kotlin", version.ref = "protobuf" }
 protobuf-util = { group = "com.google.protobuf", name = "protobuf-java-util", version.ref = "protobuf" }
