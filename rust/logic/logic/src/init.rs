@@ -14,7 +14,15 @@ pub(crate) fn init() {
     }
 
     #[cfg(target_os = "android")]
-    android_logger::init_once(android_logger::Config::default().with_min_level(log::Level::Debug));
+    {
+        // `with_min_level(L)` in android_logger 0.11 gates on `level >= L`
+        // while also setting log's max level to `L`, so the two filters
+        // intersect to exactly one level: passing `Debug` silently dropped
+        // every `info!`/`warn!`/`error!`. Leave the config's level unset (its
+        // filter then passes everything) and set log's max level ourselves.
+        android_logger::init_once(android_logger::Config::default());
+        log::set_max_level(log::LevelFilter::Debug);
+    }
 
     log::info!("initialized logic");
 }
