@@ -297,18 +297,13 @@ fun UserProfileScreen(
             LazyColumn(
                 state = listState,
                 modifier = Modifier.fillMaxSize(),
-                // 顶部留 4dp：标题上移贴 AppBar，卡片位置保持不变。
-                contentPadding = PaddingValues(start = 16.dp, top = 4.dp, end = 16.dp, bottom = 16.dp),
+                contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 item(key = "header") {
                     Column {
-                        Text(
-                            L.str(context, "User Profile"),
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        Spacer(Modifier.height(16.dp))
+                        // 原「用户档案」标题位：文字已移除，空间保留，卡片位置不变。
+                        Spacer(Modifier.height(20.dp))
                         UserProfileHeader(
                             user = resolvedUser,
                             blocked = blocked,
