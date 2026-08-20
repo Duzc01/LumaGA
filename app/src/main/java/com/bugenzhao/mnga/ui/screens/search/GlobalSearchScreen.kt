@@ -21,14 +21,11 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.Article
-import androidx.compose.material.icons.outlined.Bookmark
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Dashboard
 import androidx.compose.material.icons.outlined.Layers
-import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Star
-import androidx.compose.material.icons.outlined.TheaterComedy
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -54,20 +51,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import androidx.compose.ui.text.font.FontStyle
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.bugenzhao.mnga.App
 import com.bugenzhao.mnga.model.PagingDataSource
 import com.bugenzhao.mnga.protos.datamodel.Forum
 import com.bugenzhao.mnga.protos.datamodel.ForumId
-import com.bugenzhao.mnga.protos.datamodel.Subject
 import com.bugenzhao.mnga.protos.datamodel.Topic
 import com.bugenzhao.mnga.protos.service.AsyncRequest
 import com.bugenzhao.mnga.protos.service.ForumSearchRequest
@@ -75,13 +67,11 @@ import com.bugenzhao.mnga.protos.service.ForumSearchResponse
 import com.bugenzhao.mnga.protos.service.TopicSearchRequest
 import com.bugenzhao.mnga.protos.service.TopicSearchResponse
 import com.bugenzhao.mnga.ui.screens.forumlist.ForumIcon
+import com.bugenzhao.mnga.ui.screens.topiclist.TopicRow
 import com.bugenzhao.mnga.ui.nav.Navigator
 import com.bugenzhao.mnga.ui.nav.Route
-import com.bugenzhao.mnga.util.DateFormatters
 import com.bugenzhao.mnga.util.L
 import com.bugenzhao.mnga.util.errorLocalized
-import com.bugenzhao.mnga.storage.DateTimeStrategy
-import java.util.Date
 import kotlinx.coroutines.CoroutineScope
 
 /**
@@ -371,9 +361,10 @@ internal fun TopicResultsList(
                         LaunchedEffect(index, state.items.size) {
                             dataSource.loadMoreIfNeeded(index)
                         }
-                        TopicRowLite(topic) {
-                            navigator.push(topicDetailsRoute(topic))
-                        }
+                        TopicRow(
+                            topic = topic,
+                            onClick = { navigator.push(topicDetailsRoute(topic)) },
+                        )
                     }
                     item(key = "footer") { ListFooter(loading = state.isLoading) }
                 }
@@ -446,226 +437,6 @@ internal fun ForumRowLite(forum: Forum, onClick: () -> Unit) {
             }
         }
     }
-}
-
-/**
- * Simplified `TopicRowView`: subject (tags bar + multicolored content, dimmed
- * when read since last visit), tiered replies count, author and date footer.
- */
-@Suppress("DEPRECATION")
-@Composable
-internal fun TopicRowLite(
-    topic: Topic,
-    useTopicPostDate: Boolean = false,
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit,
-) {
-    val multicolor = App.prefs.topicListSubjectMulticolor.value
-    val dimmed = !topic.id.startsWith("mnga_") && topic.hasRepliesNumLastVisit()
-    val date = if (useTopicPostDate) topic.postDate else topic.lastPostDate
-
-    Surface(
-        onClick = onClick,
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        color = MaterialTheme.colorScheme.surface,
-    ) {
-        Column(
-            Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp),
-        ) {
-            Row(
-                verticalAlignment = Alignment.Bottom,
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
-                Column(
-                    Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(3.dp),
-                ) {
-                    TopicTagsBarLite(topic)
-                    TopicSubjectTextLite(topic, dimmed, multicolor)
-                }
-                RepliesNumLite(
-                    num = topic.repliesNum,
-                    lastNum = if (topic.hasRepliesNumLastVisit()) topic.repliesNumLastVisit else null,
-                )
-            }
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-            ) {
-                val authorName = topic.authorName
-                val anonymous = authorName.anonymous.isNotEmpty()
-                Icon(
-                    if (anonymous) Icons.Outlined.TheaterComedy else Icons.Outlined.Person,
-                    contentDescription = null,
-                    modifier = Modifier.size(14.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Text(
-                    if (anonymous) authorName.anonymous else authorName.normal,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Spacer(Modifier.weight(1f))
-                DateTimeTextLite(date)
-            }
-        }
-    }
-}
-
-/** Leading accent-colored tag bar: bookmark mark, parent forum name, tags. */
-@Suppress("DEPRECATION")
-@Composable
-private fun TopicTagsBarLite(topic: Topic) {
-    val tags = topic.subject.tagsList.ifEmpty { topic.tagsList }
-    val parentName = if (topic.hasParentForum()) topic.parentForum.name else null
-    if (tags.isEmpty() && parentName == null && !topic.isFavored) return
-
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        if (topic.isFavored) {
-            Icon(
-                Icons.Outlined.Bookmark,
-                contentDescription = null,
-                modifier = Modifier.size(13.dp),
-                tint = MaterialTheme.colorScheme.primary,
-            )
-        }
-        if (parentName != null) {
-            Text(
-                parentName,
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary,
-            )
-        }
-        tags.forEach { tag ->
-            Text(
-                tag,
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.primary,
-            )
-        }
-    }
-}
-
-/** Subject content with the `fontModifiers` palette of `TopicSubjectView`. */
-@Suppress("DEPRECATION")
-@Composable
-private fun TopicSubjectTextLite(topic: Topic, dimmed: Boolean, multicolor: Boolean) {
-    val context = LocalContext.current
-    val content = topic.subject.content.ifEmpty { topic.subjectContent }
-
-    if (content.isEmpty()) {
-        Text(
-            L.str(context, "Untitled"),
-            style = MaterialTheme.typography.bodyLarge.copy(
-                fontWeight = FontWeight.Medium,
-                fontStyle = FontStyle.Italic,
-            ),
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-        )
-        return
-    }
-
-    val modifiers = if (multicolor) topic.subject.fontModifiersList else emptyList()
-    val paletteColor = modifiers.firstNotNullOfOrNull { subjectPalette[it] }
-    val color = when {
-        paletteColor != null -> paletteColor.copy(alpha = if (dimmed) 0.6f else 1f)
-        dimmed -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-        else -> Color.Unspecified
-    }
-    var style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium)
-    when {
-        modifiers.contains(Subject.FontModifier.BOLD) ->
-            style = style.copy(fontWeight = FontWeight.Bold)
-        modifiers.contains(Subject.FontModifier.SEMIBOLD) ->
-            style = style.copy(fontWeight = FontWeight.SemiBold)
-    }
-    if (modifiers.contains(Subject.FontModifier.ITALIC)) {
-        style = style.copy(fontStyle = FontStyle.Italic)
-    }
-    val decoration =
-        if (modifiers.contains(Subject.FontModifier.UNDERLINE)) TextDecoration.Underline else null
-
-    Text(
-        content,
-        style = style,
-        color = color,
-        textDecoration = decoration,
-        maxLines = 2,
-        overflow = TextOverflow.Ellipsis,
-    )
-}
-
-/** Subject palette from `ContentCombiner.palette`. */
-private val subjectPalette: Map<Subject.FontModifier, Color> =
-    mapOf(
-        Subject.FontModifier.RED to Color(0xFFDD0000),
-        Subject.FontModifier.BLUE to Color(0xFF0066BB),
-        Subject.FontModifier.GREEN to Color(0xFF3D9F0E),
-        Subject.FontModifier.ORANGE to Color(0xFFA06700),
-        Subject.FontModifier.SILVER to Color(0xFF888888),
-    )
-
-/** Replies count with the tiered styling of `RepliesNumView`, plus the (+N) delta. */
-@Composable
-private fun RepliesNumLite(num: Int, lastNum: Int?) {
-    val accent = MaterialTheme.colorScheme.primary
-    val (style, color) = when {
-        num <= 0 -> MaterialTheme.typography.bodyMedium to Color.Transparent
-        num < 40 ->
-            MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium) to
-                accent.copy(alpha = 0.8f)
-        num < 100 ->
-            MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold) to
-                accent.copy(alpha = 0.9f)
-        num < 200 ->
-            MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold) to accent
-        num < 500 ->
-            MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold) to accent
-        else ->
-            MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.ExtraBold) to accent
-    }
-
-    Row(
-        verticalAlignment = Alignment.Bottom,
-        horizontalArrangement = Arrangement.spacedBy(2.dp),
-    ) {
-        Text(num.toString(), style = style, color = color)
-        val delta = lastNum?.let { num - it }?.takeIf { it > 0 }
-        if (delta != null) {
-            Text(
-                "(+$delta)",
-                style = MaterialTheme.typography.labelMedium,
-                color = accent.copy(alpha = 0.8f),
-            )
-        }
-    }
-}
-
-/** Timestamp honoring the `postRowDateTimeStrategy` preference. */
-@Composable
-internal fun DateTimeTextLite(timestampSeconds: Long) {
-    val context = LocalContext.current
-    val date = Date(timestampSeconds * 1000)
-    val text = when (App.prefs.postRowDateTimeStrategy) {
-        DateTimeStrategy.DETAILED -> DateFormatters.detailed(context, date)
-        DateTimeStrategy.TIME_AGO -> DateFormatters.timeAgo(context, date)
-        DateTimeStrategy.AUTOMATIC -> DateFormatters.automatic(context, date)
-    }
-    Text(
-        text,
-        style = MaterialTheme.typography.labelMedium,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-    )
 }
 
 // endregion

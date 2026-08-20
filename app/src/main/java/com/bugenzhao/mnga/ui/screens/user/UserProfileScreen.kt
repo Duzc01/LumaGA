@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -68,9 +67,9 @@ import com.bugenzhao.mnga.protos.service.UserTopicListRequest
 import com.bugenzhao.mnga.protos.service.UserTopicListResponse
 import com.bugenzhao.mnga.storage.BlockWordsStorage
 import com.bugenzhao.mnga.ui.components.DateTimeText
-import com.bugenzhao.mnga.ui.components.RepliesBadge
 import com.bugenzhao.mnga.ui.nav.Navigator
 import com.bugenzhao.mnga.ui.nav.Route
+import com.bugenzhao.mnga.ui.screens.topiclist.TopicRow
 import com.bugenzhao.mnga.util.L
 import com.bugenzhao.mnga.util.URLs
 import java.net.URLEncoder
@@ -368,16 +367,23 @@ fun UserProfileScreen(
                             }
                         } else {
                             itemsIndexed(topicState.items, key = { _, t -> "t-${t.id}" }) { _, topic ->
-                                SectionCard {
-                                    UserTopicRow(topic) {
+                                // The shared list row, not a `SectionCard`
+                                // wrapper: it brings its own card surface.
+                                TopicRow(
+                                    topic = topic,
+                                    // Every topic here is this user's own, so
+                                    // the posting date is what distinguishes
+                                    // them, not the last reply.
+                                    useTopicPostDate = true,
+                                    onClick = {
                                         navigator.push(
                                             Route.TopicDetails(
                                                 topicId = topic.id,
                                                 fav = topic.fav.takeIf { it.isNotEmpty() },
                                             )
                                         )
-                                    }
-                                }
+                                    },
+                                )
                             }
                         }
                     } else {
@@ -527,42 +533,6 @@ private fun ProfileOverflowMenu(
                 )
             }
         }
-    }
-}
-
-/** Topic list row (lite), mirroring `TopicRowLinkView` essentials. */
-@Composable
-private fun UserTopicRow(topic: Topic, onClick: () -> Unit) {
-    Row(
-        Modifier.fillMaxWidth().clickable { onClick() }.padding(14.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
-    ) {
-        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            val subject = topic.subject
-            subject.tagsList.forEach { tag ->
-                Text(
-                    tag,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.primary,
-                )
-            }
-            Text(
-                subject.content.ifEmpty { topic.subjectContent },
-                style = MaterialTheme.typography.bodyLarge,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(
-                    topic.authorName.displayString,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                DateTimeText(topic.postDate)
-            }
-        }
-        RepliesBadge(replies = topic.repliesNum)
     }
 }
 
