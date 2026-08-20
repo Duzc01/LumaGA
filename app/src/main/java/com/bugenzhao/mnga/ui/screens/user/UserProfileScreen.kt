@@ -297,7 +297,8 @@ fun UserProfileScreen(
             LazyColumn(
                 state = listState,
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(16.dp),
+                // 顶部留 4dp：标题上移贴 AppBar，卡片位置保持不变。
+                contentPadding = PaddingValues(start = 16.dp, top = 4.dp, end = 16.dp, bottom = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 item(key = "header") {
@@ -307,7 +308,7 @@ fun UserProfileScreen(
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
-                        Spacer(Modifier.height(4.dp))
+                        Spacer(Modifier.height(16.dp))
                         UserProfileHeader(
                             user = resolvedUser,
                             blocked = blocked,
