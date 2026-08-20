@@ -375,6 +375,13 @@ private fun TopicMetaBlock(
     }
 }
 
+/**
+ * Stand-in shown when a topic names neither a forum nor any tag: cross-forum
+ * payloads (search results, browsing history) carry only a numeric forum id, so
+ * the line would otherwise be a blank gap under the author.
+ */
+private const val OriginPlaceholder = "LumaGA"
+
 /** Favorite marker, parent forum (color-chipped) and subject tags, one line. */
 @Composable
 private fun TopicOriginLine(
@@ -404,20 +411,21 @@ private fun TopicOriginLine(
             )
         }
         if (forumName.isNotEmpty()) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(5.dp),
+            ForumChip(
+                name = forumName,
+                chipColor = forumChipColor(forumName),
+                textColor = color,
                 modifier = Modifier.weight(1f, fill = false),
-            ) {
-                ForumColorChip(seed = forumName)
-                Text(
-                    forumName,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = color,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
+            )
+        } else if (tags.isEmpty()) {
+            ForumChip(
+                name = OriginPlaceholder,
+                // The accent, not a name-seeded color: the placeholder stands
+                // for the app rather than for some forum.
+                chipColor = MaterialTheme.colorScheme.primary,
+                textColor = color,
+                modifier = Modifier.weight(1f, fill = false),
+            )
         }
         if (tags.isNotEmpty()) {
             Text(
@@ -432,12 +440,35 @@ private fun TopicOriginLine(
     }
 }
 
-/** Small rounded chip in the forum's own stable color, keyed by its name. */
+/** A name preceded by its small rounded color chip. */
 @Composable
-private fun ForumColorChip(seed: String) {
+private fun ForumChip(
+    name: String,
+    chipColor: Color,
+    textColor: Color,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier,
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(5.dp),
+    ) {
+        Box(Modifier.size(8.dp).background(chipColor, RoundedCornerShape(2.dp)))
+        Text(
+            name,
+            style = MaterialTheme.typography.labelMedium,
+            color = textColor,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
+
+/** The chip color a forum keeps across sessions, seeded by its own name. */
+@Composable
+private fun forumChipColor(seed: String): Color {
     val dark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
-    val color = remember(seed, dark) { avatarPalette(seed, dark).fill }
-    Box(Modifier.size(8.dp).background(color, RoundedCornerShape(2.dp)))
+    return remember(seed, dark) { avatarPalette(seed, dark).fill }
 }
 
 /**
