@@ -301,10 +301,8 @@ fun UserProfileScreen(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 item(key = "header") {
-                    Column {
-                        // 原「用户档案」标题位：文字已移除，空间保留。
-                        Spacer(Modifier.height(14.dp))
-                        UserProfileHeader(
+                    // 顶部间距与卡片左右间距一致（16dp），原标题位不再占额外空间。
+                    UserProfileHeader(
                             user = resolvedUser,
                             blocked = blocked,
                             isMyself = isMyself,
@@ -319,7 +317,6 @@ fun UserProfileScreen(
                             onShare = { shareUser(context, resolvedUser) },
                             signatureContent = signatureContent,
                         )
-                    }
                 }
 
                 if (!shouldShowList) {
