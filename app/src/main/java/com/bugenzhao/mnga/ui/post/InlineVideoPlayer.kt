@@ -1,7 +1,14 @@
 package com.bugenzhao.mnga.ui.post
 
+import android.Manifest
+import android.content.Context
+import android.content.ContentValues
+import android.content.pm.PackageManager
 import android.media.MediaPlayer
 import android.net.Uri
+import android.os.Build
+import android.os.Environment
+import android.provider.MediaStore
 import android.view.SurfaceHolder
 import android.view.SurfaceView
 import androidx.compose.foundation.background
@@ -48,6 +55,9 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 import com.bugenzhao.mnga.BuildConfig
 import com.bugenzhao.mnga.util.URLs
 import java.io.File
@@ -150,39 +160,24 @@ fun InlineVideoPlayer(
         runCatching { player.setVolume(if (muted) 0f else 1f, if (muted) 0f else 1f) }
     }
 
-    fun download() {
-        scope.launch {
-            val ok = withContext(Dispatchers.IO) {
-                runCatching {
-                    val dir = File(context.cacheDir, "videos").apply { mkdirs() }
-                    val target = File(dir, "LumaGA-${System.currentTimeMillis()}.mp4")
-                    val conn = (URL(url).openConnection() as HttpURLConnection).apply {
-                        requestMethod = "GET"
-                        connectTimeout = 15_000
-                        readTimeout = 30_000
-                        instanceFollowRedirects = true
-                        setRequestProperty("User-Agent", "LumaGA/${BuildConfig.VERSION_NAME}")
-                        setRequestProperty("Referer", URLs.base)
-                    }
-                    try {
-                        if (conn.responseCode !in 200..299) return@runCatching false
-                        conn.inputStream.use { input ->
-                            target.outputStream().use { output -> input.copyTo(output) }
-                        }
-                        target.length() > 0
-                    } finally {
-                        conn.disconnect()
-                    }
-                }.getOrDefault(false)
-            }
-            android.widget.Toast.makeText(
-                context,
-                if (ok) "已下载到 ${context.cacheDir}/videos/" else "下载失败",
-                android.widget.Toast.LENGTH_SHORT,
-            ).show()
+    val permissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission(),
+    ) { granted ->
+        if (granted) {
+            saveVideo(scope, context, url) { ok -> toastVideoResult(context, ok) }
+        } else {
+            android.widget.Toast.makeText(context, "需要存储权限才能下载", android.widget.Toast.LENGTH_SHORT).show()
         }
     }
 
+    // 点击下载：API 29+ 无需权限；旧版本先检查/请求存储权限。
+    val download: () -> Unit = {
+        if (hasStoragePermission(context)) {
+            saveVideo(scope, context, url) { ok -> toastVideoResult(context, ok) }
+        } else {
+            permissionLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+        }
+    }
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -241,7 +236,7 @@ fun InlineVideoPlayer(
             onPlayPause = ::togglePlay,
             onSeek = { ms -> runCatching { player.seekTo(ms.toInt()) } },
             onToggleMute = ::toggleMute,
-            onDownload = ::download,
+            onDownload = { download() },
             modifier = Modifier.align(Alignment.BottomCenter),
         )
     }
@@ -393,4 +388,79 @@ private fun formatTime(ms: Long): String {
     val m = totalSec / 60
     val s = totalSec % 60
     return "%d:%02d".format(m, s)
+}
+
+/** API 29+ 走 MediaStore 无需权限；旧版本需要存储权限。 */
+private fun hasStoragePermission(context: Context): Boolean =
+    Build.VERSION.SDK_INT >= 29 ||
+        ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_EXTERNAL_STORAGE) ==
+        PackageManager.PERMISSION_GRANTED
+
+private fun toastVideoResult(context: Context, ok: Boolean) {
+    android.widget.Toast.makeText(
+        context,
+        if (ok) "已保存到 下载/LumaGA/" else "下载失败",
+        android.widget.Toast.LENGTH_SHORT,
+    ).show()
+}
+
+/** 下载视频到公共「下载/LumaGA」目录（API 29+ 用 MediaStore）。 */
+private fun saveVideo(
+    scope: kotlinx.coroutines.CoroutineScope,
+    context: Context,
+    url: String,
+    onResult: (Boolean) -> Unit,
+) {
+    scope.launch {
+        val ok = withContext(Dispatchers.IO) {
+            runCatching {
+                val conn = (URL(url).openConnection() as HttpURLConnection).apply {
+                    requestMethod = "GET"
+                    connectTimeout = 15_000
+                    readTimeout = 30_000
+                    instanceFollowRedirects = true
+                    setRequestProperty("User-Agent", "LumaGA/${BuildConfig.VERSION_NAME}")
+                    setRequestProperty("Referer", URLs.base)
+                }
+                try {
+                    if (conn.responseCode !in 200..299) return@runCatching false
+                    if (Build.VERSION.SDK_INT >= 29) {
+                        val resolver = context.contentResolver
+                        val values = ContentValues().apply {
+                            put(MediaStore.MediaColumns.DISPLAY_NAME, "LumaGA-${System.currentTimeMillis()}.mp4")
+                            put(MediaStore.MediaColumns.MIME_TYPE, "video/mp4")
+                            put(
+                                MediaStore.MediaColumns.RELATIVE_PATH,
+                                Environment.DIRECTORY_DOWNLOADS + "/LumaGA",
+                            )
+                            put(MediaStore.MediaColumns.IS_PENDING, 1)
+                        }
+                        val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
+                            ?: return@runCatching false
+                        val written = resolver.openOutputStream(uri)?.use { output ->
+                            conn.inputStream.use { input -> input.copyTo(output) }
+                            true
+                        } ?: false
+                        values.clear()
+                        values.put(MediaStore.MediaColumns.IS_PENDING, 0)
+                        resolver.update(uri, values, null, null)
+                        written
+                    } else {
+                        val dir = File(
+                            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
+                            "LumaGA",
+                        ).apply { mkdirs() }
+                        val target = File(dir, "LumaGA-${System.currentTimeMillis()}.mp4")
+                        conn.inputStream.use { input ->
+                            target.outputStream().use { output -> input.copyTo(output) }
+                        }
+                        target.length() > 0
+                    }
+                } finally {
+                    conn.disconnect()
+                }
+            }.getOrDefault(false)
+        }
+        onResult(ok)
+    }
 }
