@@ -10,17 +10,27 @@ import kotlinx.coroutines.flow.StateFlow
  */
 class Navigator(initial: List<Route> = emptyList()) {
 
+    /** How the top-most route most recently entered the stack; screens use it
+     * to tell a fresh push from a pop-back (resume). */
+    enum class Op { PUSH, POP }
+
     private val _stack = MutableStateFlow(initial)
     val stack: StateFlow<List<Route>> = _stack
 
     val current: Route? get() = _stack.value.lastOrNull()
     val size: Int get() = _stack.value.size
 
+    /** PUSH after [push], POP after any pop-style operation. */
+    var lastOp: Op = Op.PUSH
+        private set
+
     fun push(route: Route) {
+        lastOp = Op.PUSH
         _stack.value = _stack.value + route
     }
 
     fun pop() {
+        lastOp = Op.POP
         if (_stack.value.isNotEmpty()) {
             _stack.value = _stack.value.dropLast(1)
         }

@@ -222,8 +222,8 @@ fun RouteDispatcher(
                 userName = route.userName,
                 user = route.user,
             )
-        is Route.GlobalSearch -> SearchScreen(navigator)
-        is Route.TopicSearch -> SearchScreen(navigator, route.forumId)
+        is Route.GlobalSearch -> SearchScreen(navigator, freshEntry = navigator.lastOp == Navigator.Op.PUSH)
+        is Route.TopicSearch -> SearchScreen(navigator, route.forumId, freshEntry = navigator.lastOp == Navigator.Op.PUSH)
         is Route.Favorites -> FavoritesScreen(navigator)
         is Route.History -> HistoryScreen(navigator)
         is Route.ShortMessages -> ShortMessageListScreen(navigator)

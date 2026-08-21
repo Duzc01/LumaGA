@@ -14,6 +14,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -156,9 +158,8 @@ internal fun ForumResultsList(
                 ErrorState(context.errorLocalized(state.latestError?.error ?: "error"))
             state.items.isEmpty() -> EmptyResultsState()
             else -> {
-                val lstate = rememberLazyListState()
-                // 新一批结果（新搜索/快照恢复）进入时总是定位到最上面。
-                LaunchedEffect(dataSource) { lstate.scrollToItem(0) }
+                // Saveable：pop 返回时恢复滚动位置（resume 效果）。
+                val lstate = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
                 LazyColumn(
                     state = lstate,
                     modifier = Modifier.fillMaxSize(),
@@ -212,9 +213,8 @@ internal fun TopicResultsList(
                 ErrorState(context.errorLocalized(state.latestError?.error ?: "error"))
             state.items.isEmpty() -> EmptyResultsState()
             else -> {
-                val lstate = rememberLazyListState()
-                // 新一批结果（新搜索/快照恢复）进入时总是定位到最上面。
-                LaunchedEffect(dataSource) { lstate.scrollToItem(0) }
+                // Saveable：pop 返回时恢复滚动位置（resume 效果）。
+                val lstate = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
                 LazyColumn(
                     state = lstate,
                     modifier = Modifier.fillMaxSize(),
