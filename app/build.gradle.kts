@@ -25,8 +25,8 @@ android {
         applicationId = "com.bugenzhao.mnga"
         minSdk = 26
         targetSdk = 36
-        versionCode = 119
-        versionName = "1.1.9"
+        versionCode = 120
+        versionName = "1.1.10"
 
         // 腾讯 Bugly 崩溃监控。AppID 通过 gradle 属性注入（本地
         // gradle.properties 或 CI secrets），未配置时监控不启用。
