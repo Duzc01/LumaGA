@@ -1,5 +1,6 @@
 package com.bugenzhao.mnga.ui.screens.favorites
 
+import android.util.Base64
 import androidx.activity.compose.BackHandler
 
 import androidx.compose.foundation.layout.Arrangement
@@ -51,6 +52,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -153,20 +157,43 @@ fun FavoritesScreen(navigator: Navigator, initialFolderId: String? = null) {
     val foldersModel = remember { FavoriteFoldersModel(scope) }
     val folders by foldersModel.folders.collectAsState()
     var currentFolder by remember { mutableStateOf<FavoriteTopicFolder?>(null) }
+    // 记住上次选择的文件夹：返回本页时恢复该选择，而不是跳回默认文件夹。
+    var savedFolderId by rememberSaveable { mutableStateOf<String?>(null) }
+    // 文件夹列表快照：返回本页时不重新拉取（NavHost 下组合重建）。
+    var savedFoldersB64 by rememberSaveable { mutableStateOf<List<String>>(emptyList()) }
 
     // Load folders on entry, keeping the previous selection when possible.
     LaunchedEffect(Unit) {
         if (currentFolder == null) {
-            foldersModel.load(force = true)
+            if (savedFoldersB64.isNotEmpty()) {
+                foldersModel.folders.value = savedFoldersB64.map {
+                    FavoriteTopicFolder.parseFrom(Base64.decode(it, Base64.NO_WRAP))
+                }
+            } else {
+                foldersModel.load(force = true)
+            }
+        }
+    }
+    // 用 ON_STOP 而不是 DisposableEffect.onDispose：onDispose 时
+    // SaveableStateHolder 可能已经拍过状态快照，写入会被丢弃。
+    LifecycleEventEffect(Lifecycle.Event.ON_STOP) {
+        if (foldersModel.folders.value.isNotEmpty()) {
+            savedFoldersB64 = foldersModel.folders.value.map {
+                Base64.encodeToString(it.toByteArray(), Base64.NO_WRAP)
+            }
         }
     }
     LaunchedEffect(folders) {
         if (folders.isNotEmpty()) {
             val restored = folders.firstOrNull { it.id == currentFolder?.id }
+                ?: savedFolderId?.let { id -> folders.firstOrNull { it.id == id } }
                 ?: folders.firstOrNull { it.id == initialFolderId }
                 ?: folders.firstOrNull { it.isDefault }
                 ?: folders.first()
-            if (restored.id != currentFolder?.id) currentFolder = restored
+            if (restored.id != currentFolder?.id) {
+                currentFolder = restored
+                savedFolderId = restored.id
+            }
         } else if (currentFolder != null && folders.none { it.id == currentFolder?.id }) {
             currentFolder = null
         }
@@ -236,6 +263,7 @@ fun FavoritesScreen(navigator: Navigator, initialFolderId: String? = null) {
                                 PlusModel.checkPlus(PlusFeature.MULTI_FAVORITE)
                             ) {
                                 currentFolder = folder
+                                savedFolderId = folder.id
                             }
                         },
                         onMakeDefault = { modifyCurrent { it.setSetDefault(true) } },
@@ -469,7 +497,40 @@ private fun FavoriteTopicList(folder: FavoriteTopicFolder, navigator: Navigator)
         )
     }
     val state by dataSource.state.collectAsState()
-    LaunchedEffect(folder.id) { dataSource.initialLoad() }
+
+    // -- 跨路由保留：被详情页盖住时保存快照，返回时恢复而不是重新拉取
+    // （NavHost 下 entry 组合销毁重建，普通 remember 数据源会重建为空）。
+    var savedItemsB64 by rememberSaveable(folder.id) { mutableStateOf<List<String>>(emptyList()) }
+    var savedLoadedPage by rememberSaveable(folder.id) { mutableStateOf(0) }
+    var savedTotalPages by rememberSaveable(folder.id) { mutableStateOf(1) }
+    var savedLastRefresh by rememberSaveable(folder.id) { mutableStateOf(0L) }
+
+    LaunchedEffect(folder.id) {
+        if (savedItemsB64.isNotEmpty()) {
+            dataSource.restoreItems(
+                items = savedItemsB64.map {
+                    Topic.parseFrom(Base64.decode(it, Base64.NO_WRAP))
+                },
+                loadedPage = savedLoadedPage,
+                totalPages = savedTotalPages,
+                lastRefreshTime = savedLastRefresh.takeIf { it > 0 }?.let { java.util.Date(it) },
+            )
+        } else {
+            dataSource.initialLoad()
+        }
+    }
+    // 用 ON_STOP 而不是 DisposableEffect.onDispose：onDispose 时
+    // SaveableStateHolder 可能已经拍过状态快照，写入会被丢弃。
+    LifecycleEventEffect(Lifecycle.Event.ON_STOP) {
+        if (dataSource.items.isNotEmpty()) {
+            savedItemsB64 = dataSource.items.map {
+                Base64.encodeToString(it.toByteArray(), Base64.NO_WRAP)
+            }
+            savedLoadedPage = dataSource.loadedPage
+            savedTotalPages = dataSource.totalPages
+            savedLastRefresh = dataSource.lastRefreshTime?.time ?: 0L
+        }
+    }
 
     // Rows hidden after a successful swipe-delete.
     val hiddenIds = remember(folder.id) { mutableStateListOf<String>() }

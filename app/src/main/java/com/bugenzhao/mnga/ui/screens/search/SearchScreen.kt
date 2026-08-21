@@ -80,7 +80,8 @@ import com.bugenzhao.mnga.protos.datamodel.Topic
 import com.bugenzhao.mnga.protos.datamodel.Forum
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.DisposableEffect
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import com.bugenzhao.mnga.storage.SearchHistoryScope
 import com.bugenzhao.mnga.ui.nav.Navigator
 import com.bugenzhao.mnga.util.L
@@ -185,23 +186,25 @@ fun SearchScreen(
             ds.initialLoad()
         }
     }
-    DisposableEffect(Unit) {
-        onDispose {
-            topicDataSource?.let { ds ->
-                if (ds.items.isNotEmpty()) {
-                    savedTopicsB64 = ds.items.map {
-                        android.util.Base64.encodeToString(it.toByteArray(), android.util.Base64.NO_WRAP)
-                    }
-                    savedTopicsLoadedPage = ds.loadedPage
+    // 保存结果快照：entry 被盖住（NavHost 下组合销毁、返回时重建）或退后台时
+    // 写入 saveable，返回时 restoreItems 恢复而不重新拉取。
+    // 注意用 ON_STOP 而不是 DisposableEffect.onDispose：onDispose 时
+    // SaveableStateHolder 可能已经拍过状态快照，写入会被丢弃。
+    LifecycleEventEffect(Lifecycle.Event.ON_STOP) {
+        topicDataSource?.let { ds ->
+            if (ds.items.isNotEmpty()) {
+                savedTopicsB64 = ds.items.map {
+                    android.util.Base64.encodeToString(it.toByteArray(), android.util.Base64.NO_WRAP)
                 }
+                savedTopicsLoadedPage = ds.loadedPage
             }
-            forumDataSource?.let { ds ->
-                if (ds.items.isNotEmpty()) {
-                    savedForumsB64 = ds.items.map {
-                        android.util.Base64.encodeToString(it.toByteArray(), android.util.Base64.NO_WRAP)
-                    }
-                    savedForumsLoadedPage = ds.loadedPage
+        }
+        forumDataSource?.let { ds ->
+            if (ds.items.isNotEmpty()) {
+                savedForumsB64 = ds.items.map {
+                    android.util.Base64.encodeToString(it.toByteArray(), android.util.Base64.NO_WRAP)
                 }
+                savedForumsLoadedPage = ds.loadedPage
             }
         }
     }

@@ -59,6 +59,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LifecycleEventEffect
 import com.bugenzhao.mnga.App
 import com.bugenzhao.mnga.model.NavigationIdentifier
 import com.bugenzhao.mnga.model.PagingDataSource
@@ -267,34 +268,34 @@ fun TopicListScreen(
         }
     }
 
-    DisposableEffect(Unit) {
-        onDispose {
-            // Only keep the snapshot when this screen was pushed away by a
-            // deeper route (so popping back restores it). When the route was
-            // popped off the stack for good, drop the snapshot so the next
-            // entry into this forum starts fresh instead of showing the
-            // stale list.
-            // 注意：NavHost 下 entry 的 route 实例与 navigator.stack 中解码出的
-            // 实例不是同一个对象，必须用值相等（Route 是 data class）。
-            val stillInStack = route != null && navigator.stack.value.any { it == route }
-            if (stillInStack && dataSource.items.isNotEmpty()) {
-                savedItemsB64 = dataSource.items.map {
-                    Base64.encodeToString(it.toByteArray(), Base64.NO_WRAP)
-                }
-                savedLoadedPage = dataSource.loadedPage
-                savedTotalPages = dataSource.totalPages
-                savedLastRefresh = dataSource.lastRefreshTime?.time ?: 0L
-                savedResponseB64 =
-                    (dataSource.latestResponse as? com.google.protobuf.Message)
-                        ?.toByteArray()
-                        ?.let { Base64.encodeToString(it, Base64.NO_WRAP) }
-            } else if (!stillInStack) {
-                savedItemsB64 = emptyList()
-                savedLoadedPage = 0
-                savedTotalPages = 1
-                savedLastRefresh = 0L
-                savedResponseB64 = null
+    LifecycleEventEffect(Lifecycle.Event.ON_STOP) {
+        // Only keep the snapshot when this screen was pushed away by a
+        // deeper route (so popping back restores it). When the route was
+        // popped off the stack for good, drop the snapshot so the next
+        // entry into this forum starts fresh instead of showing the
+        // stale list.
+        // 注意：NavHost 下 entry 的 route 实例与 navigator.stack 中解码出的
+        // 实例不是同一个对象，必须用值相等（Route 是 data class）。
+        // 用 ON_STOP 而不是 DisposableEffect.onDispose：onDispose 时
+        // SaveableStateHolder 可能已经拍过状态快照，写入会被丢弃。
+        val stillInStack = route != null && navigator.stack.value.any { it == route }
+        if (stillInStack && dataSource.items.isNotEmpty()) {
+            savedItemsB64 = dataSource.items.map {
+                Base64.encodeToString(it.toByteArray(), Base64.NO_WRAP)
             }
+            savedLoadedPage = dataSource.loadedPage
+            savedTotalPages = dataSource.totalPages
+            savedLastRefresh = dataSource.lastRefreshTime?.time ?: 0L
+            savedResponseB64 =
+                (dataSource.latestResponse as? com.google.protobuf.Message)
+                    ?.toByteArray()
+                    ?.let { Base64.encodeToString(it, Base64.NO_WRAP) }
+        } else if (!stillInStack) {
+            savedItemsB64 = emptyList()
+            savedLoadedPage = 0
+            savedTotalPages = 1
+            savedLastRefresh = 0L
+            savedResponseB64 = null
         }
     }
 
