@@ -389,7 +389,7 @@ fun ForumListScreen(
                             }
                         }
                         items(
-                            favoriteForums,
+                            favoriteForums.distinctBy { forumIdKey(it.id) },
                             key = { forum -> favoriteGridKey(forum) },
                         ) { forum ->
                             val key = favoriteGridKey(forum)
@@ -433,8 +433,12 @@ fun ForumListScreen(
                         }
                     } else {
                         // The "mnga" meta category is the app's own board; it
-                        // never belongs on the forum home.
-                        val visibleCategories = categories.filterNot { it.id == "mnga" }
+                        // never belongs on the forum home. Dedupe by id: server
+                        // payloads can repeat a category, which would collide
+                        // the grid item keys.
+                        val visibleCategories = categories
+                            .filterNot { it.id == "mnga" }
+                            .distinctBy { it.id }
                         visibleCategories.forEach { category ->
                             item(
                                 key = "cat-header-${category.id}",
@@ -448,7 +452,7 @@ fun ForumListScreen(
                             }
                             if (category.id !in collapsedCategories) {
                                 items(
-                                    category.forumsList,
+                                    category.forumsList.distinctBy { forumIdKey(it.id) },
                                     key = { forum ->
                                         "cat-${category.id}-${forumIdKey(forum.id)}"
                                     },
