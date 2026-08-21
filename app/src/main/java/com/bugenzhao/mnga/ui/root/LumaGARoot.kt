@@ -19,9 +19,12 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalView
 import androidx.lifecycle.compose.LifecycleResumeEffect
@@ -111,6 +114,23 @@ private fun NavigationHost(
 ) {
     val stack by navigator.stack.collectAsState()
     BackHandler(enabled = navigator.size > 1) { navigator.pop() }
+    // 首页（导航栈只有根）双击返回退出：3 秒内按两次退出，第一次提示。
+    // sheet/弹窗打开时它们自己的返回处理优先（后注册的 BackHandler 先触发）。
+    val context = LocalContext.current
+    var backPressedAt by remember { mutableLongStateOf(0L) }
+    BackHandler(enabled = navigator.size <= 1) {
+        val now = android.os.SystemClock.uptimeMillis()
+        if (now - backPressedAt < 3000) {
+            (context as? android.app.Activity)?.finish()
+        } else {
+            backPressedAt = now
+            android.widget.Toast.makeText(
+                context,
+                "再按一次退出LumaGA",
+                android.widget.Toast.LENGTH_SHORT,
+            ).show()
+        }
+    }
     // Keeps each route's rememberSaveable state (list data, scroll position)
     // alive while the route is off-screen, so popping back to a screen
     // restores it instead of rebuilding and refetching.
