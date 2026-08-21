@@ -1,13 +1,11 @@
 package com.bugenzhao.mnga.ui.root
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
@@ -18,21 +16,25 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
-import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.navigation.NavType
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.bugenzhao.mnga.App
 import com.bugenzhao.mnga.model.NavigationIdentifier
 import com.bugenzhao.mnga.ui.nav.Navigator
 import com.bugenzhao.mnga.ui.nav.Route
+import com.bugenzhao.mnga.ui.nav.RouteCodec
 import com.bugenzhao.mnga.ui.nav.TopicListMode
 import com.bugenzhao.mnga.ui.screens.favorites.FavoritesScreen
 import com.bugenzhao.mnga.ui.screens.forumlist.ForumListScreen
@@ -62,7 +64,8 @@ fun LumaGARoot(onNewIntent: (android.content.Intent) -> Unit) {
         themeColor = com.bugenzhao.mnga.storage.ThemeColor.fromRaw(themeColor),
         colorSchemeMode = com.bugenzhao.mnga.storage.ColorSchemeMode.fromRaw(colorScheme),
     ) {
-        val navigator = remember { Navigator(listOf(Route.ForumList)) }
+        val navController = rememberNavController()
+        val navigator = remember { Navigator(navController, listOf(Route.ForumList)) }
         val editor = remember { com.bugenzhao.mnga.ui.editor.EditorController(appScope) }
 
         // Opaque theme background under the navigation stack: during the
@@ -112,8 +115,6 @@ private fun NavigationHost(
     navigator: Navigator,
     editor: com.bugenzhao.mnga.ui.editor.EditorController?,
 ) {
-    val stack by navigator.stack.collectAsState()
-    BackHandler(enabled = navigator.size > 1) { navigator.pop() }
     // 首页（导航栈只有根）双击返回退出：3 秒内按两次退出，第一次提示。
     // sheet/弹窗打开时它们自己的返回处理优先（后注册的 BackHandler 先触发）。
     val context = LocalContext.current
@@ -131,67 +132,92 @@ private fun NavigationHost(
             ).show()
         }
     }
-    // Keeps each route's rememberSaveable state (list data, scroll position)
-    // alive while the route is off-screen, so popping back to a screen
-    // restores it instead of rebuilding and refetching.
-    val saveableStateHolder = rememberSaveableStateHolder()
-    AnimatedContent(
-        targetState = stack.lastOrNull() ?: Route.ForumList,
-        transitionSpec = {
-            // Forward (push): the new page slides in from the right while the
-            // old one exits to the left. Backward (pop): mirrored — the new
-            // page slides in from the left and the old one exits to the right.
-            val forward =
-                stack.indexOf(initialState) != -1 &&
-                    stack.indexOf(targetState) > stack.indexOf(initialState)
-            if (forward) {
-                (slideInHorizontally(tween(280)) { it / 3 } + fadeIn(tween(280)))
-                    .togetherWith(
-                        slideOutHorizontally(tween(280)) { -it / 4 } + fadeOut(tween(280))
-                    )
-            } else {
-                (slideInHorizontally(tween(280)) { -it / 3 } + fadeIn(tween(280)))
-                    .togetherWith(
-                        slideOutHorizontally(tween(280)) { it / 4 } + fadeOut(tween(280))
-                    )
-            }
-        },
-        label = "nav",
-    ) { route ->
-        saveableStateHolder.SaveableStateProvider(routeKey(route)) {
-            Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-                RouteDispatcher(navigator, route, editor)
-            }
+
+    // Derive the route stack from the NavController back stack (system back
+    // presses included), keeping navigator.stack/size/lastOp in sync.
+    LaunchedEffect(navigator) { navigator.observe(this) }
+
+    NavHost(
+        navController = navigator.navController,
+        startDestination = RouteCodec.ROUTE_FORUM_LIST,
+        modifier = Modifier.fillMaxSize(),
+        // Forward (push): the new page slides in from the right while the old
+        // one exits to the left. Backward (pop): mirrored.
+        enterTransition = { slideInHorizontally(tween(280)) { it / 3 } + fadeIn(tween(280)) },
+        exitTransition = { slideOutHorizontally(tween(280)) { -it / 4 } + fadeOut(tween(280)) },
+        popEnterTransition = { slideInHorizontally(tween(280)) { -it / 3 } + fadeIn(tween(280)) },
+        popExitTransition = { slideOutHorizontally(tween(280)) { it / 4 } + fadeOut(tween(280)) },
+    ) {
+        composable(RouteCodec.ROUTE_FORUM_LIST) {
+            RouteDispatcher(navigator, Route.ForumList, editor)
+        }
+        composable(RouteCodec.ROUTE_TOPIC_LIST, arguments = payloadArgument) { entry ->
+            val route = remember(entry) { RouteCodec.decode(entry) }
+            if (route != null) RouteDispatcher(navigator, route, editor)
+        }
+        composable(RouteCodec.ROUTE_TOPIC_DETAILS, arguments = payloadArgument) { entry ->
+            val route = remember(entry) { RouteCodec.decode(entry) }
+            if (route != null) RouteDispatcher(navigator, route, editor)
+        }
+        composable(RouteCodec.ROUTE_USER_PROFILE, arguments = payloadArgument) { entry ->
+            val route = remember(entry) { RouteCodec.decode(entry) }
+            if (route != null) RouteDispatcher(navigator, route, editor)
+        }
+        composable(RouteCodec.ROUTE_GLOBAL_SEARCH) {
+            RouteDispatcher(navigator, Route.GlobalSearch, editor)
+        }
+        composable(RouteCodec.ROUTE_TOPIC_SEARCH, arguments = payloadArgument) { entry ->
+            val route = remember(entry) { RouteCodec.decode(entry) }
+            if (route != null) RouteDispatcher(navigator, route, editor)
+        }
+        composable(RouteCodec.ROUTE_HOT_TOPICS) {
+            RouteDispatcher(navigator, Route.HotTopics, editor)
+        }
+        composable(RouteCodec.ROUTE_FAVORITES) {
+            RouteDispatcher(navigator, Route.Favorites, editor)
+        }
+        composable(RouteCodec.ROUTE_HISTORY) {
+            RouteDispatcher(navigator, Route.History, editor)
+        }
+        composable(RouteCodec.ROUTE_SHORT_MESSAGES) {
+            RouteDispatcher(navigator, Route.ShortMessages, editor)
+        }
+        composable(RouteCodec.ROUTE_SHORT_MESSAGE_DETAILS, arguments = payloadArgument) { entry ->
+            val route = remember(entry) { RouteCodec.decode(entry) }
+            if (route != null) RouteDispatcher(navigator, route, editor)
+        }
+        composable(RouteCodec.ROUTE_SUBFORUMS) {
+            RouteDispatcher(navigator, Route.Subforums, editor)
+        }
+        composable(RouteCodec.ROUTE_SUBFORUM_LIST, arguments = payloadArgument) { entry ->
+            val route = remember(entry) { RouteCodec.decode(entry) }
+            if (route != null) RouteDispatcher(navigator, route, editor)
+        }
+        composable(RouteCodec.ROUTE_UNKNOWN_FORUM, arguments = payloadArgument) { entry ->
+            val route = remember(entry) { RouteCodec.decode(entry) }
+            if (route != null) RouteDispatcher(navigator, route, editor)
+        }
+        composable(RouteCodec.ROUTE_CACHE_SETTINGS) {
+            RouteDispatcher(navigator, Route.CacheSettings, editor)
+        }
+        composable(RouteCodec.ROUTE_BLOCK_WORDS) {
+            RouteDispatcher(navigator, Route.BlockWords, editor)
+        }
+        composable(RouteCodec.ROUTE_ABOUT) {
+            RouteDispatcher(navigator, Route.About, editor)
+        }
+        composable(RouteCodec.ROUTE_SETTINGS) {
+            RouteDispatcher(navigator, Route.Settings, editor)
+        }
+        composable(RouteCodec.ROUTE_NOTIFICATIONS) {
+            RouteDispatcher(navigator, Route.Notifications, editor)
         }
     }
 }
 
-/** Stable per-route key for [androidx.compose.runtime.saveable.rememberSaveableStateHolder]. */
-private fun routeKey(route: Route): String = when (route) {
-    Route.ForumList -> "forum-list"
-    is Route.TopicList ->
-        "topic-list-${if (route.forumId.hasFid()) "f${route.forumId.fid}" else "st${route.forumId.stid}"}-${route.mode}"
-    is Route.TopicDetails ->
-        "topic-details-${route.topicId}-${route.postId ?: ""}${if (route.anonymousAuthorOnly) "-anon" else ""}-${route.authorId ?: ""}${if (route.localCache) "-cache" else ""}"
-    is Route.UserProfile -> "user-profile-${route.userId ?: route.userName ?: "?"}"
-    Route.GlobalSearch -> "global-search"
-    is Route.TopicSearch ->
-        "topic-search-" + (route.forumId?.let { if (it.hasFid()) "f${it.fid}" else "st${it.stid}" } ?: "all")
-    Route.HotTopics -> "hot-topics"
-    Route.Favorites -> "favorites"
-    Route.History -> "history"
-    Route.ShortMessages -> "short-messages"
-    is Route.ShortMessageDetails -> "short-message-details-${route.id}"
-    Route.Subforums -> "subforums"
-    is Route.SubforumList ->
-        "subforum-list-${if (route.forumId.hasFid()) "f${route.forumId.fid}" else "st${route.forumId.stid}"}"
-    is Route.UnknownForum -> "unknown-forum"
-    Route.CacheSettings -> "cache-settings"
-    Route.BlockWords -> "block-words"
-    Route.About -> "about"
-    Route.Settings -> "settings"
-    Route.Notifications -> "notifications"
-}
+/** Every argument-carrying route packs its fields into one JSON `payload` path arg. */
+private val payloadArgument =
+    listOf(navArgument("payload") { type = NavType.StringType })
 
 /** Maps a route to its screen. */
 @Composable
@@ -222,8 +248,8 @@ fun RouteDispatcher(
                 userName = route.userName,
                 user = route.user,
             )
-        is Route.GlobalSearch -> SearchScreen(navigator, freshEntry = navigator.lastOp == Navigator.Op.PUSH)
-        is Route.TopicSearch -> SearchScreen(navigator, route.forumId, freshEntry = navigator.lastOp == Navigator.Op.PUSH)
+        is Route.GlobalSearch -> SearchScreen(navigator)
+        is Route.TopicSearch -> SearchScreen(navigator, route.forumId)
         is Route.Favorites -> FavoritesScreen(navigator)
         is Route.History -> HistoryScreen(navigator)
         is Route.ShortMessages -> ShortMessageListScreen(navigator)

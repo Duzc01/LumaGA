@@ -1,14 +1,26 @@
 package com.bugenzhao.mnga.ui.nav
 
+import androidx.navigation.NavHostController
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
 
 /**
- * A minimal path-based navigation stack mirroring SwiftUI's `NavigationStack`
- * semantics: screens push/pop on an observable route list, and programmatic
- * navigation (deep links, context menus) manipulates the same list.
+ * A path-based navigation stack mirroring SwiftUI's `NavigationStack`
+ * semantics, backed by Navigation Compose's [NavHostController].
+ *
+ * The public surface (push/pop/popToRoot/popTo/replace/contains/stack/size/
+ * lastOp) is unchanged; internally the route list is derived from the
+ * NavController back stack, so programmatic navigation (deep links, context
+ * menus) and system back presses stay in sync. NavHost keeps every entry's
+ * composition and saveable state alive while it is off-screen, so popping back
+ * to a screen resumes it instead of rebuilding and refetching.
  */
-class Navigator(initial: List<Route> = emptyList()) {
+class Navigator(
+    val navController: NavHostController,
+    initial: List<Route> = emptyList(),
+) {
 
     /** How the top-most route most recently entered the stack; screens use it
      * to tell a fresh push from a pop-back (resume). */
@@ -26,31 +38,50 @@ class Navigator(initial: List<Route> = emptyList()) {
 
     fun push(route: Route) {
         lastOp = Op.PUSH
-        _stack.value = _stack.value + route
+        navController.navigate(RouteCodec.encode(route))
     }
 
     fun pop() {
         lastOp = Op.POP
-        if (_stack.value.isNotEmpty()) {
-            _stack.value = _stack.value.dropLast(1)
-        }
+        navController.popBackStack()
     }
 
     fun popToRoot() {
-        _stack.value = _stack.value.take(1)
+        navController.popBackStack(RouteCodec.ROUTE_FORUM_LIST, inclusive = false)
     }
 
     fun popTo(index: Int) {
-        if (index in _stack.value.indices && index < _stack.value.size - 1) {
-            _stack.value = _stack.value.take(index + 1)
-        }
+        val entry = navController.currentBackStack.value.getOrNull(index) ?: return
+        navController.popBackStack(entry, inclusive = false)
     }
 
     fun replace(route: Route) {
-        _stack.value = listOf(route)
+        navController.navigate(RouteCodec.encode(route)) {
+            popUpTo(navController.graph.id) { inclusive = true }
+        }
     }
 
     fun contains(predicate: (Route) -> Boolean): Boolean = _stack.value.any(predicate)
+
+    /**
+     * Keeps [stack] (and [lastOp]) in sync with the NavController back stack.
+     * Call once from composition:
+     * `LaunchedEffect(navigator) { navigator.observe(this) }`.
+     */
+    fun observe(scope: CoroutineScope) {
+        scope.launch {
+            navController.currentBackStack.collect { entries ->
+                val routes = entries.mapNotNull(RouteCodec::decode)
+                val previous = _stack.value
+                lastOp = when {
+                    routes.size > previous.size -> Op.PUSH
+                    routes.size < previous.size -> Op.POP
+                    else -> lastOp
+                }
+                _stack.value = routes
+            }
+        }
+    }
 }
 
 /** One pushed screen. */

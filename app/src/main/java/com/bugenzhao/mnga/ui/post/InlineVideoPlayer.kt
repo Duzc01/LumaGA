@@ -58,6 +58,9 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.bugenzhao.mnga.BuildConfig
 import com.bugenzhao.mnga.util.URLs
 import java.io.File
@@ -141,6 +144,36 @@ fun InlineVideoPlayer(
 
     DisposableEffect(player) {
         onDispose { runCatching { player.release() } }
+    }
+
+    // NavHost 中被其它页面盖住（或 App 退后台）时，本 entry 的生命周期会降级
+    // （RESUMED → CREATED），自动暂停；回来（ON_RESUME）时若离开前正在播放
+    // 则恢复。用户手动暂停的不自动恢复。
+    var resumeAfterLifecyclePause by remember(url) { mutableStateOf(false) }
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner, player) {
+        val observer = LifecycleEventObserver { _, event ->
+            when (event) {
+                Lifecycle.Event.ON_PAUSE -> {
+                    resumeAfterLifecyclePause =
+                        runCatching { player.isPlaying }.getOrDefault(false)
+                    if (resumeAfterLifecyclePause) {
+                        runCatching { player.pause() }
+                        isPlaying = false
+                    }
+                }
+                Lifecycle.Event.ON_RESUME -> {
+                    if (resumeAfterLifecyclePause) {
+                        resumeAfterLifecyclePause = false
+                        runCatching { player.start() }
+                        isPlaying = true
+                    }
+                }
+                else -> Unit
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
     fun togglePlay() {

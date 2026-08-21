@@ -274,7 +274,9 @@ fun TopicListScreen(
             // popped off the stack for good, drop the snapshot so the next
             // entry into this forum starts fresh instead of showing the
             // stale list.
-            val stillInStack = route != null && navigator.stack.value.any { it === route }
+            // 注意：NavHost 下 entry 的 route 实例与 navigator.stack 中解码出的
+            // 实例不是同一个对象，必须用值相等（Route 是 data class）。
+            val stillInStack = route != null && navigator.stack.value.any { it == route }
             if (stillInStack && dataSource.items.isNotEmpty()) {
                 savedItemsB64 = dataSource.items.map {
                     Base64.encodeToString(it.toByteArray(), Base64.NO_WRAP)

@@ -9,6 +9,7 @@ coil = "2.7.0"
 protobuf = "4.35.1"
 coroutines = "1.10.2"
 annotation = "1.9.1"
+navigationCompose = "2.9.0"
 buglyCrash = "4.1.9"
 buglyNative = "3.9.2"
 
@@ -26,6 +27,7 @@ androidx-compose-ui-tooling-preview = { group = "androidx.compose.ui", name = "u
 androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3" }
 androidx-compose-material-icons = { group = "androidx.compose.material", name = "material-icons-extended" }
 androidx-annotation = { group = "androidx.annotation", name = "annotation", version.ref = "annotation" }
+androidx-navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigationCompose" }
 coil-compose = { group = "io.coil-kt", name = "coil-compose", version.ref = "coil" }
 coil-gif = { group = "io.coil-kt", name = "coil-gif", version.ref = "coil" }
 bugly-crashreport = { group = "com.tencent.bugly", name = "crashreport", version.ref = "buglyCrash" }

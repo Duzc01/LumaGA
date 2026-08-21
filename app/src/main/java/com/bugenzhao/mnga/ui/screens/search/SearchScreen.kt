@@ -111,9 +111,6 @@ private enum class SearchTab(val titleKey: String, val history: SearchHistorySco
 fun SearchScreen(
     navigator: Navigator,
     forumId: ForumId? = null,
-    /** True when pushed fresh (vs. popped back to); fresh entries reset to the
-     * idle state, pop-backs resume query, results and scroll position. */
-    freshEntry: Boolean = false,
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -141,19 +138,6 @@ fun SearchScreen(
     // field may attach a frame later than this effect, hence the guard.
     LaunchedEffect(Unit) {
         runCatching { fieldFocus.requestFocus() }
-    }
-
-    // 全新进入（push）：重置为初始态——空搜索框、无结果（显示历史）。
-    // pop 返回时不动：query/结果/滚动位置由 saveable 恢复。
-    LaunchedEffect(freshEntry) {
-        if (freshEntry) {
-            text = ""
-            committedText = null
-            savedTopicsB64 = emptyList()
-            savedTopicsLoadedPage = 0
-            savedForumsB64 = emptyList()
-            savedForumsLoadedPage = 0
-        }
     }
 
     val topicDataSource = remember(committedText, currentForumOnly, searchContent) {
@@ -308,9 +292,9 @@ fun SearchScreen(
                     val forumDS = forumDataSource
                     when {
                         tab == SearchTab.TOPICS && topicDS != null ->
-                            TopicResultsList(topicDS, navigator, freshEntry)
+                            TopicResultsList(topicDS, navigator)
                         tab == SearchTab.FORUMS && forumDS != null ->
-                            ForumResultsList(forumDS, navigator, freshEntry)
+                            ForumResultsList(forumDS, navigator)
                         else -> SearchHistorySection(
                             historyScope = tab.history,
                             onPick = { query ->
