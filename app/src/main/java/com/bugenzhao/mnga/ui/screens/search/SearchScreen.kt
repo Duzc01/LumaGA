@@ -76,6 +76,11 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.bugenzhao.mnga.App
 import com.bugenzhao.mnga.protos.datamodel.ForumId
+import com.bugenzhao.mnga.protos.datamodel.Topic
+import com.bugenzhao.mnga.protos.datamodel.Forum
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.DisposableEffect
 import com.bugenzhao.mnga.storage.SearchHistoryScope
 import com.bugenzhao.mnga.ui.nav.Navigator
 import com.bugenzhao.mnga.util.L
@@ -109,11 +114,18 @@ fun SearchScreen(navigator: Navigator, forumId: ForumId? = null) {
     val keyboard = LocalSoftwareKeyboardController.current
     val fieldFocus = remember { FocusRequester() }
 
-    var text by remember { mutableStateOf("") }
-    var committedText by remember { mutableStateOf<String?>(null) }
+    var text by rememberSaveable { mutableStateOf("") }
+    var committedText by rememberSaveable { mutableStateOf<String?>(null) }
     // Narrowed to the browsed forum by default, where there is one to narrow to.
-    var currentForumOnly by remember { mutableStateOf(forumId != null) }
-    var searchContent by remember { mutableStateOf(true) }
+    var currentForumOnly by rememberSaveable { mutableStateOf(forumId != null) }
+    var searchContent by rememberSaveable { mutableStateOf(true) }
+
+    // 结果快照：进详情返回时恢复列表数据（dataSource 是普通 remember，离开组合
+    // 会重建为空；与列表页的跨路由状态保留是同一机制）。
+    var savedTopicsB64 by rememberSaveable { mutableStateOf<List<String>>(emptyList()) }
+    var savedTopicsLoadedPage by rememberSaveable { mutableIntStateOf(0) }
+    var savedForumsB64 by rememberSaveable { mutableStateOf<List<String>>(emptyList()) }
+    var savedForumsLoadedPage by rememberSaveable { mutableIntStateOf(0) }
 
     val pagerState = rememberPagerState(pageCount = { SearchTab.entries.size })
 
@@ -123,6 +135,72 @@ fun SearchScreen(navigator: Navigator, forumId: ForumId? = null) {
     // field may attach a frame later than this effect, hence the guard.
     LaunchedEffect(Unit) {
         runCatching { fieldFocus.requestFocus() }
+    }
+
+    val topicDataSource = remember(committedText, currentForumOnly, searchContent) {
+        committedText?.let {
+            buildTopicSearchDataSource(
+                scope = scope,
+                text = it,
+                forumId = forumId.takeIf { currentForumOnly },
+                searchContent = searchContent,
+            )
+        }
+    }
+    val forumDataSource = remember(committedText) {
+        committedText?.let { buildForumSearchDataSource(scope, it) }
+    }
+
+    // 恢复快照或首载：dataSource 随 committedText 重建，恢复时列表回到顶部。
+    LaunchedEffect(topicDataSource) {
+        val ds = topicDataSource ?: return@LaunchedEffect
+        if (savedTopicsB64.isNotEmpty()) {
+            ds.restoreItems(
+                items = savedTopicsB64.map {
+                    Topic.parseFrom(android.util.Base64.decode(it, android.util.Base64.NO_WRAP))
+                },
+                loadedPage = savedTopicsLoadedPage,
+                totalPages = savedTopicsLoadedPage + 1,
+                lastRefreshTime = null,
+            )
+        } else {
+            ds.initialLoad()
+        }
+    }
+    LaunchedEffect(forumDataSource) {
+        val ds = forumDataSource ?: return@LaunchedEffect
+        if (savedForumsB64.isNotEmpty()) {
+            ds.restoreItems(
+                items = savedForumsB64.map {
+                    Forum.parseFrom(android.util.Base64.decode(it, android.util.Base64.NO_WRAP))
+                },
+                loadedPage = savedForumsLoadedPage,
+                totalPages = savedForumsLoadedPage + 1,
+                lastRefreshTime = null,
+            )
+        } else {
+            ds.initialLoad()
+        }
+    }
+    DisposableEffect(Unit) {
+        onDispose {
+            topicDataSource?.let { ds ->
+                if (ds.items.isNotEmpty()) {
+                    savedTopicsB64 = ds.items.map {
+                        android.util.Base64.encodeToString(it.toByteArray(), android.util.Base64.NO_WRAP)
+                    }
+                    savedTopicsLoadedPage = ds.loadedPage
+                }
+            }
+            forumDataSource?.let { ds ->
+                if (ds.items.isNotEmpty()) {
+                    savedForumsB64 = ds.items.map {
+                        android.util.Base64.encodeToString(it.toByteArray(), android.util.Base64.NO_WRAP)
+                    }
+                    savedForumsLoadedPage = ds.loadedPage
+                }
+            }
+        }
     }
 
     /** Commit [query], remembering it in the history of the visible tab. */
@@ -139,20 +217,6 @@ fun SearchScreen(navigator: Navigator, forumId: ForumId? = null) {
 
     // Data sources are rebuilt whenever the committed text or an option
     // changes, like `SearchModel`'s `commitedText -> dataSource` mapping.
-    val topicDataSource = remember(committedText, currentForumOnly, searchContent) {
-        committedText?.let {
-            buildTopicSearchDataSource(
-                scope = scope,
-                text = it,
-                forumId = forumId.takeIf { currentForumOnly },
-                searchContent = searchContent,
-            )
-        }
-    }
-    val forumDataSource = remember(committedText) {
-        committedText?.let { buildForumSearchDataSource(scope, it) }
-    }
-
     Scaffold(
         topBar = {
             TopAppBar(
@@ -615,7 +679,7 @@ private fun SearchHistoryChip(query: String, onClick: () -> Unit, onDelete: () -
             // light as the chip itself.
             .border(Dp.Hairline, outline.copy(alpha = 0.55f), CircleShape)
             .clickable { onClick() }
-            .padding(start = 12.dp, end = 3.dp),
+            .padding(start = 12.dp, end = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
@@ -627,14 +691,16 @@ private fun SearchHistoryChip(query: String, onClick: () -> Unit, onDelete: () -
             // A long query must not claim more than a line of its own.
             modifier = Modifier.widthIn(max = 180.dp),
         )
+        Spacer(Modifier.width(4.dp))
         Icon(
             Icons.Outlined.Close,
             contentDescription = L.str(context, "Delete"),
+            // 小热区 + 间距：避免点文字末尾时误触删除。
             modifier = Modifier
-                .size(24.dp)
+                .size(18.dp)
                 .clip(CircleShape)
                 .clickable { onDelete() }
-                .padding(6.dp),
+                .padding(2.dp),
             tint = outline,
         )
     }

@@ -157,6 +157,8 @@ internal fun ForumResultsList(
             state.items.isEmpty() -> EmptyResultsState()
             else -> {
                 val lstate = rememberLazyListState()
+                // 新一批结果（新搜索/快照恢复）进入时总是定位到最上面。
+                LaunchedEffect(dataSource) { lstate.scrollToItem(0) }
                 LazyColumn(
                     state = lstate,
                     modifier = Modifier.fillMaxSize(),
@@ -211,6 +213,8 @@ internal fun TopicResultsList(
             state.items.isEmpty() -> EmptyResultsState()
             else -> {
                 val lstate = rememberLazyListState()
+                // 新一批结果（新搜索/快照恢复）进入时总是定位到最上面。
+                LaunchedEffect(dataSource) { lstate.scrollToItem(0) }
                 LazyColumn(
                     state = lstate,
                     modifier = Modifier.fillMaxSize(),
