@@ -89,6 +89,7 @@ private fun classicScheme(accent: Color): ColorScheme =
         onSurface = Color(0xFF333333),
         surfaceVariant = Color(0xFFF6E6BC),
         onSurfaceVariant = Color(0xFF6B5D3E),
+        surfaceContainerLow = Color(0xFFFEEFCC),
         surfaceContainer = Color(0xFFF8E8C0),
         surfaceContainerHigh = Color(0xFFF2E0B4),
         surfaceContainerHighest = Color(0xFFEAD6A4),
