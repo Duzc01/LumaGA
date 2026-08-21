@@ -100,7 +100,7 @@ if command -v aapt >/dev/null; then
   echo "$BADGING" | grep -q "versionCode='$((VERSION_NAME))'" 2>/dev/null || \
     echo "$BADGING" | grep -q "versionCode='$(
       IFS='.' read -r M1 M2 M3 <<<"$VERSION_NAME"
-      echo $((M1 * 100 + M2 * 10 + M3))
+      echo $((M1 * 10000 + M2 * 100 + M3))
     )'" || {
       echo "警告: APK 版本号与预期 ($VERSION_NAME) 不一致！"; exit 1
     }

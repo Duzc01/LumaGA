@@ -2,13 +2,14 @@
 #
 # bump-version.sh — 升级 LumaGA 版本号。
 #
-# versionName 与 versionCode 保持语义对应：1.x.y -> code 1xy
+# versionName 与 versionCode 保持语义对应：x.y.z -> code xxyyzz（每段两位，6 位内）
+#   1.1.10 -> 10110；1.2.0 -> 10200；99.99.99 -> 999999
 # （例如 1.1.0 -> 110，1.0.1 -> 101），避免手改出错。
 #
 # 用法:
-#   scripts/bump-version.sh patch            # 小版本：1.0.0 -> 1.0.1，code 100 -> 101
-#   scripts/bump-version.sh minor            # 中版本：1.0.0 -> 1.1.0，code 100 -> 110（末位归零）
-#   scripts/bump-version.sh major            # 大版本：1.0.0 -> 2.0.0，code 100 -> 200（后两位归零）
+#   scripts/bump-version.sh patch            # 小版本：1.0.0 -> 1.0.1，code 10000 -> 10001
+#   scripts/bump-version.sh minor            # 中版本：1.0.0 -> 1.1.0，code 10000 -> 10100（末位归零）
+#   scripts/bump-version.sh major            # 大版本：1.0.0 -> 2.0.0，code 10000 -> 20000（后四位归零）
 #   scripts/bump-version.sh patch --commit   # 同时提交
 #   scripts/bump-version.sh patch --push     # 提交并推送（隐含 --commit）
 #
@@ -57,11 +58,14 @@ case "$KIND" in
 esac
 
 NEW_NAME="$MAJOR.$MINOR.$PATCH"
-NEW_CODE=$((MAJOR * 100 + MINOR * 10 + PATCH))
+NEW_CODE=$((MAJOR * 10000 + MINOR * 100 + PATCH))
 
-# 防溢出：patch > 9 时 versionCode 会与下一个 minor 版本冲突
-if [ "$PATCH" -gt 9 ]; then
-  echo "警告: patch=$PATCH 超过 9，versionCode 将与 minor 版本冲突，请改用 minor/major。" >&2
+# 防溢出：每段两位（最多 99），超出会破坏 xxyyzz 编码
+if [ "$PATCH" -gt 99 ]; then
+  echo "警告: patch=$PATCH 超过 99，versionCode 将溢出，请改用 minor/major。" >&2
+fi
+if [ "$MINOR" -gt 99 ]; then
+  echo "警告: minor=$MINOR 超过 99，versionCode 将溢出。" >&2
 fi
 
 echo "当前版本: $VERSION_NAME (code $VERSION_CODE)"
