@@ -45,7 +45,7 @@ enum class ThemeColor(val raw: Int, val label: String, val lightColor: Long, val
 }
 
 enum class ColorSchemeMode(val raw: Int) {
-    AUTO(0), LIGHT(1), DARK(2);
+    AUTO(0), LIGHT(1), DARK(2), CLASSIC(3);
 
     companion object {
         fun fromRaw(raw: Int): ColorSchemeMode = entries.firstOrNull { it.raw == raw } ?: AUTO

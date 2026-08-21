@@ -606,6 +606,7 @@ private fun colorSchemeLabel(context: android.content.Context, mode: ColorScheme
         ColorSchemeMode.AUTO -> L.str(context, "Auto")
         ColorSchemeMode.LIGHT -> L.str(context, "Light")
         ColorSchemeMode.DARK -> L.str(context, "Dark")
+        ColorSchemeMode.CLASSIC -> L.str(context, "Classic NGA")
     }
 
 private fun orderLabel(context: android.content.Context, order: TopicListOrder): String =

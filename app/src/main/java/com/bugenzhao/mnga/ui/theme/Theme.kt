@@ -77,6 +77,25 @@ private fun scheme(accent: Color, dark: Boolean): ColorScheme {
 private fun Color.luminance(): Float =
     (0.2126f * red + 0.7152f * green + 0.0722f * blue)
 
+/**
+ * 经典 NGA 配色：浅黄底（#feefcc）+ 深灰文字，复刻网页论坛观感。
+ * 复用浅色方案派生 accent 相关色，仅替换中性色板。
+ */
+private fun classicScheme(accent: Color): ColorScheme =
+    scheme(accent, dark = false).copy(
+        background = Color(0xFFFEEFCC),
+        onBackground = Color(0xFF333333),
+        surface = Color(0xFFFEEFCC),
+        onSurface = Color(0xFF333333),
+        surfaceVariant = Color(0xFFF6E6BC),
+        onSurfaceVariant = Color(0xFF6B5D3E),
+        surfaceContainer = Color(0xFFF8E8C0),
+        surfaceContainerHigh = Color(0xFFF2E0B4),
+        surfaceContainerHighest = Color(0xFFEAD6A4),
+        outline = Color(0xFFD9C48F),
+        outlineVariant = Color(0xFFE8D8A8),
+    )
+
 @Composable
 fun LumaGATheme(
     themeColor: ThemeColor,
@@ -87,10 +106,14 @@ fun LumaGATheme(
         ColorSchemeMode.AUTO -> isSystemInDarkTheme()
         ColorSchemeMode.LIGHT -> false
         ColorSchemeMode.DARK -> true
+        ColorSchemeMode.CLASSIC -> false
     }
     val accent = Color(if (dark) themeColor.darkColor else themeColor.lightColor)
     MaterialTheme(
-        colorScheme = scheme(accent, dark),
+        colorScheme = when (colorSchemeMode) {
+            ColorSchemeMode.CLASSIC -> classicScheme(accent)
+            else -> scheme(accent, dark)
+        },
         typography = LumaGATypography,
         content = content,
     )
