@@ -79,17 +79,17 @@ private fun Color.luminance(): Float =
 
 /**
  * 经典 NGA 配色：浅黄底（#feefcc）+ 深灰文字，复刻网页论坛观感。
- * 复用浅色方案派生 accent 相关色，仅替换中性色板。
+ * 卡片（surface）用更浅的 #fff6df 与背景区分；accent 相关色沿用浅色方案派生。
  */
 private fun classicScheme(accent: Color): ColorScheme =
     scheme(accent, dark = false).copy(
         background = Color(0xFFFEEFCC),
         onBackground = Color(0xFF333333),
-        surface = Color(0xFFFEEFCC),
+        surface = Color(0xFFFFF6DF),
         onSurface = Color(0xFF333333),
         surfaceVariant = Color(0xFFF6E6BC),
         onSurfaceVariant = Color(0xFF6B5D3E),
-        surfaceContainerLow = Color(0xFFFEEFCC),
+        surfaceContainerLow = Color(0xFFFFF6DF),
         surfaceContainer = Color(0xFFF8E8C0),
         surfaceContainerHigh = Color(0xFFF2E0B4),
         surfaceContainerHighest = Color(0xFFEAD6A4),
