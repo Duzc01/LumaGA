@@ -308,9 +308,9 @@ fun SearchScreen(
                     val forumDS = forumDataSource
                     when {
                         tab == SearchTab.TOPICS && topicDS != null ->
-                            TopicResultsList(topicDS, navigator)
+                            TopicResultsList(topicDS, navigator, freshEntry)
                         tab == SearchTab.FORUMS && forumDS != null ->
-                            ForumResultsList(forumDS, navigator)
+                            ForumResultsList(forumDS, navigator, freshEntry)
                         else -> SearchHistorySection(
                             historyScope = tab.history,
                             onPick = { query ->

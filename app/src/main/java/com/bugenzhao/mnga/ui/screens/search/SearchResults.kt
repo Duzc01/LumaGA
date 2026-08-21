@@ -125,6 +125,7 @@ internal fun buildTopicSearchDataSource(
 internal fun ForumResultsList(
     dataSource: PagingDataSource<ForumSearchResponse, Forum>,
     navigator: Navigator,
+    freshEntry: Boolean = false,
 ) {
     val context = LocalContext.current
     val state by dataSource.state.collectAsState()
@@ -160,6 +161,10 @@ internal fun ForumResultsList(
             else -> {
                 // Saveable：pop 返回时恢复滚动位置（resume 效果）。
                 val lstate = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
+                // 全新进入：即便 saveable 残留了上次的位置也重置到顶部。
+                if (freshEntry) {
+                    LaunchedEffect(Unit) { lstate.scrollToItem(0) }
+                }
                 LazyColumn(
                     state = lstate,
                     modifier = Modifier.fillMaxSize(),
@@ -183,6 +188,7 @@ internal fun ForumResultsList(
 internal fun TopicResultsList(
     dataSource: PagingDataSource<TopicSearchResponse, Topic>,
     navigator: Navigator,
+    freshEntry: Boolean = false,
 ) {
     val context = LocalContext.current
     val view = LocalView.current
@@ -215,6 +221,10 @@ internal fun TopicResultsList(
             else -> {
                 // Saveable：pop 返回时恢复滚动位置（resume 效果）。
                 val lstate = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
+                // 全新进入：即便 saveable 残留了上次的位置也重置到顶部。
+                if (freshEntry) {
+                    LaunchedEffect(Unit) { lstate.scrollToItem(0) }
+                }
                 LazyColumn(
                     state = lstate,
                     modifier = Modifier.fillMaxSize(),
