@@ -233,10 +233,8 @@ fun NotificationListSheet(
                                 read = read,
                                 onClick = {
                                     mark(listOf(noti.id), read = true)
-                                    // 不能先 push 再 pop：NavController 的 pop 会
-                                    // 弹掉刚 push 的 entry，页面留在原地。用"替换
-                                    // 顶部"让通知页直接路由到目标页。
-                                    navigator.pushReplacingTop(routeForNotification(noti))
+                                    // 与其它列表页一致：push 详情，返回时回到通知列表。
+                                    navigator.push(routeForNotification(noti))
                                 },
                                 onToggleRead = { mark(listOf(noti.id), read = !read) },
                             )
