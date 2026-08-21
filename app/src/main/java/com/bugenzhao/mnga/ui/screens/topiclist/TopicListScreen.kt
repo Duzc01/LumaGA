@@ -1,6 +1,5 @@
 package com.bugenzhao.mnga.ui.screens.topiclist
 
-import android.util.Base64
 import androidx.activity.compose.BackHandler
 
 import androidx.compose.foundation.layout.Box
@@ -49,7 +48,6 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -59,6 +57,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.bugenzhao.mnga.App
 import com.bugenzhao.mnga.model.NavigationIdentifier
 import com.bugenzhao.mnga.model.PagingDataSource
@@ -103,8 +102,6 @@ fun TopicListScreen(
     mode: TopicListMode = TopicListMode.NORMAL,
     dateRange: Int = 0,
     editor: com.bugenzhao.mnga.ui.editor.EditorController? = null,
-    /** The stack route rendering this screen, used to tell a pop from a push. */
-    route: Route? = null,
 ) {
     val context = LocalContext.current
     val view = LocalView.current
@@ -137,48 +134,12 @@ fun TopicListScreen(
         return result
     }
 
-    // -- Data sources.
-    val (dataSourceLastPost, dataSourcePostDate) = remember(forumId) {
-        val lastPost = PagingDataSource<TopicListResponse, Topic>(
-            scope = scope,
-            responseParser = { TopicListResponse.parser() },
-            buildRequest = { page ->
-                AsyncRequest.newBuilder()
-                    .setTopicList(
-                        TopicListRequest.newBuilder()
-                            .setId(forumId)
-                            .setPage(page)
-                            .setOrder(TopicListRequest.Order.LAST_POST)
-                            .build()
-                    )
-                    .build()
-            },
-            onResponse = { response ->
-                Pair(maybeFiltered(response.topicsList), response.pages.toInt().takeIf { it > 0 })
-            },
-            id = { it.id },
-        )
-        val postDate = PagingDataSource<TopicListResponse, Topic>(
-            scope = scope,
-            responseParser = { TopicListResponse.parser() },
-            buildRequest = { page ->
-                AsyncRequest.newBuilder()
-                    .setTopicList(
-                        TopicListRequest.newBuilder()
-                            .setId(forumId)
-                            .setPage(page)
-                            .setOrder(TopicListRequest.Order.POST_DATE)
-                            .build()
-                    )
-                    .build()
-            },
-            onResponse = { response ->
-                Pair(maybeFiltered(response.topicsList), response.pages.toInt().takeIf { it > 0 })
-            },
-            id = { it.id },
-        )
-        lastPost to postDate
-    }
+    // -- Data sources: held by the entry-scoped ViewModel so the loaded data
+    // survives being covered by a pushed screen (composition is disposed,
+    // ViewModel is not) — no snapshot needed.
+    val topicListVM: TopicListViewModel = viewModel(
+        factory = TopicListViewModel.factory(forumId, mode),
+    )
 
     var hotRange by remember(forumId) {
         mutableStateOf(
@@ -186,114 +147,19 @@ fun TopicListScreen(
                 ?: HotTopicListRequest.DateRange.DAY
         )
     }
-    val hotDataSource = remember(forumId, hotRange) {
-        PagingDataSource<HotTopicListResponse, Topic>(
-            scope = scope,
-            responseParser = { HotTopicListResponse.parser() },
-            buildRequest = { _ ->
-                AsyncRequest.newBuilder()
-                    .setHotTopicList(
-                        HotTopicListRequest.newBuilder()
-                            .setId(forumId)
-                            .setRange(hotRange)
-                            .setFetchPageLimit(5)
-                            .build()
-                    )
-                    .build()
-            },
-            onResponse = { response -> Pair(response.topicsList, 1) },
-            id = { it.id },
-        )
-    }
-    val recommendedDataSource = remember(forumId) {
-        PagingDataSource<TopicListResponse, Topic>(
-            scope = scope,
-            responseParser = { TopicListResponse.parser() },
-            buildRequest = { page ->
-                AsyncRequest.newBuilder()
-                    .setTopicList(
-                        TopicListRequest.newBuilder()
-                            .setId(forumId)
-                            .setPage(page)
-                            .setOrder(TopicListRequest.Order.POST_DATE)
-                            .setRecommendedOnly(true)
-                            .build()
-                    )
-                    .build()
-            },
-            onResponse = { response ->
-                Pair(response.topicsList, response.pages.toInt().takeIf { it > 0 })
-            },
-            id = { it.id },
-        )
-    }
-
     val dataSource = when (mode) {
-        TopicListMode.HOT -> hotDataSource
-        TopicListMode.RECOMMENDED -> recommendedDataSource
+        TopicListMode.HOT -> topicListVM.hotDataSource(hotRange)
+        TopicListMode.RECOMMENDED -> topicListVM.recommendedDataSource
         TopicListMode.NORMAL ->
-            if (orderOrDefault == TopicListOrder.POST_DATE) dataSourcePostDate
-            else dataSourceLastPost
+            if (orderOrDefault == TopicListOrder.POST_DATE) topicListVM.dataSourcePostDate
+            else topicListVM.dataSourceLastPost
     }
     val state by dataSource.state.collectAsState()
 
-    // -- Keep the loaded topic list across navigation: when this screen is
-    // pushed away (e.g. into a topic details page) and popped back, restore
-    // the previous items/page/scroll instead of refetching and jumping to top.
-    var savedItemsB64 by rememberSaveable(forumId, mode) { mutableStateOf<List<String>>(emptyList()) }
-    var savedLoadedPage by rememberSaveable(forumId, mode) { mutableStateOf(0) }
-    var savedTotalPages by rememberSaveable(forumId, mode) { mutableStateOf(1) }
-    var savedLastRefresh by rememberSaveable(forumId, mode) { mutableStateOf(0L) }
-    var savedResponseB64 by rememberSaveable(forumId, mode) { mutableStateOf<String?>(null) }
-
+    // Load on first entry only: after a pop-back the ViewModel still holds the
+    // data, so notLoaded is false and nothing is refetched.
     LaunchedEffect(dataSource) {
-        if (savedItemsB64.isNotEmpty()) {
-            val parser =
-                when (dataSource) {
-                    hotDataSource -> HotTopicListResponse.parser()
-                    else -> TopicListResponse.parser()
-                }
-            dataSource.restoreItems(
-                items = savedItemsB64.map { Topic.parseFrom(Base64.decode(it, Base64.NO_WRAP)) },
-                loadedPage = savedLoadedPage,
-                totalPages = savedTotalPages,
-                lastRefreshTime = savedLastRefresh.takeIf { it > 0 }?.let { java.util.Date(it) },
-                latestResponse = savedResponseB64?.let {
-                    parser.parseFrom(Base64.decode(it, Base64.NO_WRAP))
-                },
-            )
-        } else {
-            dataSource.initialLoad()
-        }
-    }
-
-    DisposableEffect(Unit) {
-        onDispose {
-            // Only keep the snapshot when this screen was pushed away by a
-            // deeper route (so popping back restores it). When the route was
-            // popped off the stack for good, drop the snapshot so the next
-            // entry into this forum starts fresh instead of showing the
-            // stale list.
-            val stillInStack = route != null && navigator.stack.value.any { it === route }
-            if (stillInStack && dataSource.items.isNotEmpty()) {
-                savedItemsB64 = dataSource.items.map {
-                    Base64.encodeToString(it.toByteArray(), Base64.NO_WRAP)
-                }
-                savedLoadedPage = dataSource.loadedPage
-                savedTotalPages = dataSource.totalPages
-                savedLastRefresh = dataSource.lastRefreshTime?.time ?: 0L
-                savedResponseB64 =
-                    (dataSource.latestResponse as? com.google.protobuf.Message)
-                        ?.toByteArray()
-                        ?.let { Base64.encodeToString(it, Base64.NO_WRAP) }
-            } else if (!stillInStack) {
-                savedItemsB64 = emptyList()
-                savedLoadedPage = 0
-                savedTotalPages = 1
-                savedLastRefresh = 0L
-                savedResponseB64 = null
-            }
-        }
+        if (dataSource.notLoaded) dataSource.initialLoad()
     }
 
     // -- Forum meta enrichment (SS5 updateForumMeta).
@@ -556,10 +422,6 @@ fun TopicListScreen(
                 showInitialLoading = false,
                 emptyPlaceholder = L.str(context, "No Results"),
                 header = header,
-                // A fresh entry (no restored snapshot) must start at the top:
-                // the saveable scroll position would otherwise be restored
-                // from the route registry even though the data was reloaded.
-                freshEntry = savedItemsB64.isEmpty(),
                 scrollToTopSignal = refreshScrollEpoch,
                 itemContent = { _, topic ->
                     TopicListItem(

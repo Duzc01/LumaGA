@@ -233,8 +233,8 @@ fun NotificationListSheet(
                                 read = read,
                                 onClick = {
                                     mark(listOf(noti.id), read = true)
-                                    navigateForNotification(navigator, noti)
-                                    onDismiss()
+                                    // 与其它列表页一致：push 详情，返回时回到通知列表。
+                                    navigator.push(routeForNotification(noti))
                                 },
                                 onToggleRead = { mark(listOf(noti.id), read = !read) },
                             )
@@ -247,19 +247,15 @@ fun NotificationListSheet(
 }
 
 /** Route per `NotificationListView.buildLink`. */
-private fun navigateForNotification(navigator: Navigator, noti: Notification) {
-    when (noti.type) {
-        Notification.Type.SHORT_MESSAGE, Notification.Type.SHORT_MESSAGE_START ->
-            // The SM conversation id is carried in `otherPostID.tid`.
-            navigator.push(Route.ShortMessageDetails(id = noti.otherPostId.tid))
-        else -> navigator.push(
-            Route.TopicDetails(
-                topicId = noti.otherPostId.tid,
-                postId = noti.otherPostId.pid.takeIf { it.isNotEmpty() },
-                startPage = noti.page.toInt().takeIf { it > 0 } ?: 1,
-            )
-        )
-    }
+private fun routeForNotification(noti: Notification): Route = when (noti.type) {
+    Notification.Type.SHORT_MESSAGE, Notification.Type.SHORT_MESSAGE_START ->
+        // The SM conversation id is carried in `otherPostID.tid`.
+        Route.ShortMessageDetails(id = noti.otherPostId.tid)
+    else -> Route.TopicDetails(
+        topicId = noti.otherPostId.tid,
+        postId = noti.otherPostId.pid.takeIf { it.isNotEmpty() },
+        startPage = noti.page.toInt().takeIf { it > 0 } ?: 1,
+    )
 }
 
 /** One notification row, ported from `NotificationRowView`. */

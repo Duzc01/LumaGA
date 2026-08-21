@@ -80,7 +80,8 @@ import com.bugenzhao.mnga.protos.datamodel.Topic
 import com.bugenzhao.mnga.protos.datamodel.Forum
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.DisposableEffect
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import com.bugenzhao.mnga.storage.SearchHistoryScope
 import com.bugenzhao.mnga.ui.nav.Navigator
 import com.bugenzhao.mnga.util.L
@@ -111,9 +112,6 @@ private enum class SearchTab(val titleKey: String, val history: SearchHistorySco
 fun SearchScreen(
     navigator: Navigator,
     forumId: ForumId? = null,
-    /** True when pushed fresh (vs. popped back to); fresh entries reset to the
-     * idle state, pop-backs resume query, results and scroll position. */
-    freshEntry: Boolean = false,
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -124,7 +122,7 @@ fun SearchScreen(
     var committedText by rememberSaveable { mutableStateOf<String?>(null) }
     // Narrowed to the browsed forum by default, where there is one to narrow to.
     var currentForumOnly by rememberSaveable { mutableStateOf(forumId != null) }
-    var searchContent by rememberSaveable { mutableStateOf(true) }
+    var searchContent by rememberSaveable { mutableStateOf(false) }
 
     // 结果快照：进详情返回时恢复列表数据（dataSource 是普通 remember，离开组合
     // 会重建为空；与列表页的跨路由状态保留是同一机制）。
@@ -141,19 +139,6 @@ fun SearchScreen(
     // field may attach a frame later than this effect, hence the guard.
     LaunchedEffect(Unit) {
         runCatching { fieldFocus.requestFocus() }
-    }
-
-    // 全新进入（push）：重置为初始态——空搜索框、无结果（显示历史）。
-    // pop 返回时不动：query/结果/滚动位置由 saveable 恢复。
-    LaunchedEffect(freshEntry) {
-        if (freshEntry) {
-            text = ""
-            committedText = null
-            savedTopicsB64 = emptyList()
-            savedTopicsLoadedPage = 0
-            savedForumsB64 = emptyList()
-            savedForumsLoadedPage = 0
-        }
     }
 
     val topicDataSource = remember(committedText, currentForumOnly, searchContent) {
@@ -201,23 +186,25 @@ fun SearchScreen(
             ds.initialLoad()
         }
     }
-    DisposableEffect(Unit) {
-        onDispose {
-            topicDataSource?.let { ds ->
-                if (ds.items.isNotEmpty()) {
-                    savedTopicsB64 = ds.items.map {
-                        android.util.Base64.encodeToString(it.toByteArray(), android.util.Base64.NO_WRAP)
-                    }
-                    savedTopicsLoadedPage = ds.loadedPage
+    // 保存结果快照：entry 被盖住（NavHost 下组合销毁、返回时重建）或退后台时
+    // 写入 saveable，返回时 restoreItems 恢复而不重新拉取。
+    // 注意用 ON_STOP 而不是 DisposableEffect.onDispose：onDispose 时
+    // SaveableStateHolder 可能已经拍过状态快照，写入会被丢弃。
+    LifecycleEventEffect(Lifecycle.Event.ON_STOP) {
+        topicDataSource?.let { ds ->
+            if (ds.items.isNotEmpty()) {
+                savedTopicsB64 = ds.items.map {
+                    android.util.Base64.encodeToString(it.toByteArray(), android.util.Base64.NO_WRAP)
                 }
+                savedTopicsLoadedPage = ds.loadedPage
             }
-            forumDataSource?.let { ds ->
-                if (ds.items.isNotEmpty()) {
-                    savedForumsB64 = ds.items.map {
-                        android.util.Base64.encodeToString(it.toByteArray(), android.util.Base64.NO_WRAP)
-                    }
-                    savedForumsLoadedPage = ds.loadedPage
+        }
+        forumDataSource?.let { ds ->
+            if (ds.items.isNotEmpty()) {
+                savedForumsB64 = ds.items.map {
+                    android.util.Base64.encodeToString(it.toByteArray(), android.util.Base64.NO_WRAP)
                 }
+                savedForumsLoadedPage = ds.loadedPage
             }
         }
     }
@@ -308,9 +295,9 @@ fun SearchScreen(
                     val forumDS = forumDataSource
                     when {
                         tab == SearchTab.TOPICS && topicDS != null ->
-                            TopicResultsList(topicDS, navigator, freshEntry)
+                            TopicResultsList(topicDS, navigator)
                         tab == SearchTab.FORUMS && forumDS != null ->
-                            ForumResultsList(forumDS, navigator, freshEntry)
+                            ForumResultsList(forumDS, navigator)
                         else -> SearchHistorySection(
                             historyScope = tab.history,
                             onPick = { query ->
