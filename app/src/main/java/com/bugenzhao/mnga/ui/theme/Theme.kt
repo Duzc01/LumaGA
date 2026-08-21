@@ -79,7 +79,14 @@ private fun Color.luminance(): Float =
 
 /**
  * 经典 NGA 配色：浅黄底（#feefcc）+ 深灰文字，复刻网页论坛观感。
- * 卡片（surface）用更浅的 #fff6df 与背景区分；accent 相关色沿用浅色方案派生。
+ *
+ * 语义色用途与层级（改色时保持单调：surface 最浅，Container 系递进加深）：
+ * - surface            卡片/内容面板（帖子行、设置行、弹窗内卡片）
+ * - surfaceContainerLow  底部弹窗（ModalBottomSheet）底色，比卡片深一档
+ * - surfaceContainer    次级容器（chip 底等）
+ * - surfaceContainerHigh/Highest  对话框（AlertDialog）、输入框等
+ * - background         页面底色；surfaceVariant 输入框/下拉底色
+ * - outline/outlineVariant      边框与分割线（米色系，避免默认紫灰违和）
  */
 private fun classicScheme(accent: Color): ColorScheme =
     scheme(accent, dark = false).copy(
@@ -89,7 +96,7 @@ private fun classicScheme(accent: Color): ColorScheme =
         onSurface = Color(0xFF333333),
         surfaceVariant = Color(0xFFF6E6BC),
         onSurfaceVariant = Color(0xFF6B5D3E),
-        surfaceContainerLow = Color(0xFFFFF6DF),
+        surfaceContainerLow = Color(0xFFF8E8C0),
         surfaceContainer = Color(0xFFF8E8C0),
         surfaceContainerHigh = Color(0xFFF2E0B4),
         surfaceContainerHighest = Color(0xFFEAD6A4),
