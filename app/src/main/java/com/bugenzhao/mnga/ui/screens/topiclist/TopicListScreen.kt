@@ -37,11 +37,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SwipeToDismissBox
-import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -54,7 +51,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
@@ -64,7 +60,6 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import com.bugenzhao.mnga.App
-import com.bugenzhao.mnga.logicCallAsync
 import com.bugenzhao.mnga.model.NavigationIdentifier
 import com.bugenzhao.mnga.model.PagingDataSource
 import com.bugenzhao.mnga.model.PlusFeature
@@ -77,13 +72,13 @@ import com.bugenzhao.mnga.protos.datamodel.Topic
 import com.bugenzhao.mnga.protos.service.AsyncRequest
 import com.bugenzhao.mnga.protos.service.HotTopicListRequest
 import com.bugenzhao.mnga.protos.service.HotTopicListResponse
-import com.bugenzhao.mnga.protos.service.TopicFavorRequest
-import com.bugenzhao.mnga.protos.service.TopicFavorResponse
 import com.bugenzhao.mnga.protos.service.TopicListRequest
 import com.bugenzhao.mnga.protos.service.TopicListResponse
 import com.bugenzhao.mnga.storage.BlockWordsStorage
 import com.bugenzhao.mnga.storage.TopicListOrder
 import com.bugenzhao.mnga.ui.components.PagedList
+import com.bugenzhao.mnga.ui.components.SwipeToFavorBox
+import com.bugenzhao.mnga.ui.components.toggleTopicFavor
 import com.bugenzhao.mnga.ui.nav.Navigator
 import com.bugenzhao.mnga.ui.nav.Route
 import com.bugenzhao.mnga.ui.nav.TopicListMode
@@ -332,32 +327,6 @@ fun TopicListScreen(
 
     // -- Local favorite-topic overrides (kept after the swipe action).
     val favoredOverrides = remember(forumId) { mutableStateMapOf<String, Boolean>() }
-
-    fun toggleTopicFavor(topic: Topic) {
-        val favored = favoredOverrides[topic.id] ?: topic.isFavored
-        val operation = if (favored) {
-            TopicFavorRequest.Operation.DELETE
-        } else {
-            TopicFavorRequest.Operation.ADD
-        }
-        scope.launch {
-            val result = logicCallAsync(
-                AsyncRequest.newBuilder()
-                    .setTopicFavor(
-                        TopicFavorRequest.newBuilder()
-                            .setTopicId(topic.id)
-                            .setOperation(operation)
-                            .build()
-                    )
-                    .build(),
-                TopicFavorResponse.parser(),
-            )
-            result.onSuccess { response ->
-                favoredOverrides[topic.id] = response.isFavored
-                Haptics.play(view, Haptics.NotificationType.SUCCESS)
-            }
-        }
-    }
 
     // -- Toolbar-triggered refresh (SS0.6): refresh then success haptic. The
     // refresh also resets the scroll to the top (via scrollToTopSignal) so
@@ -612,7 +581,14 @@ fun TopicListScreen(
                                 )
                             )
                         },
-                        onToggleFavor = { toggleTopicFavor(topic) },
+                        onToggleFavor = {
+                            toggleTopicFavor(
+                                scope = scope,
+                                view = view,
+                                topicId = topic.id,
+                                currentFavored = favoredOverrides[topic.id] ?: topic.isFavored,
+                            ) { favored -> favoredOverrides[topic.id] = favored }
+                        },
                         onNavigateToForum = { id ->
                             navigator.push(Route.TopicList(forumId = id))
                         },
@@ -636,7 +612,6 @@ private fun ForumId.idDisplay(): String =
  * One topic entry: swipe-to-favorite wrapper around either a forum-shortcut
  * row or the standard topic row with its long-press context menu.
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun TopicListItem(
     topic: Topic,
@@ -652,33 +627,8 @@ private fun TopicListItem(
 ) {
     val context = LocalContext.current
     var shareMenuExpanded by remember { mutableStateOf(false) }
-    val boxState = rememberSwipeToDismissBoxState(
-        confirmValueChange = { value ->
-            if (value == SwipeToDismissBoxValue.StartToEnd) {
-                onToggleFavor()
-            }
-            false // Never actually dismiss: favoriting keeps the row.
-        }
-    )
 
-    SwipeToDismissBox(
-        state = boxState,
-        backgroundContent = {
-            Box(
-                Modifier.fillMaxSize(),
-                contentAlignment = Alignment.CenterStart,
-            ) {
-                Icon(
-                    Icons.Outlined.Star,
-                    contentDescription = L.str(context, "Mark as Favorite"),
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(start = 32.dp),
-                )
-            }
-        },
-        enableDismissFromStartToEnd = true,
-        enableDismissFromEndToStart = false,
-    ) {
+    SwipeToFavorBox(onFavor = onToggleFavor) {
         Box {
             if (topic.hasShortcutForum()) {
                 ForumShortcutRow(

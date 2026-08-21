@@ -31,10 +31,14 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.bugenzhao.mnga.App
@@ -47,6 +51,8 @@ import com.bugenzhao.mnga.protos.service.ForumSearchRequest
 import com.bugenzhao.mnga.protos.service.ForumSearchResponse
 import com.bugenzhao.mnga.protos.service.TopicSearchRequest
 import com.bugenzhao.mnga.protos.service.TopicSearchResponse
+import com.bugenzhao.mnga.ui.components.SwipeToFavorBox
+import com.bugenzhao.mnga.ui.components.toggleTopicFavor
 import com.bugenzhao.mnga.ui.screens.forumlist.ForumIcon
 import com.bugenzhao.mnga.ui.screens.topiclist.TopicRow
 import com.bugenzhao.mnga.ui.nav.Navigator
@@ -176,7 +182,12 @@ internal fun TopicResultsList(
     navigator: Navigator,
 ) {
     val context = LocalContext.current
+    val view = LocalView.current
+    val scope = rememberCoroutineScope()
     val state by dataSource.state.collectAsState()
+
+    // Local favorite-topic overrides (kept after the swipe action).
+    val favoredOverrides = remember { mutableStateMapOf<String, Boolean>() }
 
     // Observe the loading state: see ForumResultsList.
     @Suppress("UNUSED_VARIABLE")
@@ -211,10 +222,22 @@ internal fun TopicResultsList(
                         LaunchedEffect(index, state.items.size) {
                             dataSource.loadMoreIfNeeded(index)
                         }
-                        TopicRow(
-                            topic = topic,
-                            onClick = { navigator.push(topicDetailsRoute(topic)) },
-                        )
+                        SwipeToFavorBox(
+                            onFavor = {
+                                toggleTopicFavor(
+                                    scope = scope,
+                                    view = view,
+                                    topicId = topic.id,
+                                    currentFavored = favoredOverrides[topic.id] ?: topic.isFavored,
+                                ) { favored -> favoredOverrides[topic.id] = favored }
+                            },
+                        ) {
+                            TopicRow(
+                                topic = topic,
+                                isFavored = favoredOverrides[topic.id],
+                                onClick = { navigator.push(topicDetailsRoute(topic)) },
+                            )
+                        }
                     }
                     item(key = "footer") { ListFooter(loading = state.isLoading) }
                 }

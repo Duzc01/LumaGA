@@ -35,6 +35,8 @@ import androidx.compose.material.icons.filled.SubdirectoryArrowRight
 import androidx.compose.material.icons.filled.SwapVert
 import androidx.compose.material.icons.outlined.ChatBubbleOutline
 import androidx.compose.material.icons.outlined.Schedule
+import androidx.compose.material.icons.outlined.Star
+import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.CircularProgressIndicator
@@ -72,6 +74,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -101,6 +104,7 @@ import com.bugenzhao.mnga.protos.service.UpdateTopicProgressRequest
 import com.bugenzhao.mnga.storage.TopicResumeFrom
 import com.bugenzhao.mnga.ui.components.DateTimeText
 import com.bugenzhao.mnga.ui.components.hotAccentColor
+import com.bugenzhao.mnga.ui.components.toggleTopicFavor
 import com.bugenzhao.mnga.ui.components.imageviewer.ImageViewerDialog
 import com.bugenzhao.mnga.ui.editor.EditorController
 import com.bugenzhao.mnga.ui.editor.PostReplyTask
@@ -130,6 +134,7 @@ fun TopicDetailsScreen(
     editor: EditorController? = null,
 ) {
     val context = LocalContext.current
+    val view = LocalView.current
     val scope = rememberCoroutineScope()
 
     // Screen mode, derived from the route.
@@ -138,6 +143,10 @@ fun TopicDetailsScreen(
     val forceLocalMode = route.localCache
     val enableAuthorOnly = !forceLocalMode && !authorOnlyMode
     val mock = route.topicId.startsWith("mnga_")
+
+    // Local favorite override (kept after the More-menu toggle), ahead of the
+    // response-provided state.
+    var favoredOverride by remember(route) { mutableStateOf<Boolean?>(null) }
 
     // Mutable topic mirror, refreshed from every response.
     var topic by remember(route) {
@@ -284,6 +293,7 @@ fun TopicDetailsScreen(
             if (newTopic.hasHighestViewedFloor()) setHighestViewedFloor(newTopic.highestViewedFloor)
             if (newTopic.hasLastViewingFloor()) setLastViewingFloor(newTopic.lastViewingFloor)
             if (newTopic.hasFav()) setFav(newTopic.fav)
+            if (newTopic.isFavored) setIsFavored(true)
         }.build()
     }
 
@@ -546,6 +556,19 @@ fun TopicDetailsScreen(
                         enableAuthorOnly = enableAuthorOnly,
                         localMode = localMode,
                         atForum = atForum,
+                        isFavorite = favoredOverride ?: topic.isFavored,
+                        onToggleFavorite = if (!mock) {
+                            {
+                                toggleTopicFavor(
+                                    scope = scope,
+                                    view = view,
+                                    topicId = topic.id,
+                                    currentFavored = favoredOverride ?: topic.isFavored,
+                                ) { favored -> favoredOverride = favored }
+                            }
+                        } else {
+                            null
+                        },
                         onAuthorOnly = {
                             if (PlusModel.checkPlus(PlusFeature.AUTHOR_ONLY)) {
                                 val isAnonymous = topic.authorName.anonymous.isNotEmpty()
@@ -1317,6 +1340,8 @@ private fun TopicDetailsMoreMenu(
     onAuthorOnly: () -> Unit,
     onViewCached: () -> Unit,
     onGotoForum: (com.bugenzhao.mnga.protos.datamodel.Forum) -> Unit,
+    isFavorite: Boolean = false,
+    onToggleFavorite: (() -> Unit)? = null,
     onJump: (() -> Unit)? = null,
     onLoadFirstPage: (() -> Unit)? = null,
     onReply: (() -> Unit)? = null,
@@ -1380,6 +1405,25 @@ private fun TopicDetailsMoreMenu(
                     text = { Text(L.str(context, "View Cached Topic")) },
                     leadingIcon = { Icon(Icons.Filled.Bookmark, null) },
                     onClick = { open = false; onViewCached() },
+                )
+            }
+            if (onToggleFavorite != null) {
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            L.str(
+                                context,
+                                if (isFavorite) "Remove from Favorites" else "Mark as Favorite",
+                            )
+                        )
+                    },
+                    leadingIcon = {
+                        Icon(
+                            if (isFavorite) Icons.Outlined.Star else Icons.Outlined.StarBorder,
+                            contentDescription = null,
+                        )
+                    },
+                    onClick = { open = false; onToggleFavorite() },
                 )
             }
             HorizontalDivider()
