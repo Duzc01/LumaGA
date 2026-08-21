@@ -1,16 +1,20 @@
 package com.bugenzhao.mnga.ui.post
 
 import android.content.Context
+import android.content.Intent
 import android.net.Uri
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.border
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -19,6 +23,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AccountBox
@@ -29,6 +34,7 @@ import androidx.compose.material.icons.outlined.Movie
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.VerticalDivider
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -45,6 +51,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
@@ -860,11 +867,8 @@ internal class ContentCombiner(
 
     private fun visitFlashVideo(url: String) {
         appendOther(ContentNode.View {
-            ContentButton(
-                icon = Icons.Outlined.Movie,
-                title = textNode(L.str(host.context, "View Video")),
-                inQuote = inQuote,
-            ) { host.actions.openURL(url) }
+            // 原地展示视频占位，点击调起系统播放器。
+            ContentVideoView(url = url)
         })
     }
 
@@ -1244,10 +1248,55 @@ internal fun RenderNode(node: ContentNode?, clicksEnabled: Boolean = true) {
 }
 
 /**
- * Accent-tinted action chip used for links/media, ported from
- * `Views/ContentButtonView.swift`.
+ * Inline video placeholder: dark 16:9 area with a centered play button,
+ * mirroring the inline image slot. Tapping opens the video in the system
+ * player.
  */
 @Composable
+fun ContentVideoView(
+    url: String,
+    modifier: Modifier = Modifier,
+) {
+    val context = LocalContext.current
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .aspectRatio(16f / 9f)
+            .clip(RoundedCornerShape(8.dp))
+            .background(Color(0xFF141416))
+            .clickable {
+                runCatching {
+                    context.startActivity(
+                        Intent(Intent.ACTION_VIEW).apply {
+                            setDataAndType(Uri.parse(url), "video/mp4")
+                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        }
+                    )
+                }
+            },
+        contentAlignment = Alignment.Center,
+    ) {
+        Box(
+            Modifier
+                .size(52.dp)
+                .clip(CircleShape)
+                .background(Color.Black.copy(alpha = 0.5f)),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                Icons.Filled.PlayArrow,
+                contentDescription = "Play",
+                tint = Color.White,
+                modifier = Modifier.size(32.dp),
+            )
+        }
+    }
+}
+
+/**
+ * Accent-tinted action chip used for links/media, ported from
+ * `Views/ContentButtonView.swift`.
+ */@Composable
 fun ContentButton(
     icon: ImageVector,
     title: (@Composable () -> Unit)?,
