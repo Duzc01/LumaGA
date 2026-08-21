@@ -1,6 +1,5 @@
 package com.bugenzhao.mnga.ui.screens.favorites
 
-import android.util.Base64
 import androidx.activity.compose.BackHandler
 
 import androidx.compose.foundation.layout.Arrangement
@@ -52,9 +51,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.compose.LifecycleEventEffect
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.bugenzhao.mnga.logicCallAsync
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -62,21 +60,12 @@ import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.bugenzhao.mnga.logicCallAsync
-import com.bugenzhao.mnga.model.PagingDataSource
 import com.bugenzhao.mnga.model.PlusFeature
 import com.bugenzhao.mnga.model.PlusModel
 import com.bugenzhao.mnga.protos.datamodel.FavoriteTopicFolder
 import com.bugenzhao.mnga.protos.datamodel.Topic
 import com.bugenzhao.mnga.protos.service.AsyncRequest
-import com.bugenzhao.mnga.protos.service.FavoriteFolderCreateRequest
-import com.bugenzhao.mnga.protos.service.FavoriteFolderCreateResponse
-import com.bugenzhao.mnga.protos.service.FavoriteFolderListRequest
-import com.bugenzhao.mnga.protos.service.FavoriteFolderListResponse
 import com.bugenzhao.mnga.protos.service.FavoriteFolderModifyRequest
-import com.bugenzhao.mnga.protos.service.FavoriteFolderModifyResponse
-import com.bugenzhao.mnga.protos.service.FavoriteTopicListRequest
-import com.bugenzhao.mnga.protos.service.FavoriteTopicListResponse
 import com.bugenzhao.mnga.protos.service.TopicFavorRequest
 import com.bugenzhao.mnga.protos.service.TopicFavorResponse
 import com.bugenzhao.mnga.ui.components.AdaptiveFooter
@@ -87,55 +76,7 @@ import com.bugenzhao.mnga.ui.nav.Route
 import com.bugenzhao.mnga.ui.screens.topiclist.TopicRow
 import com.bugenzhao.mnga.util.Haptics
 import com.bugenzhao.mnga.util.L
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
-
-/**
- * Favorite folders state holder, a port of the `FavoriteFolderModel` singleton
- * scoped to this screen.
- */
-private class FavoriteFoldersModel(private val scope: CoroutineScope) {
-    val folders = MutableStateFlow<List<FavoriteTopicFolder>>(emptyList())
-
-    suspend fun load(force: Boolean = false) {
-        if (folders.value.isEmpty() || force) {
-            val result = logicCallAsync(
-                AsyncRequest.newBuilder()
-                    .setFavoriteFolderList(FavoriteFolderListRequest.getDefaultInstance())
-                    .build(),
-                FavoriteFolderListResponse.parser(),
-            )
-            result.onSuccess { response -> folders.value = response.foldersList }
-        }
-    }
-
-    suspend fun modify(request: FavoriteFolderModifyRequest): Boolean {
-        val result = logicCallAsync(
-            AsyncRequest.newBuilder().setFavoriteFolderModify(request).build(),
-            FavoriteFolderModifyResponse.parser(),
-        )
-        return if (result.isSuccess) {
-            load(force = true)
-            true
-        } else {
-            false
-        }
-    }
-
-    /** Creates a folder and returns its id, or null on failure. */
-    suspend fun create(name: String): String? {
-        val result = logicCallAsync(
-            AsyncRequest.newBuilder()
-                .setFavoriteFolderCreate(
-                    FavoriteFolderCreateRequest.newBuilder().setName(name).build()
-                )
-                .build(),
-            FavoriteFolderCreateResponse.parser(),
-        )
-        return result.getOrNull()?.folderId?.also { load(force = true) }
-    }
-}
 
 /** The default folder forced first, mirroring `sortedFolders`. */
 private fun List<FavoriteTopicFolder>.sortedFolders(): List<FavoriteTopicFolder> =
@@ -154,45 +95,29 @@ fun FavoritesScreen(navigator: Navigator, initialFolderId: String? = null) {
     val scope = rememberCoroutineScope()
     BackHandler(enabled = navigator.size > 1) { navigator.pop() }
 
-    val foldersModel = remember { FavoriteFoldersModel(scope) }
+    val favoritesVM: FavoritesViewModel = viewModel()
+    val foldersModel = favoritesVM.foldersModel
     val folders by foldersModel.folders.collectAsState()
     var currentFolder by remember { mutableStateOf<FavoriteTopicFolder?>(null) }
-    // 记住上次选择的文件夹：返回本页时恢复该选择，而不是跳回默认文件夹。
-    var savedFolderId by rememberSaveable { mutableStateOf<String?>(null) }
-    // 文件夹列表快照：返回本页时不重新拉取（NavHost 下组合重建）。
-    var savedFoldersB64 by rememberSaveable { mutableStateOf<List<String>>(emptyList()) }
 
     // Load folders on entry, keeping the previous selection when possible.
+    // The ViewModel (and the loaded folder list) survives pop-backs, so only
+    // a first entry or process death triggers a fetch.
     LaunchedEffect(Unit) {
-        if (currentFolder == null) {
-            if (savedFoldersB64.isNotEmpty()) {
-                foldersModel.folders.value = savedFoldersB64.map {
-                    FavoriteTopicFolder.parseFrom(Base64.decode(it, Base64.NO_WRAP))
-                }
-            } else {
-                foldersModel.load(force = true)
-            }
-        }
-    }
-    // 用 ON_STOP 而不是 DisposableEffect.onDispose：onDispose 时
-    // SaveableStateHolder 可能已经拍过状态快照，写入会被丢弃。
-    LifecycleEventEffect(Lifecycle.Event.ON_STOP) {
-        if (foldersModel.folders.value.isNotEmpty()) {
-            savedFoldersB64 = foldersModel.folders.value.map {
-                Base64.encodeToString(it.toByteArray(), Base64.NO_WRAP)
-            }
+        if (currentFolder == null && foldersModel.folders.value.isEmpty()) {
+            foldersModel.load(force = true)
         }
     }
     LaunchedEffect(folders) {
         if (folders.isNotEmpty()) {
             val restored = folders.firstOrNull { it.id == currentFolder?.id }
-                ?: savedFolderId?.let { id -> folders.firstOrNull { it.id == id } }
+                ?: favoritesVM.currentFolderId?.let { id -> folders.firstOrNull { it.id == id } }
                 ?: folders.firstOrNull { it.id == initialFolderId }
                 ?: folders.firstOrNull { it.isDefault }
                 ?: folders.first()
             if (restored.id != currentFolder?.id) {
                 currentFolder = restored
-                savedFolderId = restored.id
+                favoritesVM.currentFolderId = restored.id
             }
         } else if (currentFolder != null && folders.none { it.id == currentFolder?.id }) {
             currentFolder = null
@@ -263,7 +188,7 @@ fun FavoritesScreen(navigator: Navigator, initialFolderId: String? = null) {
                                 PlusModel.checkPlus(PlusFeature.MULTI_FAVORITE)
                             ) {
                                 currentFolder = folder
-                                savedFolderId = folder.id
+                                favoritesVM.currentFolderId = folder.id
                             }
                         },
                         onMakeDefault = { modifyCurrent { it.setSetDefault(true) } },
@@ -476,60 +401,17 @@ private fun FavoriteTopicList(folder: FavoriteTopicFolder, navigator: Navigator)
     val view = LocalView.current
     val scope = rememberCoroutineScope()
 
-    val dataSource = remember(folder.id) {
-        PagingDataSource<FavoriteTopicListResponse, Topic>(
-            scope = scope,
-            responseParser = { FavoriteTopicListResponse.parser() },
-            buildRequest = { page ->
-                AsyncRequest.newBuilder()
-                    .setFavoriteTopicList(
-                        FavoriteTopicListRequest.newBuilder()
-                            .setFolderId(folder.id)
-                            .setPage(page)
-                            .build()
-                    )
-                    .build()
-            },
-            onResponse = { response ->
-                Pair(response.topicsList, response.pages.toInt().takeIf { it > 0 })
-            },
-            id = { it.id },
-        )
-    }
+    // The per-folder paged list lives in the entry-scoped ViewModel: it
+    // survives pop-backs (composition is disposed, ViewModel is not), so
+    // returning here does not refetch.
+    val favoritesVM: FavoritesViewModel = viewModel()
+    val dataSource = favoritesVM.topicDataSource(folder.id)
     val state by dataSource.state.collectAsState()
 
-    // -- 跨路由保留：被详情页盖住时保存快照，返回时恢复而不是重新拉取
-    // （NavHost 下 entry 组合销毁重建，普通 remember 数据源会重建为空）。
-    var savedItemsB64 by rememberSaveable(folder.id) { mutableStateOf<List<String>>(emptyList()) }
-    var savedLoadedPage by rememberSaveable(folder.id) { mutableStateOf(0) }
-    var savedTotalPages by rememberSaveable(folder.id) { mutableStateOf(1) }
-    var savedLastRefresh by rememberSaveable(folder.id) { mutableStateOf(0L) }
-
+    // Load on first entry only: after a pop-back the ViewModel still holds
+    // the data, so notLoaded is false and nothing is refetched.
     LaunchedEffect(folder.id) {
-        if (savedItemsB64.isNotEmpty()) {
-            dataSource.restoreItems(
-                items = savedItemsB64.map {
-                    Topic.parseFrom(Base64.decode(it, Base64.NO_WRAP))
-                },
-                loadedPage = savedLoadedPage,
-                totalPages = savedTotalPages,
-                lastRefreshTime = savedLastRefresh.takeIf { it > 0 }?.let { java.util.Date(it) },
-            )
-        } else {
-            dataSource.initialLoad()
-        }
-    }
-    // 用 ON_STOP 而不是 DisposableEffect.onDispose：onDispose 时
-    // SaveableStateHolder 可能已经拍过状态快照，写入会被丢弃。
-    LifecycleEventEffect(Lifecycle.Event.ON_STOP) {
-        if (dataSource.items.isNotEmpty()) {
-            savedItemsB64 = dataSource.items.map {
-                Base64.encodeToString(it.toByteArray(), Base64.NO_WRAP)
-            }
-            savedLoadedPage = dataSource.loadedPage
-            savedTotalPages = dataSource.totalPages
-            savedLastRefresh = dataSource.lastRefreshTime?.time ?: 0L
-        }
+        if (dataSource.notLoaded) dataSource.initialLoad()
     }
 
     // Rows hidden after a successful swipe-delete.
