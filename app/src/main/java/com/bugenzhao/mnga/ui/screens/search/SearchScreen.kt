@@ -122,7 +122,7 @@ fun SearchScreen(
     var committedText by rememberSaveable { mutableStateOf<String?>(null) }
     // Narrowed to the browsed forum by default, where there is one to narrow to.
     var currentForumOnly by rememberSaveable { mutableStateOf(forumId != null) }
-    var searchContent by rememberSaveable { mutableStateOf(true) }
+    var searchContent by rememberSaveable { mutableStateOf(false) }
 
     // 结果快照：进详情返回时恢复列表数据（dataSource 是普通 remember，离开组合
     // 会重建为空；与列表页的跨路由状态保留是同一机制）。
