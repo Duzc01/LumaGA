@@ -46,6 +46,18 @@ class Navigator(
         navController.popBackStack()
     }
 
+    /** Pushes [route], replacing the current top entry — for a sheet that
+     * routes onward into a pushed screen. (Push-then-pop would pop the very
+     * entry just pushed.) */
+    fun pushReplacingTop(route: Route) {
+        val top = navController.currentBackStack.value.lastOrNull() ?: return
+        lastOp = Op.PUSH
+        navController.navigate(RouteCodec.encode(route)) {
+            // popUpTo matches the *destination* id, not the entry id.
+            popUpTo(top.destination.id) { inclusive = true }
+        }
+    }
+
     fun popToRoot() {
         navController.popBackStack(RouteCodec.ROUTE_FORUM_LIST, inclusive = false)
     }

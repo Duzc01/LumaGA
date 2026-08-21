@@ -233,8 +233,10 @@ fun NotificationListSheet(
                                 read = read,
                                 onClick = {
                                     mark(listOf(noti.id), read = true)
-                                    navigateForNotification(navigator, noti)
-                                    onDismiss()
+                                    // 不能先 push 再 pop：NavController 的 pop 会
+                                    // 弹掉刚 push 的 entry，页面留在原地。用"替换
+                                    // 顶部"让通知页直接路由到目标页。
+                                    navigator.pushReplacingTop(routeForNotification(noti))
                                 },
                                 onToggleRead = { mark(listOf(noti.id), read = !read) },
                             )
@@ -247,19 +249,15 @@ fun NotificationListSheet(
 }
 
 /** Route per `NotificationListView.buildLink`. */
-private fun navigateForNotification(navigator: Navigator, noti: Notification) {
-    when (noti.type) {
-        Notification.Type.SHORT_MESSAGE, Notification.Type.SHORT_MESSAGE_START ->
-            // The SM conversation id is carried in `otherPostID.tid`.
-            navigator.push(Route.ShortMessageDetails(id = noti.otherPostId.tid))
-        else -> navigator.push(
-            Route.TopicDetails(
-                topicId = noti.otherPostId.tid,
-                postId = noti.otherPostId.pid.takeIf { it.isNotEmpty() },
-                startPage = noti.page.toInt().takeIf { it > 0 } ?: 1,
-            )
-        )
-    }
+private fun routeForNotification(noti: Notification): Route = when (noti.type) {
+    Notification.Type.SHORT_MESSAGE, Notification.Type.SHORT_MESSAGE_START ->
+        // The SM conversation id is carried in `otherPostID.tid`.
+        Route.ShortMessageDetails(id = noti.otherPostId.tid)
+    else -> Route.TopicDetails(
+        topicId = noti.otherPostId.tid,
+        postId = noti.otherPostId.pid.takeIf { it.isNotEmpty() },
+        startPage = noti.page.toInt().takeIf { it > 0 } ?: 1,
+    )
 }
 
 /** One notification row, ported from `NotificationRowView`. */
