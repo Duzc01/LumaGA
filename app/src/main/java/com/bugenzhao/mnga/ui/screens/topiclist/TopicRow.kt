@@ -291,39 +291,49 @@ fun TopicRow(
         color = MaterialTheme.colorScheme.surface,
     ) {
         if (avatarless) {
-            Row(
+            Column(
                 Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
-                verticalAlignment = Alignment.CenterVertically,
+                verticalArrangement = Arrangement.spacedBy(6.dp),
             ) {
-                Column(
-                    Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(6.dp),
-                ) {
-                    if (blocked) {
-                        BlockedSubjectView()
-                    } else {
-                        TopicSubjectView(
-                            topic = topic,
-                            maxLines = 2,
-                            showIndicators = showIndicators,
-                            dimmed = shouldDim,
-                            // The forum and tags live on the metadata line below.
-                            tagBar = false,
-                        )
-                    }
-                    AuthorDateLine(topic = topic, date = date)
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        TopicOriginLine(
-                            topic = topic,
-                            showFavored = showIndicators && favored,
-                            color = topicMetaColor(),
-                            fallbackForumName = fallbackForumName,
-                            modifier = Modifier.weight(1f),
-                        )
-                    }
+                if (blocked) {
+                    BlockedSubjectView()
+                } else {
+                    TopicSubjectView(
+                        topic = topic,
+                        maxLines = 2,
+                        showIndicators = showIndicators,
+                        dimmed = shouldDim,
+                        // The forum and tags live on the metadata line below.
+                        tagBar = false,
+                    )
                 }
-                Spacer(Modifier.width(10.dp))
-                RepliesCountColumn(replies = num, delta = delta)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    val display = topicAuthorName(topic).display()
+                    if (display.isNotEmpty()) {
+                        Text(
+                            display,
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f, fill = false),
+                        )
+                        Spacer(Modifier.width(6.dp))
+                    }
+                    TopicOriginLine(
+                        topic = topic,
+                        showFavored = showIndicators && favored,
+                        color = topicMetaColor(),
+                        fallbackForumName = fallbackForumName,
+                        modifier = Modifier.weight(1f, fill = false),
+                    )
+                    Spacer(Modifier.weight(1f))
+                    DateTimeText(timestampSeconds = date, color = topicMetaColor())
+                    Spacer(Modifier.width(8.dp))
+                    // The standard badge: hot-color ramp as the count climbs.
+                    RepliesBadge(replies = num, delta = delta)
+                }
             }
         } else {
             Column(
@@ -356,60 +366,6 @@ fun TopicRow(
     }
 }
 
-/**
- * Avatar-less author line: name, a dot separator and the timestamp.
- */
-@Composable
-private fun AuthorDateLine(topic: Topic, date: Long) {
-    val display = topicAuthorName(topic).display()
-    val meta = topicMetaColor()
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        if (display.isNotEmpty()) {
-            Text(
-                display,
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f, fill = false),
-            )
-            Text(" · ", style = MaterialTheme.typography.labelMedium, color = meta)
-        }
-        DateTimeText(timestampSeconds = date, color = meta)
-    }
-}
-
-/**
- * The reply count as a tall right-hand column, the classic NGA web list
- * idiom: a large number, a small unit, and the unread delta in the accent
- * color.
- */
-@Composable
-private fun RepliesCountColumn(replies: Int, delta: Int?) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(
-            "$replies",
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.onSurface,
-            maxLines = 1,
-        )
-        Text(
-            "回",
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        if (delta != null && delta > 0) {
-            Text(
-                "+$delta",
-                style = MaterialTheme.typography.labelSmall,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary,
-            )
-        }
-    }
-}
 
 /**
  * The two metadata lines under a subject, sharing one avatar: author name and
