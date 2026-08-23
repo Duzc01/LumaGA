@@ -308,32 +308,38 @@ fun TopicRow(
                     )
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    val display = topicAuthorName(topic).display()
-                    if (display.isNotEmpty()) {
-                        Text(
-                            display,
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.weight(1f, fill = false),
-                        )
-                        Spacer(Modifier.width(6.dp))
+                    // Left group (elastic): author name, then tags — the
+                    // weight(1f) pushes the right group to the edge.
+                    Row(
+                        Modifier.weight(1f),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        val display = topicAuthorName(topic).display()
+                        if (display.isNotEmpty()) {
+                            Text(
+                                display,
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f, fill = false),
+                            )
+                            Spacer(Modifier.width(6.dp))
+                        }
+                        // Tags only — no forum chip in the compact style.
+                        val tags = topicTags(topic)
+                        if (tags.isNotEmpty()) {
+                            Text(
+                                tags.joinToString(" ") { "#$it" },
+                                style = MaterialTheme.typography.labelMedium,
+                                color = topicMetaColor(),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
                     }
-                    // Tags only — no forum chip in the compact style.
-                    val tags = topicTags(topic)
-                    if (tags.isNotEmpty()) {
-                        Text(
-                            tags.joinToString(" ") { "#$it" },
-                            style = MaterialTheme.typography.labelMedium,
-                            color = topicMetaColor(),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.weight(1f, fill = false),
-                        )
-                    }
-                    Spacer(Modifier.weight(1f))
+                    Spacer(Modifier.width(8.dp))
                     DateTimeText(timestampSeconds = date, color = topicMetaColor())
                     Spacer(Modifier.width(8.dp))
                     // The standard badge: hot-color ramp as the count climbs.
