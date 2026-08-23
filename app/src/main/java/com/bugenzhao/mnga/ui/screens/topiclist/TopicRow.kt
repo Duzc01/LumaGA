@@ -321,13 +321,18 @@ fun TopicRow(
                         )
                         Spacer(Modifier.width(6.dp))
                     }
-                    TopicOriginLine(
-                        topic = topic,
-                        showFavored = showIndicators && favored,
-                        color = topicMetaColor(),
-                        fallbackForumName = fallbackForumName,
-                        modifier = Modifier.weight(1f, fill = false),
-                    )
+                    // Tags only — no forum chip in the compact style.
+                    val tags = topicTags(topic)
+                    if (tags.isNotEmpty()) {
+                        Text(
+                            tags.joinToString(" ") { "#$it" },
+                            style = MaterialTheme.typography.labelMedium,
+                            color = topicMetaColor(),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f, fill = false),
+                        )
+                    }
                     Spacer(Modifier.weight(1f))
                     DateTimeText(timestampSeconds = date, color = topicMetaColor())
                     Spacer(Modifier.width(8.dp))
