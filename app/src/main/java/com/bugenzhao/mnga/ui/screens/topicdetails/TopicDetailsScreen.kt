@@ -62,6 +62,7 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -182,21 +183,13 @@ fun TopicDetailsScreen(
         page
     }
 
-    // Data source over `topicDetails`.
-    val dataSource = remember(route) {
-        buildTopicDetailsDataSource(
-            scope = scope,
-            topicId = route.topicId,
-            fav = route.fav?.takeIf { it.isNotEmpty() },
-            onlyPostId = onlyPostId,
-            localCache = forceLocalMode,
-            authorId = route.authorId?.takeIf { it.isNotEmpty() },
-            anonymousAuthorOnly = route.anonymousAuthorOnly,
-            useDisabledStrategy = onlyPostId != null || authorOnlyMode,
-            finishOnError = forceLocalMode,
-            initialPage = initialPage,
-        )
-    }
+    // Data source over `topicDetails`, held by the entry-scoped ViewModel so
+    // the loaded floors survive pop-backs (composition is disposed, ViewModel
+    // is not) — no refetch on return.
+    val topicDetailsVM: TopicDetailsViewModel = viewModel(
+        factory = TopicDetailsViewModel.factory(route, initialPage),
+    )
+    val dataSource = topicDetailsVM.dataSource
 
     val action = remember(route) { TopicDetailsActionModel() }
     val postLocator = remember(route) { TopicPostLocator(scope, topic) }
@@ -867,7 +860,7 @@ private fun shouldShowTailSection(
 }
 
 /** Builds the `topicDetails`-backed data source per the RPC table. */
-private fun buildTopicDetailsDataSource(
+internal fun buildTopicDetailsDataSource(
     scope: kotlinx.coroutines.CoroutineScope,
     topicId: String,
     fav: String?,

@@ -48,6 +48,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -62,11 +63,6 @@ import com.bugenzhao.mnga.protos.datamodel.Topic
 import com.bugenzhao.mnga.protos.datamodel.TopicWithLightPost
 import com.bugenzhao.mnga.protos.datamodel.User
 import com.bugenzhao.mnga.protos.service.AsyncRequest
-import com.bugenzhao.mnga.protos.service.RemoteUserRequest
-import com.bugenzhao.mnga.protos.service.UserPostListRequest
-import com.bugenzhao.mnga.protos.service.UserPostListResponse
-import com.bugenzhao.mnga.protos.service.UserTopicListRequest
-import com.bugenzhao.mnga.protos.service.UserTopicListResponse
 import com.bugenzhao.mnga.storage.BlockWordsStorage
 import com.bugenzhao.mnga.ui.components.DateTimeText
 import com.bugenzhao.mnga.ui.nav.Navigator
@@ -99,21 +95,14 @@ fun UserProfileScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
-    var currentUser by remember { mutableStateOf(user) }
-    var loading by remember {
-        mutableStateOf(user == null && (userId != null || userName != null))
-    }
-
-    // Resolve by id/name like `RemoteUserProfileView` (with error toast).
-    LaunchedEffect(userId, userName, user) {
-        if (currentUser != null) return@LaunchedEffect
-        val request = RemoteUserRequest.newBuilder()
-        if (!userId.isNullOrEmpty()) request.userId = userId
-        if (!userName.isNullOrEmpty()) request.userName = userName
-        val resolved = App.users.remoteUser(request.build(), showError = true)
-        loading = false
-        if (resolved != null) currentUser = resolved
-    }
+    // Entry-scoped ViewModel: the resolved user and the paged topic/post
+    // lists survive pop-backs (composition is disposed, ViewModel is not),
+    // so returning does not re-resolve the user nor refetch the lists.
+    val profileVM: UserProfileViewModel = viewModel(
+        factory = UserProfileViewModel.factory(userId, userName, user),
+    )
+    val currentUser by profileVM.currentUser.collectAsState()
+    val loading by profileVM.loading.collectAsState()
 
     val authInfo by App.authStorage.authInfo.collectAsState()
     val blockWords by App.blockWords.words.collectAsState()
@@ -146,44 +135,8 @@ fun UserProfileScreen(
     val shouldShowList =
         resolvedUser.id.isNotEmpty() && !resolvedUser.isAnonymousUser && !blocked
 
-    val topicDataSource = remember(resolvedUser.id) {
-        com.bugenzhao.mnga.model.PagingDataSource<UserTopicListResponse, Topic>(
-            scope = appScope,
-            responseParser = { UserTopicListResponse.parser() },
-            buildRequest = { page ->
-                AsyncRequest.newBuilder()
-                    .setUserTopicList(
-                        UserTopicListRequest.newBuilder()
-                            .setAuthorId(resolvedUser.id)
-                            .setPage(page)
-                    )
-                    .build()
-            },
-            onResponse = { response ->
-                Pair(response.topicsList, response.pages.toInt().takeIf { it > 0 })
-            },
-            id = { it.id },
-        )
-    }
-    val postDataSource = remember(resolvedUser.id) {
-        com.bugenzhao.mnga.model.PagingDataSource<UserPostListResponse, TopicWithLightPost>(
-            scope = appScope,
-            responseParser = { UserPostListResponse.parser() },
-            buildRequest = { page ->
-                AsyncRequest.newBuilder()
-                    .setUserPostList(
-                        UserPostListRequest.newBuilder()
-                            .setAuthorId(resolvedUser.id)
-                            .setPage(page)
-                    )
-                    .build()
-            },
-            // Page count unknown: load until empty/error.
-            onResponse = { response -> Pair(response.tpsList, Int.MAX_VALUE) },
-            id = { "${it.post.id.tid}/${it.post.id.pid}" },
-            finishOnError = true,
-        )
-    }
+    val topicDataSource = profileVM.topicDataSource(resolvedUser.id)
+    val postDataSource = profileVM.postDataSource(resolvedUser.id)
 
     LaunchedEffect(topicDataSource) {
         if (topicDataSource.notLoaded) topicDataSource.initialLoad()
@@ -195,15 +148,11 @@ fun UserProfileScreen(
     }
 
     fun reloadUser() {
-        scope.launch {
-            App.users.remoteUser(resolvedUser.id, showError = false, ignoreCache = true)
-                ?.let { currentUser = it }
-        }
+        profileVM.reload()
     }
     fun refresh() {
         scope.launch {
-            App.users.remoteUser(resolvedUser.id, showError = false, ignoreCache = true)
-                ?.let { currentUser = it }
+            profileVM.reload()
             if (shouldShowList) {
                 topicDataSource.refreshAsync()
                 postDataSource.refreshAsync()
