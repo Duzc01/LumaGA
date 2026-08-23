@@ -1,13 +1,19 @@
 package com.bugenzhao.mnga.ui.components.imageviewer
 
-import androidx.compose.foundation.gestures.detectTapGestures
-
+import android.Manifest
+import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
 import android.net.Uri
+import android.os.Build
+import android.os.Environment
+import android.provider.MediaStore
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -15,6 +21,7 @@ import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.calculatePan
 import androidx.compose.foundation.gestures.calculateZoom
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -25,6 +32,7 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -37,6 +45,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -53,14 +62,20 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.core.content.ContextCompat
 import coil.imageLoader
 import coil.request.ImageRequest
 import com.bugenzhao.mnga.App
+import com.bugenzhao.mnga.BuildConfig
 import com.bugenzhao.mnga.model.ViewingImageModel
+import com.bugenzhao.mnga.util.URLs
 import java.io.File
+import java.net.HttpURLConnection
+import java.net.URL
 import java.security.MessageDigest
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /**
@@ -191,6 +206,39 @@ fun ImageViewerDialog(model: ViewingImageModel) {
                     }) {
                         Icon(Icons.Filled.Share, contentDescription = "Share", tint = Color.White)
                     }
+                }
+            }
+
+            // Bottom-right download button (saved to 下载/LumaGA, same as videos).
+            val scope = rememberCoroutineScope()
+            val permissionLauncher = rememberLauncherForActivityResult(
+                ActivityResultContracts.RequestPermission(),
+            ) { granted ->
+                val url = urls.getOrNull(pagerState.settledPage) ?: return@rememberLauncherForActivityResult
+                if (granted) {
+                    saveImage(scope, context, url) { ok -> toastImageResult(context, ok) }
+                } else {
+                    android.widget.Toast.makeText(
+                        context,
+                        "需要存储权限才能下载",
+                        android.widget.Toast.LENGTH_SHORT,
+                    ).show()
+                }
+            }
+            Box(
+                Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(bottom = 32.dp, end = 24.dp),
+            ) {
+                IconButton(onClick = {
+                    val url = urls.getOrNull(pagerState.settledPage) ?: return@IconButton
+                    if (hasStoragePermission(context)) {
+                        saveImage(scope, context, url) { ok -> toastImageResult(context, ok) }
+                    } else {
+                        permissionLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                    }
+                }) {
+                    Icon(Icons.Filled.Download, contentDescription = "Download", tint = Color.White)
                 }
             }
         }
@@ -425,6 +473,114 @@ internal suspend fun buildImageShareIntent(context: Context, url: String): Inten
         throw e
     } catch (e: Exception) {
         null
+    }
+}
+
+// endregion
+
+// region Download helpers
+
+/** Extension from the URL path, defaulting to jpg. */
+private fun imageExtFor(url: String): String {
+    val path = Uri.parse(url).path?.lowercase() ?: return "jpg"
+    return when {
+        path.endsWith(".png") -> "png"
+        path.endsWith(".gif") -> "gif"
+        path.endsWith(".webp") -> "webp"
+        path.endsWith(".bmp") -> "bmp"
+        path.endsWith(".heic") -> "heic"
+        else -> "jpg"
+    }
+}
+
+private fun mimeFor(ext: String): String = when (ext) {
+    "png" -> "image/png"
+    "gif" -> "image/gif"
+    "webp" -> "image/webp"
+    "bmp" -> "image/bmp"
+    "heic" -> "image/heic"
+    else -> "image/jpeg"
+}
+
+/** API 29+ 走 MediaStore 无需权限；旧版本需要存储权限。 */
+private fun hasStoragePermission(context: Context): Boolean =
+    Build.VERSION.SDK_INT >= 29 ||
+        ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_EXTERNAL_STORAGE) ==
+        PackageManager.PERMISSION_GRANTED
+
+private fun toastImageResult(context: Context, ok: Boolean) {
+    android.widget.Toast.makeText(
+        context,
+        if (ok) "已保存到 下载/LumaGA/" else "下载失败",
+        android.widget.Toast.LENGTH_SHORT,
+    ).show()
+}
+
+/** 下载图片到公共「下载/LumaGA」目录（API 29+ 用 MediaStore），与视频一致。 */
+private fun saveImage(
+    scope: kotlinx.coroutines.CoroutineScope,
+    context: Context,
+    url: String,
+    onResult: (Boolean) -> Unit,
+) {
+    scope.launch {
+        val ok = withContext(Dispatchers.IO) {
+            runCatching {
+                val conn = (URL(url).openConnection() as HttpURLConnection).apply {
+                    requestMethod = "GET"
+                    connectTimeout = 15_000
+                    readTimeout = 30_000
+                    instanceFollowRedirects = true
+                    setRequestProperty("User-Agent", "LumaGA/${BuildConfig.VERSION_NAME}")
+                    setRequestProperty("Referer", URLs.base)
+                }
+                try {
+                    if (conn.responseCode !in 200..299) return@runCatching false
+                    val ext = imageExtFor(url)
+                    val mime = mimeFor(ext)
+                    if (Build.VERSION.SDK_INT >= 29) {
+                        val resolver = context.contentResolver
+                        val values = ContentValues().apply {
+                            put(
+                                MediaStore.MediaColumns.DISPLAY_NAME,
+                                "LumaGA-${System.currentTimeMillis()}.$ext",
+                            )
+                            put(MediaStore.MediaColumns.MIME_TYPE, mime)
+                            put(
+                                MediaStore.MediaColumns.RELATIVE_PATH,
+                                Environment.DIRECTORY_DOWNLOADS + "/LumaGA",
+                            )
+                            put(MediaStore.MediaColumns.IS_PENDING, 1)
+                        }
+                        val uri = resolver.insert(
+                            MediaStore.Downloads.EXTERNAL_CONTENT_URI,
+                            values,
+                        ) ?: return@runCatching false
+                        val written = resolver.openOutputStream(uri)?.use { output ->
+                            conn.inputStream.use { input -> input.copyTo(output) }
+                            true
+                        } ?: false
+                        values.clear()
+                        values.put(MediaStore.MediaColumns.IS_PENDING, 0)
+                        resolver.update(uri, values, null, null)
+                        written
+                    } else {
+                        val dir = File(
+                            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
+                            "LumaGA",
+                        ).apply { mkdirs() }
+                        val target = File(dir, "LumaGA-${System.currentTimeMillis()}.$ext")
+                        conn.inputStream.use { input ->
+                            target.outputStream().use { output -> input.copyTo(output) }
+                        }
+                        target.length() > 0
+                    }
+                } finally {
+                    conn.disconnect()
+                }
+            }.getOrDefault(false)
+        }
+        onResult(ok)
     }
 }
 
