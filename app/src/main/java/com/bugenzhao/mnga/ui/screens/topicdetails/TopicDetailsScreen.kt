@@ -610,14 +610,29 @@ fun TopicDetailsScreen(
             )
         },
     ) { padding ->
-        // 加载上一页；完成后滚到新页末尾楼层，保持阅读连续性（位置离开
-        // 顶部，滑回顶部才会再次触发自动加载）。
-        fun loadBack(prevPage: Int) {
+        // 加载上一页：记录加载前的锚定楼层，加载完成后滚回该楼层——前面
+        // 的 items 前插进来，但阅读位置保持不变。锚点优先取跳转目标
+        // （jumpFloor，跳转/恢复场景），否则取屏幕顶部第一个可见楼层
+        // （跳过 Header；Header 可见时也拿得到真实楼层）。
+        var pendingAnchor by remember { mutableStateOf<Int?>(null) }
+        fun loadBack(prevPage: Int, jumpFloor: Int? = null) {
+            val anchorFloor = jumpFloor ?: currentRows
+                .drop(listState.firstVisibleItemIndex)
+                .firstOrNull { it is RowSpec.Reply }
+                ?.let { (it as RowSpec.Reply).post.floor }
             dataSource.reload(page = prevPage, evenIfNotLoaded = true) {
-                val floor = dataSource.itemsAtPage(prevPage)
-                    .maxOfOrNull { it.floor }
-                if (floor != null) action.scrollToFloor.value = floor
+                if (anchorFloor != null) pendingAnchor = anchorFloor
             }
+        }
+        // reload 完成回调执行时重组尚未发生（currentRows 还是旧 rows），
+        // 直接滚动会按旧 index 定位而错位；这里挂起等到 pendingAnchor
+        // 变化后的重组完成，用最新 rows 计算 index，再瞬时回位——同帧
+        // 完成，用户看到的位置不发生跳变。
+        LaunchedEffect(pendingAnchor) {
+            val floor = pendingAnchor ?: return@LaunchedEffect
+            val index = rows.indexOfFirst { it.floor == floor }
+            if (index >= 0) listState.scrollToItem(index)
+            pendingAnchor = null
         }
 
         // 滑到当前页顶部时自动加载上一页（无需下拉手势）；加载中由列表
@@ -641,16 +656,18 @@ fun TopicDetailsScreen(
         }
         // 2) 跳转/刷新后兜底：自动预载上一页一次（保证跳转到后面楼层后能
         //    往回滑；内容不满一屏无法滚动触发时也不会卡住）。reload 不更新
-        //    lastRefreshTime，所以不会连发。
+        //    lastRefreshTime，所以不会连发。锚定跳转目标楼层（jumpFloor 的
+        //    快照——跳转滚动 effect 稍后会把该变量清空，需先捕获）。
         LaunchedEffect(state.lastRefreshTime) {
             if (state.lastRefreshTime != null && (dataSource.firstLoadedPage ?: 1) > 1) {
+                val jumpFloor = floorToJump
                 delay(300)
                 // 等待当前加载（如跳转后触发的 loadMore）结束，否则
                 // reload 的 isLoading guard 会拒绝预载。
                 while (dataSource.state.value.isLoading) {
                     delay(100)
                 }
-                loadBack((dataSource.firstLoadedPage ?: 1) - 1)
+                loadBack((dataSource.firstLoadedPage ?: 1) - 1, jumpFloor)
             }
         }
 
