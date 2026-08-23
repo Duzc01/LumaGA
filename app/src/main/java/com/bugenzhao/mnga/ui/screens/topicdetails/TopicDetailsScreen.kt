@@ -310,7 +310,6 @@ fun TopicDetailsScreen(
         buildRows(
             items = items,
             first = first,
-            firstLoadedPage = dataSource.firstLoadedPage,
             showTail = shouldShowTailSection(dataSource, state, response, onlyPostId != null),
         )
     }
@@ -737,7 +736,6 @@ fun TopicDetailsScreen(
                                 dataSource = dataSource,
                                 currentViewingFloor = currentViewingFloor,
                                 onPostAction = onPostAction,
-                                onLoadBack = { prevPage -> loadBack(prevPage) },
                                 onLoadNewReplies = {
                                     dataSource.reloadLastPage(evenIfNotLoaded = true) {
                                         Haptics.vibrate(context, Haptics.NotificationType.SUCCESS)
@@ -872,10 +870,6 @@ sealed interface RowSpec {
         val railTo: Float get() = 1f - (index + 1).toFloat() / count
     }
 
-    data class LoadBack(val page: Int) : RowSpec {
-        override val key: String = "loadback"
-    }
-
     data class Reply(val post: Post) : RowSpec {
         override val key: String = "floor_${post.floor}"
         override val floor: Int get() = post.floor
@@ -890,7 +884,6 @@ sealed interface RowSpec {
 private fun buildRows(
     items: List<Post>,
     first: Post?,
-    firstLoadedPage: Int?,
     showTail: Boolean,
 ): List<RowSpec> {
     val rows = mutableListOf<RowSpec>(RowSpec.Header)
@@ -905,9 +898,6 @@ private fun buildRows(
         val byPage = items.groupBy { it.atPage }
         byPage.keys.sorted().map { page -> page to byPage.getValue(page).sortedBy { it.floor } }
     }
-    val prevPage = firstLoadedPage?.minus(1)?.takeIf { it >= 1 }
-    if (prevPage != null && items.isNotEmpty()) rows += RowSpec.LoadBack(prevPage)
-
     for ((page, posts) in paged) {
         for (post in posts) {
             if (first != null && post.id == first.id) continue
@@ -1030,7 +1020,6 @@ private fun TopicDetailsRow(
     dataSource: com.bugenzhao.mnga.model.PagingDataSource<TopicDetailsResponse, Post>,
     currentViewingFloor: CurrentViewingFloor,
     onPostAction: ((action: String, post: Post) -> Unit)?,
-    onLoadBack: (Int) -> Unit,
     onLoadNewReplies: () -> Unit,
 ) {
     val context = LocalContext.current
@@ -1090,13 +1079,6 @@ private fun TopicDetailsRow(
                     bottom = if (row.isLast) 14.dp else 12.dp,
                 ),
             )
-        }
-
-        is RowSpec.LoadBack -> {
-            val loading = isLoading
-            TextButton(onClick = { if (!loading) onLoadBack(row.page) }, enabled = !loading) {
-                Text(L.str(context, "Load Page %lld", row.page))
-            }
         }
 
         is RowSpec.Reply -> ReplyRow(
