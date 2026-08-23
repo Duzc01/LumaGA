@@ -31,19 +31,17 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.bugenzhao.mnga.model.PagingDataSource
 import com.bugenzhao.mnga.model.PlusFeature
 import com.bugenzhao.mnga.model.appScope
 import com.bugenzhao.mnga.protos.datamodel.ShortMessage
 import com.bugenzhao.mnga.protos.datamodel.UserName
 import com.bugenzhao.mnga.protos.service.AsyncRequest
-import com.bugenzhao.mnga.protos.service.ShortMessageListRequest
-import com.bugenzhao.mnga.protos.service.ShortMessageListResponse
 import com.bugenzhao.mnga.ui.components.PagedList
 import com.bugenzhao.mnga.ui.components.RepliesBadge
 import com.bugenzhao.mnga.ui.nav.Navigator
@@ -66,25 +64,12 @@ fun ShortMessageListScreen(
 ) {
     val context = LocalContext.current
 
-    val dataSource = remember {
-        PagingDataSource<ShortMessageListResponse, ShortMessage>(
-            scope = appScope,
-            responseParser = { ShortMessageListResponse.parser() },
-            buildRequest = { page ->
-                AsyncRequest.newBuilder()
-                    .setShortMessageList(
-                        ShortMessageListRequest.newBuilder().setPage(page)
-                    )
-                    .build()
-            },
-            onResponse = { response ->
-                Pair(response.messagesList, response.pages.toInt().takeIf { it > 0 })
-            },
-            id = { it.id },
-        )
-    }
+    // Entry-scoped ViewModel: the loaded list survives pop-backs (composition
+    // is disposed, ViewModel is not) — no refetch on return.
+    val listVM: ShortMessageListViewModel = viewModel()
+    val dataSource = listVM.dataSource
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(dataSource) {
         if (dataSource.notLoaded) dataSource.initialLoad()
     }
 

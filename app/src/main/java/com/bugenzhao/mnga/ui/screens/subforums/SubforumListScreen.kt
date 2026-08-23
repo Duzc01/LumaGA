@@ -42,6 +42,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -52,20 +53,18 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.bugenzhao.mnga.App
 import com.bugenzhao.mnga.logicCallAsync
-import com.bugenzhao.mnga.model.PagingDataSource
 import com.bugenzhao.mnga.protos.datamodel.Forum
 import com.bugenzhao.mnga.protos.datamodel.ForumId
 import com.bugenzhao.mnga.protos.datamodel.Subforum
 import com.bugenzhao.mnga.protos.service.AsyncRequest
 import com.bugenzhao.mnga.protos.service.SubforumFilterRequest
 import com.bugenzhao.mnga.protos.service.SubforumFilterResponse
-import com.bugenzhao.mnga.protos.service.TopicListRequest
 import com.bugenzhao.mnga.protos.service.TopicListResponse
 import com.bugenzhao.mnga.ui.components.ListPlaceholder
 import com.bugenzhao.mnga.ui.nav.Navigator
 import com.bugenzhao.mnga.ui.nav.Route
-import com.bugenzhao.mnga.ui.screens.forumlist.ForumRow
 import com.bugenzhao.mnga.ui.screens.forumlist.forumIdKey
+import com.bugenzhao.mnga.ui.screens.forumlist.ForumRow
 import com.bugenzhao.mnga.util.Haptics
 import com.bugenzhao.mnga.util.L
 import kotlinx.coroutines.launch
@@ -85,26 +84,16 @@ fun SubforumListScreen(navigator: Navigator, forumId: ForumId) {
     val scope = rememberCoroutineScope()
     BackHandler(enabled = navigator.size > 1) { navigator.pop() }
 
-    val dataSource = remember {
-        PagingDataSource<TopicListResponse, Subforum>(
-            scope = scope,
-            responseParser = { TopicListResponse.parser() },
-            buildRequest = {
-                AsyncRequest.newBuilder()
-                    .setTopicList(
-                        TopicListRequest.newBuilder()
-                            .setId(forumId)
-                            .setPage(1)
-                            .build()
-                    )
-                    .build()
-            },
-            onResponse = { response -> Pair(response.subforumsList, 1) },
-            id = { "${forumIdKey(it.forum.id)}:${it.filterId}" },
-        )
-    }
+    // Entry-scoped ViewModel: the loaded subforum list survives pop-backs
+    // (composition is disposed, ViewModel is not) — no refetch on return.
+    val subforumListVM: SubforumListViewModel = viewModel(
+        factory = SubforumListViewModel.factory(forumId),
+    )
+    val dataSource = subforumListVM.dataSource
     val state by dataSource.state.collectAsState()
-    LaunchedEffect(Unit) { dataSource.initialLoad() }
+    LaunchedEffect(dataSource) {
+        if (dataSource.notLoaded) dataSource.initialLoad()
+    }
 
     // Local editable copy, updated optimistically and re-synced on refresh.
     val subforums = remember { mutableStateListOf<Subforum>() }

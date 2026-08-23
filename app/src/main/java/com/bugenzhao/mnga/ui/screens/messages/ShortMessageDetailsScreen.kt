@@ -33,6 +33,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
@@ -41,15 +42,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.bugenzhao.mnga.model.PagingDataSource
 import com.bugenzhao.mnga.model.PlusFeature
 import com.bugenzhao.mnga.model.appScope
 import com.bugenzhao.mnga.protos.datamodel.PostContent
 import com.bugenzhao.mnga.protos.datamodel.ShortMessage
 import com.bugenzhao.mnga.protos.datamodel.ShortMessagePost
 import com.bugenzhao.mnga.protos.service.AsyncRequest
-import com.bugenzhao.mnga.protos.service.ShortMessageDetailsRequest
-import com.bugenzhao.mnga.protos.service.ShortMessageDetailsResponse
 import com.bugenzhao.mnga.ui.components.AdaptiveFooter
 import com.bugenzhao.mnga.ui.nav.Navigator
 import com.bugenzhao.mnga.ui.screens.user.RawPostContent
@@ -74,27 +72,14 @@ fun ShortMessageDetailsScreen(
 ) {
     val context = LocalContext.current
 
-    val dataSource = remember(id) {
-        PagingDataSource<ShortMessageDetailsResponse, ShortMessagePost>(
-            scope = appScope,
-            responseParser = { ShortMessageDetailsResponse.parser() },
-            buildRequest = { page ->
-                AsyncRequest.newBuilder()
-                    .setShortMessageDetails(
-                        ShortMessageDetailsRequest.newBuilder()
-                            .setId(id)
-                            .setPage(page)
-                    )
-                    .build()
-            },
-            onResponse = { response ->
-                Pair(response.postsList, response.pages.toInt().takeIf { it > 0 })
-            },
-            id = { it.id },
-        )
-    }
+    // Entry-scoped ViewModel: the loaded posts survive pop-backs (composition
+    // is disposed, ViewModel is not) — no refetch on return.
+    val detailsVM: ShortMessageDetailsViewModel = viewModel(
+        factory = ShortMessageDetailsViewModel.factory(id),
+    )
+    val dataSource = detailsVM.dataSource
 
-    LaunchedEffect(id) {
+    LaunchedEffect(dataSource) {
         if (dataSource.notLoaded) dataSource.initialLoad()
     }
 
