@@ -780,7 +780,9 @@ fun TopicDetailsScreen(
             }
         }
 
-        // 只有第一页的最顶部才允许下拉刷新；还有前页时由自动加载接管。
+        // 第一页下拉刷新；>第一页下拉 = 手动加载上一页（滑到顶自动加载
+        // 失败时的兜底入口），无翻页动画、保持位置，与自动触发一致（顶部
+        // 显示"正在加载上一页"提示）。
         val pullRefreshState = rememberPullToRefreshState()
         Box(
             Modifier
@@ -789,8 +791,13 @@ fun TopicDetailsScreen(
                 .pullToRefresh(
                     state = pullRefreshState,
                     isRefreshing = state.isRefreshing,
-                    onRefresh = { dataSource.refreshAsync(sleepMillis = 500) },
-                    enabled = (dataSource.firstLoadedPage ?: 1) <= 1,
+                    onRefresh = {
+                        if ((dataSource.firstLoadedPage ?: 1) <= 1) {
+                            dataSource.refreshAsync(sleepMillis = 500)
+                        } else if (!dataSource.isLoading) {
+                            loadBack((dataSource.firstLoadedPage ?: 1) - 1)
+                        }
+                    },
                 ),
         ) {
             PullToRefreshDefaults.Indicator(
