@@ -94,9 +94,7 @@
     <string name="tap_an_item_to_clear_it">Tap an item to clear it.</string>
     <string name="view_image">View Image</string>
     <string name="share_as_image">Share As Image</string>
-    <string name="page_d">Page %lld</string>
     <string name="load_this_page">Load This Page</string>
-    <string name="paginated_reading">Paginated Reading</string>
     <string name="view_video">View Video</string>
     <string name="always_use_in_app_safari">Always Use In-App Safari</string>
     <string name="audio">Audio</string>

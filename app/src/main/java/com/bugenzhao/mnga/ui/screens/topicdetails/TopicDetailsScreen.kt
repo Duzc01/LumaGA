@@ -235,7 +235,6 @@ fun TopicDetailsScreen(
 
     val state by dataSource.state.collectAsState()
     val response = state.latestResponse as? TopicDetailsResponse
-    val usePaginated = App.prefs.usePaginatedDetails.flow.collectAsState().value
     val localMode = forceLocalMode || (response?.isLocalCache == true)
 
     val listState = rememberLazyListState()
@@ -303,12 +302,11 @@ fun TopicDetailsScreen(
     }
 
     // Scroll targets from the action model.
-    val rows = remember(items, first, usePaginated, response, atForum, onlyPostId) {
+    val rows = remember(items, first, response, atForum, onlyPostId) {
         buildRows(
             items = items,
             first = first,
             firstLoadedPage = dataSource.firstLoadedPage,
-            paginated = usePaginated && onlyPostId == null,
             showTail = shouldShowTailSection(dataSource, state, response, onlyPostId != null),
         )
     }
@@ -796,10 +794,6 @@ sealed interface RowSpec {
         override val key: String = "loadback"
     }
 
-    data class PageHeader(val page: Int) : RowSpec {
-        override val key: String = "page_$page"
-    }
-
     data class Reply(val post: Post) : RowSpec {
         override val key: String = "floor_${post.floor}"
         override val floor: Int get() = post.floor
@@ -815,7 +809,6 @@ private fun buildRows(
     items: List<Post>,
     first: Post?,
     firstLoadedPage: Int?,
-    paginated: Boolean,
     showTail: Boolean,
 ): List<RowSpec> {
     val rows = mutableListOf<RowSpec>(RowSpec.Header)
@@ -834,7 +827,6 @@ private fun buildRows(
     if (prevPage != null && items.isNotEmpty()) rows += RowSpec.LoadBack(prevPage)
 
     for ((page, posts) in paged) {
-        if (paginated) rows += RowSpec.PageHeader(page)
         for (post in posts) {
             if (first != null && post.id == first.id) continue
             rows += RowSpec.Reply(post)
@@ -1024,13 +1016,6 @@ private fun TopicDetailsRow(
                 Text(L.str(context, "Load Page %lld", row.page))
             }
         }
-
-        is RowSpec.PageHeader -> Text(
-            L.str(context, "Page %lld", row.page),
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(start = 4.dp, top = 4.dp),
-        )
 
         is RowSpec.Reply -> ReplyRow(
             post = row.post,

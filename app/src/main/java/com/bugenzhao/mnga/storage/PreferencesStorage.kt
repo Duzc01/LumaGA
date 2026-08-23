@@ -145,7 +145,6 @@ class PreferencesStorage(private val prefs: SharedPreferences) {
             { e, k, v -> e.putString(k, v) })
 
     val showSignature = boolPref("showSignatureNew", false)
-    val usePaginatedDetails = boolPref("usePaginatedDetails", false)
     val useInAppSafari = boolPref("useInAppSafari", true)
     val topicListHideBlocked = boolPref("topicListHideBlocked", false)
     val topicListShowRefreshButton = boolPref("topicListShowRefreshButton", true)

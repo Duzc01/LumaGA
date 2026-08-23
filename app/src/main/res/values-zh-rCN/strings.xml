@@ -94,9 +94,7 @@
     <string name="tap_an_item_to_clear_it">轻触一项来清除缓存。</string>
     <string name="view_image">查看图片</string>
     <string name="share_as_image">作为图片分享</string>
-    <string name="page_d">第 %1$d 页</string>
     <string name="load_this_page">加载本页</string>
-    <string name="paginated_reading">分页阅读</string>
     <string name="view_video">查看视频</string>
     <string name="always_use_in_app_safari">始终使用内置 Safari</string>
     <string name="audio">音频</string>

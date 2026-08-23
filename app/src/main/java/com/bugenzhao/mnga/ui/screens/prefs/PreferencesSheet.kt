@@ -118,7 +118,6 @@ fun PreferencesSheet(onDismiss: () -> Unit, navigator: Navigator? = null) {
     val showForumShortcut by prefs.topicListShowForumShortcut.flow.collectAsState()
     val subjectMulticolor by prefs.topicListSubjectMulticolor.flow.collectAsState()
 
-    val usePaginatedDetails by prefs.usePaginatedDetails.flow.collectAsState()
     val webApiStrategyRaw by prefs.topicDetailsWebApiStrategyRaw.flow.collectAsState()
     val resumeFromRaw by prefs.resumeTopicFromRaw.flow.collectAsState()
     val autoOpenInBrowserWhenBanned by prefs.autoOpenInBrowserWhenBanned.flow.collectAsState()
@@ -268,11 +267,6 @@ fun PreferencesSheet(onDismiss: () -> Unit, navigator: Navigator? = null) {
                     header = L.str(context, "Topic Details"),
                     footer = L.str(context, "Web API Explained"),
                 ) {
-                    SwitchRow(
-                        title = L.str(context, "Paginated Reading"),
-                        checked = usePaginatedDetails,
-                        onChange = { prefs.usePaginatedDetails.value = it },
-                    )
                     PickerRow(
                         title = L.str(context, "Web API"),
                         valueLabel = webApiStrategyLabel(context, webApiStrategy),
