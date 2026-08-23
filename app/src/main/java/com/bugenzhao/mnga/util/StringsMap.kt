@@ -177,6 +177,7 @@ object StringsMap {
         "First" to "first",
         "Last" to "last",
         "Load Page %lld" to "load_page_d",
+        "Loading Previous Page" to "loading_previous_page",
         "Accounts" to "accounts",
         "Add Account" to "add_account",
         "Multiple Accounts" to "multiple_accounts",

@@ -173,6 +173,7 @@
     <string name="type_here">Type here...</string>
     <string name="first">First</string>
     <string name="last">Last</string>
+    <string name="loading_previous_page">Loading Previous Page</string>
     <string name="load_page_d">Load Page %lld</string>
     <string name="accounts">Accounts</string>
     <string name="add_account">Add Account</string>

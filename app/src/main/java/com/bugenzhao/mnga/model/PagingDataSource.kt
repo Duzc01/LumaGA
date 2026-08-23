@@ -147,8 +147,10 @@ class PagingDataSource<Res : Message, Item : Any>(
                 itemToIndexAndPage[key] = Pair(list.size - 1, page)
             }
         }
-        reindex()
+        // 必须先更新列表再 reindex：reindex 用当前 items 重建映射，
+        // 若在更新前执行，新增条目的 key 不在旧列表里会被全部丢弃。
         _state.value = _state.value.copy(items = list)
+        reindex()
     }
 
     private fun replaceItems(new: List<Item>, page: Int) {

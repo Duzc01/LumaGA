@@ -173,6 +173,7 @@
     <string name="type_here">输入…</string>
     <string name="first">最前</string>
     <string name="last">最后</string>
+    <string name="loading_previous_page">正在加载上一页</string>
     <string name="load_page_d">加载第 %1$d 页</string>
     <string name="accounts">账号</string>
     <string name="add_account">添加账号</string>

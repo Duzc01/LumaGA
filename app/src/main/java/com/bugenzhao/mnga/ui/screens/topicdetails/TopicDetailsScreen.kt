@@ -53,7 +53,9 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
+import androidx.compose.material3.pulltorefresh.pullToRefresh
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -62,9 +64,11 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -310,10 +314,13 @@ fun TopicDetailsScreen(
             showTail = shouldShowTailSection(dataSource, state, response, onlyPostId != null),
         )
     }
-    LaunchedEffect(action, rows) {
+    val currentRows by rememberUpdatedState(rows)
+    LaunchedEffect(action, listState) {
         action.scrollToFloor.collect { floor ->
             if (floor != null) {
-                val index = rows.indexOfFirst { it.floor == floor }
+                // currentRows 始终是最新 rows（effect 不随 rows 重启，
+                // 避免闭包过期导致加载前页后滚动目标找不到）。
+                val index = currentRows.indexOfFirst { it.floor == floor }
                 if (index >= 0) listState.animateScrollToItem(index)
                 action.scrollToFloor.value = null
             }
@@ -604,11 +611,68 @@ fun TopicDetailsScreen(
             )
         },
     ) { padding ->
-        PullToRefreshBox(
-            isRefreshing = state.isRefreshing,
-            onRefresh = { dataSource.refreshAsync(sleepMillis = 500) },
-            modifier = Modifier.fillMaxSize().padding(padding),
+        // 加载上一页；完成后滚到新页末尾楼层，保持阅读连续性（位置离开
+        // 顶部，滑回顶部才会再次触发自动加载）。
+        fun loadBack(prevPage: Int) {
+            dataSource.reload(page = prevPage, evenIfNotLoaded = true) {
+                val floor = dataSource.itemsAtPage(prevPage)
+                    .maxOfOrNull { it.floor }
+                if (floor != null) action.scrollToFloor.value = floor
+            }
+        }
+
+        // 滑到当前页顶部时自动加载上一页（无需下拉手势）；加载中由列表
+        // 顶部的"正在加载上一页"提示展示。只有第一页顶部下拉才是刷新。
+        // 注意：snapshotFlow 只追踪列表位置（Compose snapshot 状态），
+        // 数据源状态在 collect 时实时读取。
+        val isLoadingPrev =
+            state.isLoading && (dataSource.firstLoadedPage ?: 1) > 1
+        fun maybeAutoLoadPrev() {
+            if (listState.firstVisibleItemIndex <= 1 &&
+                (dataSource.firstLoadedPage ?: 1) > 1 &&
+                !dataSource.state.value.isLoading
+            ) {
+                loadBack((dataSource.firstLoadedPage ?: 1) - 1)
+            }
+        }
+        // 1) 用户滚动到顶部时触发。
+        LaunchedEffect(dataSource, listState) {
+            snapshotFlow { listState.firstVisibleItemIndex <= 1 }
+                .collect { atTop -> if (atTop) maybeAutoLoadPrev() }
+        }
+        // 2) 跳转/刷新后兜底：自动预载上一页一次（保证跳转到后面楼层后能
+        //    往回滑；内容不满一屏无法滚动触发时也不会卡住）。reload 不更新
+        //    lastRefreshTime，所以不会连发。
+        LaunchedEffect(state.lastRefreshTime) {
+            if (state.lastRefreshTime != null && (dataSource.firstLoadedPage ?: 1) > 1) {
+                delay(300)
+                // 等待当前加载（如跳转后触发的 loadMore）结束，否则
+                // reload 的 isLoading guard 会拒绝预载。
+                while (dataSource.state.value.isLoading) {
+                    delay(100)
+                }
+                loadBack((dataSource.firstLoadedPage ?: 1) - 1)
+            }
+        }
+
+        // 只有第一页的最顶部才允许下拉刷新；还有前页时由自动加载接管。
+        val pullRefreshState = rememberPullToRefreshState()
+        Box(
+            Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .pullToRefresh(
+                    state = pullRefreshState,
+                    isRefreshing = state.isRefreshing,
+                    onRefresh = { dataSource.refreshAsync(sleepMillis = 500) },
+                    enabled = (dataSource.firstLoadedPage ?: 1) <= 1,
+                ),
         ) {
+            PullToRefreshDefaults.Indicator(
+                state = pullRefreshState,
+                isRefreshing = state.isRefreshing,
+                modifier = Modifier.align(Alignment.TopCenter),
+            )
             if (localMode) {
                 LocalCacheBanner(
                     reason = response?.localReason ?: "",
@@ -630,6 +694,32 @@ fun TopicDetailsScreen(
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(vertical = 8.dp),
                 ) {
+                    // 自动加载上一页时，顶部居中显示加载提示。
+                    if (isLoadingPrev) {
+                        item(key = "loading-prev") {
+                            Box(
+                                Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 14.dp),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                ) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(16.dp),
+                                        strokeWidth = 2.dp,
+                                    )
+                                    Text(
+                                        L.str(context, "Loading Previous Page"),
+                                        style = MaterialTheme.typography.labelMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                            }
+                        }
+                    }
                     itemsIndexed(rows, key = { _, row -> row.key }) { index, row ->
                         Column {
                             TopicDetailsRow(
@@ -647,15 +737,7 @@ fun TopicDetailsScreen(
                                 dataSource = dataSource,
                                 currentViewingFloor = currentViewingFloor,
                                 onPostAction = onPostAction,
-                                onLoadBack = { prevPage ->
-                                    val currFirst = items.minByOrNull { it.floor }
-                                    if (currFirst != null) action.scrollToFloor.value = currFirst.floor
-                                    dataSource.reload(page = prevPage, evenIfNotLoaded = true) {
-                                        val floor = dataSource.itemsAtPage(prevPage)
-                                            .maxOfOrNull { it.floor }
-                                        if (floor != null) action.scrollToFloor.value = floor
-                                    }
-                                },
+                                onLoadBack = { prevPage -> loadBack(prevPage) },
                                 onLoadNewReplies = {
                                     dataSource.reloadLastPage(evenIfNotLoaded = true) {
                                         Haptics.vibrate(context, Haptics.NotificationType.SUCCESS)
