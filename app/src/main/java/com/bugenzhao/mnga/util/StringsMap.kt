@@ -327,6 +327,7 @@ object StringsMap {
         "Album" to "album",
         "Multicolor Subject" to "multicolor_subject",
         "Sync Favorites" to "sync_favorites",
+        "Use NGA Classic Icon" to "use_nga_classic_icon",
         "Back" to "back",
         "Sync Favorite Forums" to "sync_favorite_forums",
         "LumaGA Login Notice" to "lumaga_login_notice",

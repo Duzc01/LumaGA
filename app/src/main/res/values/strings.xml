@@ -328,6 +328,7 @@
     <string name="album">Album</string>
     <string name="multicolor_subject">Multicolor Subject</string>
     <string name="sync_favorites">Sync Favorites</string>
+    <string name="use_nga_classic_icon">使用 NGA 经典图标</string>
     <string name="back">Back</string>
     <string name="sync_favorite_forums">Sync Favorite Forums</string>
     <string name="lumaga_login_notice">LumaGA Login Notice</string>

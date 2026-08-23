@@ -110,6 +110,7 @@ fun PreferencesSheet(onDismiss: () -> Unit, navigator: Navigator? = null) {
     val alwaysPortrait by prefs.alwaysPortraitOnPhone.flow.collectAsState()
     val useInAppSafari by prefs.useInAppSafari.flow.collectAsState()
     val alwaysShareImageAsFile by prefs.alwaysShareImageAsFile.flow.collectAsState()
+    val useClassicIcon by prefs.useClassicIcon.flow.collectAsState()
 
     val defaultOrderRaw by prefs.defaultTopicListOrderRaw.flow.collectAsState()
     val hideBlocked by prefs.topicListHideBlocked.flow.collectAsState()
@@ -213,10 +214,17 @@ fun PreferencesSheet(onDismiss: () -> Unit, navigator: Navigator? = null) {
                             scope.launch { App.favoriteForums.sync() }
                         },
                     )
+                    SwitchRow(
+                        title = L.str(context, "Use NGA Classic Icon"),
+                        checked = useClassicIcon,
+                        onChange = { next ->
+                            prefs.useClassicIcon.value = next
+                            applyLauncherIcon(context, next)
+                        },
+                    )
                 }
             }
             // endregion
-
             // region Topic List
             item(key = "topic-list") {
                 Section(header = L.str(context, "Topic List")) {
@@ -663,3 +671,25 @@ private fun themeColorDot(color: ThemeColor): Color {
 }
 
 // endregion
+
+/**
+ * Switches the home-screen launcher icon by enabling one of the two
+ * launcher activity aliases and disabling the other (Settings ->
+ * Use NGA Classic Icon). Only one may be enabled at a time.
+ */
+private fun applyLauncherIcon(context: android.content.Context, useNGA: Boolean) {
+    val pm = context.packageManager
+    val pkg = context.packageName
+    pm.setComponentEnabledSetting(
+        android.content.ComponentName(pkg, "$pkg.Launcher"),
+        if (useNGA) android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_DISABLED
+        else android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
+        android.content.pm.PackageManager.DONT_KILL_APP,
+    )
+    pm.setComponentEnabledSetting(
+        android.content.ComponentName(pkg, "$pkg.LauncherNGA"),
+        if (useNGA) android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_ENABLED
+        else android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
+        android.content.pm.PackageManager.DONT_KILL_APP,
+    )
+}
