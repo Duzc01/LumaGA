@@ -1,5 +1,7 @@
 package com.bugenzhao.mnga.ui.screens.topicdetails
 
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
@@ -63,6 +65,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -78,8 +81,11 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
@@ -617,13 +623,25 @@ fun TopicDetailsScreen(
         // （jumpFloor，跳转/恢复场景），否则取屏幕顶部第一个可见楼层
         // （跳过 Header；Header 可见时也拿得到真实楼层）。
         var pendingAnchor by remember { mutableStateOf<Int?>(null) }
-        fun loadBack(prevPage: Int, jumpFloor: Int? = null) {
-            val anchorFloor = jumpFloor ?: currentRows
+        // scrollToPageEnd=true（手势右滑翻页）：加载完成后滚到该页末尾楼层，
+        // 让用户看到新加载的上一页内容（ViewPager 翻页语义）；否则保持原
+        // 阅读位置（滑到顶自动加载/跳转预载）。
+        fun loadBack(
+            prevPage: Int,
+            jumpFloor: Int? = null,
+            scrollToPageEnd: Boolean = false,
+            onDone: (() -> Unit)? = null,
+        ) {
+            val anchorFloor = if (scrollToPageEnd) null else jumpFloor ?: currentRows
                 .drop(listState.firstVisibleItemIndex)
                 .firstOrNull { it is RowSpec.Reply }
                 ?.let { (it as RowSpec.Reply).post.floor }
             dataSource.reload(page = prevPage, evenIfNotLoaded = true) {
-                if (anchorFloor != null) pendingAnchor = anchorFloor
+                val target = if (scrollToPageEnd)
+                    dataSource.itemsAtPage(prevPage).maxOfOrNull { it.floor }
+                else anchorFloor
+                if (target != null) pendingAnchor = target
+                onDone?.invoke()
             }
         }
         // reload 完成回调执行时重组尚未发生（currentRows 还是旧 rows），
@@ -635,6 +653,26 @@ fun TopicDetailsScreen(
             val index = rows.indexOfFirst { it.floor == floor }
             if (index >= 0) listState.scrollToItem(index)
             pendingAnchor = null
+        }
+
+        // ViewPager 式翻页动画：内容随手指横向平移，松手后按方向滑出
+        // （左滑出左侧/右滑出右侧），加载完成后新内容从对侧滑入；未触发
+        // 加载（位移不足/边界/加载中）则回弹。swipeLocked 期间手势只跟
+        // 手不触发，避免动画与手势互相覆盖。
+        val density = LocalDensity.current
+        val screenWidthPx = with(density) { LocalConfiguration.current.screenWidthDp.dp.toPx() }
+        var contentOffset by remember { mutableFloatStateOf(0f) }
+        var swipeLocked by remember { mutableStateOf(false) }
+        var showSwipeOverlay by remember { mutableStateOf(false) }
+        val swipeScope = rememberCoroutineScope()
+        fun settleSwipe() {
+            swipeScope.launch {
+                swipeLocked = true
+                animate(contentOffset, 0f, animationSpec = tween(220, easing = FastOutSlowInEasing)) { v, _ ->
+                    contentOffset = v
+                }
+                swipeLocked = false
+            }
         }
 
         // 滑到当前页顶部时自动加载上一页（无需下拉手势）；加载中由列表
@@ -711,35 +749,98 @@ fun TopicDetailsScreen(
                     state = listState,
                     modifier = Modifier
                         .fillMaxSize()
-                        // 横向滑动翻页：右滑加载上一页、左滑加载下一页。在手势
-                        // 结束（onDragEnd）时按累计位移判定，滑动过程中不触发、
-                        // 也不会反复触发；位移不足阈值（70dp）视为误触，忽略。
-                        // 与 LazyColumn 垂直滚动正交共存：垂直拖动被列表消费，
-                        // 水平拖动冒泡到这里；系统边缘返回手势仍由系统处理，
-                        // 只影响屏幕中间区域的左右滑动。
+                        // ViewPager 式横向翻页：右滑加载上一页、左滑加载下一页。
+                        // 拖动时内容跟手平移；松手时累计位移 ≥70dp 且边界允许则
+                        // 滑出→加载→新内容从对侧滑入，否则回弹。手势期间列表
+                        // 垂直滚动让位于水平手势；系统边缘返回手势仍由系统处理。
                         .pointerInput(dataSource) {
                             val threshold = with(density) { 70.dp.toPx() }
                             var totalX = 0f
                             detectHorizontalDragGestures(
+                                onDragStart = { totalX = 0f },
                                 onDragEnd = {
-                                    if (totalX >= threshold) {
-                                        val prev = (dataSource.firstLoadedPage ?: 1) - 1
-                                        if (prev >= 1 && !dataSource.isLoading) {
-                                            loadBack(prev)
-                                        }
-                                    } else if (totalX <= -threshold) {
-                                        if (dataSource.hasMore && !dataSource.isLoading) {
-                                            dataSource.loadMore()
-                                        }
-                                    }
+                                    val dx = totalX
                                     totalX = 0f
+                                    if (swipeLocked) return@detectHorizontalDragGestures
+                                    val canPrev = dx >= threshold &&
+                                        (dataSource.firstLoadedPage ?: 1) > 1 &&
+                                        !dataSource.isLoading
+                                    val canNext = dx <= -threshold &&
+                                        dataSource.hasMore &&
+                                        !dataSource.isLoading
+                                    when {
+                                        canPrev -> swipeScope.launch {
+                                            swipeLocked = true
+                                            animate(
+                                                contentOffset, screenWidthPx,
+                                                animationSpec = tween(200, easing = FastOutSlowInEasing),
+                                            ) { v, _ -> contentOffset = v }
+                                            showSwipeOverlay = true
+                                            var loaded = false
+                                            loadBack(
+                                                (dataSource.firstLoadedPage ?: 1) - 1,
+                                                scrollToPageEnd = true,
+                                            ) { loaded = true }
+                                            while (!loaded && dataSource.isLoading) delay(50)
+                                            showSwipeOverlay = false
+                                            // 成功：新内容（上一页）从左侧滑入；
+                                            // 失败/被 guard 拒绝：旧内容从右侧滑回。
+                                            if (loaded) {
+                                                contentOffset = -screenWidthPx
+                                                animate(
+                                                    contentOffset, 0f,
+                                                    animationSpec = tween(240, easing = FastOutSlowInEasing),
+                                                ) { v, _ -> contentOffset = v }
+                                            } else {
+                                                settleSwipe()
+                                                return@launch
+                                            }
+                                            swipeLocked = false
+                                        }
+                                        canNext -> swipeScope.launch {
+                                            swipeLocked = true
+                                            animate(
+                                                contentOffset, -screenWidthPx,
+                                                animationSpec = tween(200, easing = FastOutSlowInEasing),
+                                            ) { v, _ -> contentOffset = v }
+                                            showSwipeOverlay = true
+                                            val beforeSize = dataSource.items.size
+                                            dataSource.loadMore()
+                                            while (dataSource.isLoading) delay(50)
+                                            showSwipeOverlay = false
+                                            // 成功且有新内容：滚到新页开头，下一页从右侧滑入；
+                                            // 失败/空页/被 guard 拒绝：旧内容滑回。
+                                            val changed = dataSource.items.size != beforeSize
+                                            if (changed && dataSource.state.value.latestError == null) {
+                                                dataSource.itemsAtPage(dataSource.loadedPage)
+                                                    .minOfOrNull { it.floor }
+                                                    ?.let { pendingAnchor = it }
+                                                contentOffset = screenWidthPx
+                                                animate(
+                                                    contentOffset, 0f,
+                                                    animationSpec = tween(240, easing = FastOutSlowInEasing),
+                                                ) { v, _ -> contentOffset = v }
+                                                swipeLocked = false
+                                            } else {
+                                                settleSwipe()
+                                            }
+                                        }
+                                        else -> settleSwipe()
+                                    }
                                 },
-                                onDragCancel = { totalX = 0f },
+                                onDragCancel = {
+                                    totalX = 0f
+                                    settleSwipe()
+                                },
                             ) { change, dragAmount ->
                                 change.consume()
                                 totalX += dragAmount
+                                if (!swipeLocked) contentOffset = totalX
                             }
-                        },
+                        }
+                        // 跟手平移发生在 graphicsLayer：绘制/命中随平移变化，
+                        // 手势判定仍用原始坐标。
+                        .graphicsLayer { translationX = contentOffset },
                     contentPadding = PaddingValues(vertical = 8.dp),
                 ) {
                     // 自动加载上一页时，顶部居中显示加载提示。
@@ -803,6 +904,17 @@ fun TopicDetailsScreen(
                                 Spacer(Modifier.height(8.dp))
                             }
                         }
+                    }
+                }
+                // 翻页切换中（内容已滑出屏幕、等待新页加载）的居中加载指示。
+                if (showSwipeOverlay) {
+                    Box(
+                        Modifier
+                            .fillMaxSize()
+                            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.72f)),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        CircularProgressIndicator()
                     }
                 }
             }
