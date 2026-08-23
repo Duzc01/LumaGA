@@ -623,25 +623,25 @@ fun TopicDetailsScreen(
         // （jumpFloor，跳转/恢复场景），否则取屏幕顶部第一个可见楼层
         // （跳过 Header；Header 可见时也拿得到真实楼层）。
         var pendingAnchor by remember { mutableStateOf<Int?>(null) }
-        // scrollToEdge != null（手势翻页）：加载完成后滚到目标页的对应端
-        // （上一页末尾/下一页开头，ViewPager 翻页语义）；否则保持原阅读
-        // 位置（滑到顶自动加载/跳转预载）。
+        // 目标页开头的楼层：跳过 0 楼（主题楼——主题在头部单独渲染，
+        // 不在列表行里，滚动目标必须落在列表行上）。
+        fun pageStartFloor(page: Int): Int? =
+            dataSource.itemsAtPage(page).filter { it.floor > 0 }.minOfOrNull { it.floor }
+        // scrollToPageStart=true（手势翻页）：加载完成后滚到目标页开头楼层
+        // （ViewPager 翻页语义：翻页即显示新页开头，竖着滚动才连续阅读）；
+        // 否则保持原阅读位置（滑到顶自动加载/跳转预载）。
         fun loadBack(
             prevPage: Int,
             jumpFloor: Int? = null,
-            scrollToEdge: PageEdge? = null,
+            scrollToPageStart: Boolean = false,
             onDone: (() -> Unit)? = null,
         ) {
-            val anchorFloor = if (scrollToEdge != null) null else jumpFloor ?: currentRows
+            val anchorFloor = if (scrollToPageStart) null else jumpFloor ?: currentRows
                 .drop(listState.firstVisibleItemIndex)
                 .firstOrNull { it is RowSpec.Reply }
                 ?.let { (it as RowSpec.Reply).post.floor }
             dataSource.reload(page = prevPage, evenIfNotLoaded = true) {
-                val target = when (scrollToEdge) {
-                    PageEdge.END -> dataSource.itemsAtPage(prevPage).maxOfOrNull { it.floor }
-                    PageEdge.START -> dataSource.itemsAtPage(prevPage).minOfOrNull { it.floor }
-                    null -> anchorFloor
-                }
+                val target = if (scrollToPageStart) pageStartFloor(prevPage) else anchorFloor
                 if (target != null) pendingAnchor = target
                 onDone?.invoke()
             }
@@ -678,8 +678,8 @@ fun TopicDetailsScreen(
         }
         // 按页码翻页（ViewPager 切换动画）：右滑 fromLeft=true（新页从左侧
         // 滑入）、左滑 fromLeft=false（从右侧滑入）。目标页已加载则直接滚到
-        // 该页对应端（上一页末尾/下一页开头），不重复加载、不跨页跳转；
-        // 未加载才发起加载（顺序页 loadMore，任意页 reload）。
+        // 该页开头，不重复加载、不跨页跳转；未加载才发起加载（顺序页
+        // loadMore，任意页 reload）。竖着滚动才是页内连续阅读（60→59）。
         fun swipeToPage(targetPage: Int, fromLeft: Boolean) {
             if (targetPage < 1) {
                 settleSwipe()
@@ -692,13 +692,9 @@ fun TopicDetailsScreen(
                     contentOffset, exitX,
                     animationSpec = tween(200, easing = FastOutSlowInEasing),
                 ) { v, _ -> contentOffset = v }
-                val edgeFloor = {
-                    val its = dataSource.itemsAtPage(targetPage)
-                    if (fromLeft) its.maxOfOrNull { it.floor } else its.minOfOrNull { it.floor }
-                }
                 if (dataSource.itemsAtPage(targetPage).isNotEmpty()) {
-                    // 目标页已加载：直接滚到对应端，无加载等待。
-                    edgeFloor()?.let { pendingAnchor = it }
+                    // 目标页已加载：直接滚到该页开头，无加载等待。
+                    pageStartFloor(targetPage)?.let { pendingAnchor = it }
                     showSwipeOverlay = false
                     contentOffset = -exitX
                     animate(
@@ -713,7 +709,7 @@ fun TopicDetailsScreen(
                 var ok = false
                 if (fromLeft) {
                     // 上一页：reload 任意页。
-                    loadBack(targetPage, scrollToEdge = PageEdge.END) { ok = true }
+                    loadBack(targetPage, scrollToPageStart = true) { ok = true }
                     while (!ok && dataSource.isLoading) delay(50)
                 } else {
                     // 下一页：顺序页走 loadMore；中间缺页（页号 ≤ 已加载页数但
@@ -727,7 +723,7 @@ fun TopicDetailsScreen(
                                 dataSource.state.value.latestError == null
                         }
                         targetPage <= dataSource.loadedPage -> {
-                            loadBack(targetPage, scrollToEdge = PageEdge.START) { ok = true }
+                            loadBack(targetPage, scrollToPageStart = true) { ok = true }
                             while (!ok && dataSource.isLoading) delay(50)
                         }
                         else -> ok = false
@@ -735,7 +731,7 @@ fun TopicDetailsScreen(
                 }
                 showSwipeOverlay = false
                 if (ok) {
-                    edgeFloor()?.let { pendingAnchor = it }
+                    pageStartFloor(targetPage)?.let { pendingAnchor = it }
                     contentOffset = -exitX
                     animate(
                         contentOffset, 0f,
@@ -1825,8 +1821,3 @@ private fun ReplyChainOverlay(
 }
 
 // endregion
-
-
-
-/** 手势翻页后滚动到目标页的哪一端（上一页末尾 / 下一页开头）。 */
-private enum class PageEdge { START, END }
