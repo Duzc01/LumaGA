@@ -151,6 +151,7 @@ class PreferencesStorage(private val prefs: SharedPreferences) {
     val topicListShowRefreshButton = boolPref("topicListShowRefreshButton", true)
     val topicListShowForumShortcut = boolPref("topicListShowForumShortcut", true)
     val topicListSubjectMulticolor = boolPref("topicListSubjectMulticolor", true)
+    val topicListRowStyle = boolPref("topicListRowStyle", false)
     val alwaysPortraitOnPhone = boolPref("alwaysPortraitOnPhone", false)
     val postRowShowUserRegDate = boolPref("postRowShowUserRegDate", false)
     val postRowShowAuthorIndicator = boolPref("postRowShowAuthorIndicator", true)

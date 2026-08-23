@@ -111,6 +111,7 @@ fun PreferencesSheet(onDismiss: () -> Unit, navigator: Navigator? = null) {
     val useInAppSafari by prefs.useInAppSafari.flow.collectAsState()
     val alwaysShareImageAsFile by prefs.alwaysShareImageAsFile.flow.collectAsState()
     val useClassicIcon by prefs.useClassicIcon.flow.collectAsState()
+    val compactTopicList by prefs.topicListRowStyle.flow.collectAsState()
 
     val defaultOrderRaw by prefs.defaultTopicListOrderRaw.flow.collectAsState()
     val hideBlocked by prefs.topicListHideBlocked.flow.collectAsState()
@@ -251,6 +252,11 @@ fun PreferencesSheet(onDismiss: () -> Unit, navigator: Navigator? = null) {
                         title = L.str(context, "Multicolor Subject"),
                         checked = subjectMulticolor,
                         onChange = { prefs.topicListSubjectMulticolor.value = it },
+                    )
+                    SwitchRow(
+                        title = L.str(context, "Compact Topic List"),
+                        checked = compactTopicList,
+                        onChange = { prefs.topicListRowStyle.value = it },
                     )
                 }
             }

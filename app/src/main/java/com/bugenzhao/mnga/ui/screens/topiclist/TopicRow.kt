@@ -29,6 +29,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -273,6 +274,10 @@ fun TopicRow(
     } else {
         null
     }
+    // Avatar-less list style (Settings -> Compact Topic List): no author
+    // avatar, author and time share one line, replies sit as a tall number
+    // on the right — the classic forum-list vernacular.
+    val avatarless by App.prefs.topicListRowStyle.flow.collectAsState()
 
     Surface(
         modifier = modifier
@@ -285,30 +290,122 @@ fun TopicRow(
         shape = RoundedCornerShape(12.dp),
         color = MaterialTheme.colorScheme.surface,
     ) {
-        Column(
-            Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            if (blocked) {
-                BlockedSubjectView()
-            } else {
-                TopicSubjectView(
+        if (avatarless) {
+            Row(
+                Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(
+                    Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    if (blocked) {
+                        BlockedSubjectView()
+                    } else {
+                        TopicSubjectView(
+                            topic = topic,
+                            maxLines = 2,
+                            showIndicators = showIndicators,
+                            dimmed = shouldDim,
+                            // The forum and tags live on the metadata line below.
+                            tagBar = false,
+                        )
+                    }
+                    AuthorDateLine(topic = topic, date = date)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        TopicOriginLine(
+                            topic = topic,
+                            showFavored = showIndicators && favored,
+                            color = topicMetaColor(),
+                            fallbackForumName = fallbackForumName,
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+                }
+                Spacer(Modifier.width(10.dp))
+                RepliesCountColumn(replies = num, delta = delta)
+            }
+        } else {
+            Column(
+                Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                if (blocked) {
+                    BlockedSubjectView()
+                } else {
+                    TopicSubjectView(
+                        topic = topic,
+                        maxLines = 2,
+                        showIndicators = showIndicators,
+                        dimmed = shouldDim,
+                        // The forum and tags live on the metadata line below.
+                        tagBar = false,
+                    )
+                }
+
+                TopicMetaBlock(
                     topic = topic,
-                    maxLines = 2,
-                    showIndicators = showIndicators,
-                    dimmed = shouldDim,
-                    // The forum and tags live on the metadata line below.
-                    tagBar = false,
+                    date = date,
+                    replies = num,
+                    delta = delta,
+                    showFavored = showIndicators && favored,
+                    fallbackForumName = fallbackForumName,
                 )
             }
+        }
+    }
+}
 
-            TopicMetaBlock(
-                topic = topic,
-                date = date,
-                replies = num,
-                delta = delta,
-                showFavored = showIndicators && favored,
-                fallbackForumName = fallbackForumName,
+/**
+ * Avatar-less author line: name, a dot separator and the timestamp.
+ */
+@Composable
+private fun AuthorDateLine(topic: Topic, date: Long) {
+    val display = topicAuthorName(topic).display()
+    val meta = topicMetaColor()
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        if (display.isNotEmpty()) {
+            Text(
+                display,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f, fill = false),
+            )
+            Text(" · ", style = MaterialTheme.typography.labelMedium, color = meta)
+        }
+        DateTimeText(timestampSeconds = date, color = meta)
+    }
+}
+
+/**
+ * The reply count as a tall right-hand column, the classic NGA web list
+ * idiom: a large number, a small unit, and the unread delta in the accent
+ * color.
+ */
+@Composable
+private fun RepliesCountColumn(replies: Int, delta: Int?) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(
+            "$replies",
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurface,
+            maxLines = 1,
+        )
+        Text(
+            "回",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        if (delta != null && delta > 0) {
+            Text(
+                "+$delta",
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary,
             )
         }
     }
