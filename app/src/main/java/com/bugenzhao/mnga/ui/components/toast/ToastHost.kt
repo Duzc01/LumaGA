@@ -34,6 +34,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.bugenzhao.mnga.App
 import com.bugenzhao.mnga.model.ToastModel
+import com.bugenzhao.mnga.util.L
 import kotlinx.coroutines.delay
 
 /**
@@ -78,10 +79,15 @@ private fun BannerToast(model: ToastModel) {
     ) { msg ->
         val (title, subtitle, container, icon) = when (msg) {
             is ToastModel.Message.Success ->
-                ToastVisual("Success", msg.message, green, Icons.Filled.CheckCircle)
+                ToastVisual(
+                    L.str(context, "Success"),
+                    msg.message,
+                    green,
+                    Icons.Filled.CheckCircle,
+                )
             is ToastModel.Message.Error ->
                 ToastVisual(
-                    "Error",
+                    L.str(context, "Error"),
                     run {
                         val parts = msg.error.split("|", limit = 2)
                         if (parts.size == 2)
@@ -93,12 +99,12 @@ private fun BannerToast(model: ToastModel) {
                 )
             is ToastModel.Message.CacheLoaded ->
                 ToastVisual(
-                    "Cache Loaded",
+                    L.str(context, "Cache Loaded"),
                     msg.message,
                     MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
                     Icons.Filled.CheckCircle,
                 )
-            else -> ToastVisual("Error", "", red, Icons.Filled.Error)
+            else -> ToastVisual(L.str(context, "Error"), "", red, Icons.Filled.Error)
         }
         ToastCard(title, subtitle, container, icon)
     }
@@ -106,14 +112,20 @@ private fun BannerToast(model: ToastModel) {
 
 @Composable
 private fun HudToast(model: ToastModel) {
+    val context = androidx.compose.ui.platform.LocalContext.current
     ToastSlot(model, Modifier.fillMaxSize().padding(24.dp)) { msg ->
         val (title, subtitle) = when (msg) {
             is ToastModel.Message.Notification ->
-                "Notifications" to "${msg.count} new unread notifications"
-            is ToastModel.Message.UserSwitch -> "Account Switched" to msg.name
-            is ToastModel.Message.ClockIn -> "Clocked in Successfully" to msg.message
-            is ToastModel.Message.OpenURL -> "Navigated to Link" to msg.url
-            ToastModel.Message.AutoRefreshed -> "Auto Refreshed" to null
+                L.str(context, "Notifications") to
+                    L.str(context, "%lld new unread notifications", msg.count)
+            is ToastModel.Message.UserSwitch ->
+                L.str(context, "Account Switched") to msg.name
+            is ToastModel.Message.ClockIn ->
+                L.str(context, "Clocked in Successfully") to msg.message
+            is ToastModel.Message.OpenURL ->
+                L.str(context, "Navigated to Link") to msg.url
+            ToastModel.Message.AutoRefreshed ->
+                L.str(context, "Auto Refreshed") to null
             else -> "" to null
         }
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
