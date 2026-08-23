@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -80,6 +81,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -707,7 +709,37 @@ fun TopicDetailsScreen(
                 // loading indicator; render the (empty) list below it.
                 LazyColumn(
                     state = listState,
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        // 横向滑动翻页：右滑加载上一页、左滑加载下一页。在手势
+                        // 结束（onDragEnd）时按累计位移判定，滑动过程中不触发、
+                        // 也不会反复触发；位移不足阈值（70dp）视为误触，忽略。
+                        // 与 LazyColumn 垂直滚动正交共存：垂直拖动被列表消费，
+                        // 水平拖动冒泡到这里；系统边缘返回手势仍由系统处理，
+                        // 只影响屏幕中间区域的左右滑动。
+                        .pointerInput(dataSource) {
+                            val threshold = with(density) { 70.dp.toPx() }
+                            var totalX = 0f
+                            detectHorizontalDragGestures(
+                                onDragEnd = {
+                                    if (totalX >= threshold) {
+                                        val prev = (dataSource.firstLoadedPage ?: 1) - 1
+                                        if (prev >= 1 && !dataSource.isLoading) {
+                                            loadBack(prev)
+                                        }
+                                    } else if (totalX <= -threshold) {
+                                        if (dataSource.hasMore && !dataSource.isLoading) {
+                                            dataSource.loadMore()
+                                        }
+                                    }
+                                    totalX = 0f
+                                },
+                                onDragCancel = { totalX = 0f },
+                            ) { change, dragAmount ->
+                                change.consume()
+                                totalX += dragAmount
+                            }
+                        },
                     contentPadding = PaddingValues(vertical = 8.dp),
                 ) {
                     // 自动加载上一页时，顶部居中显示加载提示。
