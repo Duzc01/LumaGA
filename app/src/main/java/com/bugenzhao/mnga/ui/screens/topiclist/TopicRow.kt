@@ -10,6 +10,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -343,7 +344,11 @@ fun TopicRow(
                     DateTimeText(timestampSeconds = date, color = topicMetaColor())
                     Spacer(Modifier.width(8.dp))
                     // The standard badge: hot-color ramp as the count climbs.
-                    RepliesBadge(replies = num, delta = delta)
+                    // Counter the badge's internal -1dp digit offset so the
+                    // number sits on the same vertical center as the texts.
+                    Box(Modifier.offset(y = 1.dp)) {
+                        RepliesBadge(replies = num, delta = delta)
+                    }
                 }
             }
         } else {
