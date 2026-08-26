@@ -793,5 +793,32 @@ public interface AsyncRequestOrBuilder extends
    */
   com.bugenzhao.mnga.protos.service.FavoriteForumModifyRequestOrBuilder getFavoriteForumModifyOrBuilder();
 
+  /**
+   * <pre>
+   * Query clock-in stats only (no sign-in side effect).
+   * </pre>
+   *
+   * <code>.ClockInStatsRequest clock_in_stats = 30;</code>
+   * @return Whether the clockInStats field is set.
+   */
+  boolean hasClockInStats();
+  /**
+   * <pre>
+   * Query clock-in stats only (no sign-in side effect).
+   * </pre>
+   *
+   * <code>.ClockInStatsRequest clock_in_stats = 30;</code>
+   * @return The clockInStats.
+   */
+  com.bugenzhao.mnga.protos.service.ClockInStatsRequest getClockInStats();
+  /**
+   * <pre>
+   * Query clock-in stats only (no sign-in side effect).
+   * </pre>
+   *
+   * <code>.ClockInStatsRequest clock_in_stats = 30;</code>
+   */
+  com.bugenzhao.mnga.protos.service.ClockInStatsRequestOrBuilder getClockInStatsOrBuilder();
+
   com.bugenzhao.mnga.protos.service.AsyncRequest.ValueCase getValueCase();
 }

@@ -1,5 +1,7 @@
 use cache::CACHE;
-use protos::Service::{ClockInRequest, ClockInResponse};
+use protos::Service::{
+    ClockInRequest, ClockInResponse, ClockInStatsRequest, ClockInStatsResponse,
+};
 
 use crate::{
     auth::current_uid,
@@ -50,8 +52,23 @@ async fn fetch_stats() -> ServiceResult<ClockInResponse> {
     resp.total_days = v["0"]["sum"].as_i64().unwrap_or(0) as i32;
     resp.money = v["1"]["money"].as_i64().unwrap_or(0) as i32;
     resp.money_n = v["1"]["money_n"].as_i64().unwrap_or(0) as i32;
+    resp.last_time = v["0"]["last_time"].as_i64().unwrap_or(0);
     let _ = CACHE.insert_msg(&clock_in_stats_key(), &resp)?;
     Ok(resp)
+}
+
+/// 只查询签到统计（不触发签到），供界面刷新"已签到"状态。
+pub async fn clock_in_stats(_request: ClockInStatsRequest) -> ServiceResult<ClockInStatsResponse> {
+    let stats = fetch_stats().await?;
+    Ok(ClockInStatsResponse {
+        date: stats.date,
+        continued_days: stats.continued_days,
+        total_days: stats.total_days,
+        money: stats.money,
+        money_n: stats.money_n,
+        last_time: stats.last_time,
+        ..Default::default()
+    })
 }
 
 pub async fn clock_in(_request: ClockInRequest) -> ServiceResult<ClockInResponse> {

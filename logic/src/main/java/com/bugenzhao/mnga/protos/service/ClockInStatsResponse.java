@@ -6,13 +6,13 @@
 package com.bugenzhao.mnga.protos.service;
 
 /**
- * Protobuf type {@code ClockInResponse}
+ * Protobuf type {@code ClockInStatsResponse}
  */
 @com.google.protobuf.Generated
-public final class ClockInResponse extends
+public final class ClockInStatsResponse extends
     com.google.protobuf.GeneratedMessage implements
-    // @@protoc_insertion_point(message_implements:ClockInResponse)
-    ClockInResponseOrBuilder {
+    // @@protoc_insertion_point(message_implements:ClockInStatsResponse)
+    ClockInStatsResponseOrBuilder {
 private static final long serialVersionUID = 0L;
   static {
     com.google.protobuf.RuntimeVersion.validateProtobufGencodeVersion(
@@ -21,32 +21,32 @@ private static final long serialVersionUID = 0L;
       /* minor= */ 35,
       /* patch= */ 1,
       /* suffix= */ "",
-      "ClockInResponse");
+      "ClockInStatsResponse");
   }
-  // Use ClockInResponse.newBuilder() to construct.
-  private ClockInResponse(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
+  // Use ClockInStatsResponse.newBuilder() to construct.
+  private ClockInStatsResponse(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
     super(builder);
   }
-  private ClockInResponse() {
+  private ClockInStatsResponse() {
     date_ = "";
   }
 
   public static final com.google.protobuf.Descriptors.Descriptor
       getDescriptor() {
-    return com.bugenzhao.mnga.protos.service.Service.internal_static_ClockInResponse_descriptor;
+    return com.bugenzhao.mnga.protos.service.Service.internal_static_ClockInStatsResponse_descriptor;
   }
 
   @java.lang.Override
   public com.google.protobuf.Descriptors.Descriptor getDescriptorForType() {
-    return com.bugenzhao.mnga.protos.service.Service.internal_static_ClockInResponse_descriptor;
+    return com.bugenzhao.mnga.protos.service.Service.internal_static_ClockInStatsResponse_descriptor;
   }
 
   @java.lang.Override
   protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
       internalGetFieldAccessorTable() {
-    return com.bugenzhao.mnga.protos.service.Service.internal_static_ClockInResponse_fieldAccessorTable
+    return com.bugenzhao.mnga.protos.service.Service.internal_static_ClockInStatsResponse_fieldAccessorTable
         .ensureFieldAccessorsInitialized(
-            com.bugenzhao.mnga.protos.service.ClockInResponse.class, com.bugenzhao.mnga.protos.service.ClockInResponse.Builder.class);
+            com.bugenzhao.mnga.protos.service.ClockInStatsResponse.class, com.bugenzhao.mnga.protos.service.ClockInStatsResponse.Builder.class);
   }
 
   public static final int DATE_FIELD_NUMBER = 1;
@@ -88,25 +88,10 @@ private static final long serialVersionUID = 0L;
     }
   }
 
-  public static final int IS_FIRST_TIME_FIELD_NUMBER = 2;
-  private boolean isFirstTime_ = false;
-  /**
-   * <code>bool is_first_time = 2;</code>
-   * @return The isFirstTime.
-   */
-  @java.lang.Override
-  public boolean getIsFirstTime() {
-    return isFirstTime_;
-  }
-
-  public static final int CONTINUED_DAYS_FIELD_NUMBER = 3;
+  public static final int CONTINUED_DAYS_FIELD_NUMBER = 2;
   private int continuedDays_ = 0;
   /**
-   * <pre>
-   * 签到统计（签到墙口径）：连续/累计签到天数、货币余额。
-   * </pre>
-   *
-   * <code>int32 continued_days = 3;</code>
+   * <code>int32 continued_days = 2;</code>
    * @return The continuedDays.
    */
   @java.lang.Override
@@ -114,10 +99,10 @@ private static final long serialVersionUID = 0L;
     return continuedDays_;
   }
 
-  public static final int TOTAL_DAYS_FIELD_NUMBER = 4;
+  public static final int TOTAL_DAYS_FIELD_NUMBER = 3;
   private int totalDays_ = 0;
   /**
-   * <code>int32 total_days = 4;</code>
+   * <code>int32 total_days = 3;</code>
    * @return The totalDays.
    */
   @java.lang.Override
@@ -125,14 +110,10 @@ private static final long serialVersionUID = 0L;
     return totalDays_;
   }
 
-  public static final int MONEY_FIELD_NUMBER = 5;
+  public static final int MONEY_FIELD_NUMBER = 4;
   private int money_ = 0;
   /**
-   * <pre>
-   * 货币总量，以铜币为最小单位（100 铜币 = 1 银币，100 银币 = 1 金币）。
-   * </pre>
-   *
-   * <code>int32 money = 5;</code>
+   * <code>int32 money = 4;</code>
    * @return The money.
    */
   @java.lang.Override
@@ -140,10 +121,10 @@ private static final long serialVersionUID = 0L;
     return money_;
   }
 
-  public static final int MONEY_N_FIELD_NUMBER = 6;
+  public static final int MONEY_N_FIELD_NUMBER = 5;
   private int moneyN_ = 0;
   /**
-   * <code>int32 money_n = 6;</code>
+   * <code>int32 money_n = 5;</code>
    * @return The moneyN.
    */
   @java.lang.Override
@@ -151,14 +132,10 @@ private static final long serialVersionUID = 0L;
     return moneyN_;
   }
 
-  public static final int LAST_TIME_FIELD_NUMBER = 7;
+  public static final int LAST_TIME_FIELD_NUMBER = 6;
   private long lastTime_ = 0L;
   /**
-   * <pre>
-   * 最近一次签到时间戳（秒，服务器权威，用于判断"今日是否已签"）。
-   * </pre>
-   *
-   * <code>int64 last_time = 7;</code>
+   * <code>int64 last_time = 6;</code>
    * @return The lastTime.
    */
   @java.lang.Override
@@ -183,23 +160,20 @@ private static final long serialVersionUID = 0L;
     if (!com.google.protobuf.GeneratedMessage.isStringEmpty(date_)) {
       com.google.protobuf.GeneratedMessage.writeString(output, 1, date_);
     }
-    if (isFirstTime_ != false) {
-      output.writeBool(2, isFirstTime_);
-    }
     if (continuedDays_ != 0) {
-      output.writeInt32(3, continuedDays_);
+      output.writeInt32(2, continuedDays_);
     }
     if (totalDays_ != 0) {
-      output.writeInt32(4, totalDays_);
+      output.writeInt32(3, totalDays_);
     }
     if (money_ != 0) {
-      output.writeInt32(5, money_);
+      output.writeInt32(4, money_);
     }
     if (moneyN_ != 0) {
-      output.writeInt32(6, moneyN_);
+      output.writeInt32(5, moneyN_);
     }
     if (lastTime_ != 0L) {
-      output.writeInt64(7, lastTime_);
+      output.writeInt64(6, lastTime_);
     }
     getUnknownFields().writeTo(output);
   }
@@ -208,29 +182,25 @@ private static final long serialVersionUID = 0L;
     if (!com.google.protobuf.GeneratedMessage.isStringEmpty(date_)) {
       size += com.google.protobuf.GeneratedMessage.computeStringSize(1, date_);
     }
-    if (isFirstTime_ != false) {
-      size += com.google.protobuf.CodedOutputStream
-        .computeBoolSize(2, isFirstTime_);
-    }
     if (continuedDays_ != 0) {
       size += com.google.protobuf.CodedOutputStream
-        .computeInt32Size(3, continuedDays_);
+        .computeInt32Size(2, continuedDays_);
     }
     if (totalDays_ != 0) {
       size += com.google.protobuf.CodedOutputStream
-        .computeInt32Size(4, totalDays_);
+        .computeInt32Size(3, totalDays_);
     }
     if (money_ != 0) {
       size += com.google.protobuf.CodedOutputStream
-        .computeInt32Size(5, money_);
+        .computeInt32Size(4, money_);
     }
     if (moneyN_ != 0) {
       size += com.google.protobuf.CodedOutputStream
-        .computeInt32Size(6, moneyN_);
+        .computeInt32Size(5, moneyN_);
     }
     if (lastTime_ != 0L) {
       size += com.google.protobuf.CodedOutputStream
-        .computeInt64Size(7, lastTime_);
+        .computeInt64Size(6, lastTime_);
     }
     return size;
   }
@@ -251,15 +221,13 @@ private static final long serialVersionUID = 0L;
     if (obj == this) {
      return true;
     }
-    if (!(obj instanceof com.bugenzhao.mnga.protos.service.ClockInResponse)) {
+    if (!(obj instanceof com.bugenzhao.mnga.protos.service.ClockInStatsResponse)) {
       return super.equals(obj);
     }
-    com.bugenzhao.mnga.protos.service.ClockInResponse other = (com.bugenzhao.mnga.protos.service.ClockInResponse) obj;
+    com.bugenzhao.mnga.protos.service.ClockInStatsResponse other = (com.bugenzhao.mnga.protos.service.ClockInStatsResponse) obj;
 
     if (!getDate()
         .equals(other.getDate())) return false;
-    if (getIsFirstTime()
-        != other.getIsFirstTime()) return false;
     if (getContinuedDays()
         != other.getContinuedDays()) return false;
     if (getTotalDays()
@@ -283,9 +251,6 @@ private static final long serialVersionUID = 0L;
     hash = (19 * hash) + getDescriptor().hashCode();
     hash = (37 * hash) + DATE_FIELD_NUMBER;
     hash = (53 * hash) + getDate().hashCode();
-    hash = (37 * hash) + IS_FIRST_TIME_FIELD_NUMBER;
-    hash = (53 * hash) + com.google.protobuf.Internal.hashBoolean(
-        getIsFirstTime());
     hash = (37 * hash) + CONTINUED_DAYS_FIELD_NUMBER;
     hash = (53 * hash) + getContinuedDays();
     hash = (37 * hash) + TOTAL_DAYS_FIELD_NUMBER;
@@ -302,44 +267,44 @@ private static final long serialVersionUID = 0L;
     return hash;
   }
 
-  public static com.bugenzhao.mnga.protos.service.ClockInResponse parseFrom(
+  public static com.bugenzhao.mnga.protos.service.ClockInStatsResponse parseFrom(
       java.nio.ByteBuffer data)
       throws com.google.protobuf.InvalidProtocolBufferException {
     return PARSER.parseFrom(data);
   }
-  public static com.bugenzhao.mnga.protos.service.ClockInResponse parseFrom(
+  public static com.bugenzhao.mnga.protos.service.ClockInStatsResponse parseFrom(
       java.nio.ByteBuffer data,
       com.google.protobuf.ExtensionRegistryLite extensionRegistry)
       throws com.google.protobuf.InvalidProtocolBufferException {
     return PARSER.parseFrom(data, extensionRegistry);
   }
-  public static com.bugenzhao.mnga.protos.service.ClockInResponse parseFrom(
+  public static com.bugenzhao.mnga.protos.service.ClockInStatsResponse parseFrom(
       com.google.protobuf.ByteString data)
       throws com.google.protobuf.InvalidProtocolBufferException {
     return PARSER.parseFrom(data);
   }
-  public static com.bugenzhao.mnga.protos.service.ClockInResponse parseFrom(
+  public static com.bugenzhao.mnga.protos.service.ClockInStatsResponse parseFrom(
       com.google.protobuf.ByteString data,
       com.google.protobuf.ExtensionRegistryLite extensionRegistry)
       throws com.google.protobuf.InvalidProtocolBufferException {
     return PARSER.parseFrom(data, extensionRegistry);
   }
-  public static com.bugenzhao.mnga.protos.service.ClockInResponse parseFrom(byte[] data)
+  public static com.bugenzhao.mnga.protos.service.ClockInStatsResponse parseFrom(byte[] data)
       throws com.google.protobuf.InvalidProtocolBufferException {
     return PARSER.parseFrom(data);
   }
-  public static com.bugenzhao.mnga.protos.service.ClockInResponse parseFrom(
+  public static com.bugenzhao.mnga.protos.service.ClockInStatsResponse parseFrom(
       byte[] data,
       com.google.protobuf.ExtensionRegistryLite extensionRegistry)
       throws com.google.protobuf.InvalidProtocolBufferException {
     return PARSER.parseFrom(data, extensionRegistry);
   }
-  public static com.bugenzhao.mnga.protos.service.ClockInResponse parseFrom(java.io.InputStream input)
+  public static com.bugenzhao.mnga.protos.service.ClockInStatsResponse parseFrom(java.io.InputStream input)
       throws java.io.IOException {
     return com.google.protobuf.GeneratedMessage
         .parseWithIOException(PARSER, input);
   }
-  public static com.bugenzhao.mnga.protos.service.ClockInResponse parseFrom(
+  public static com.bugenzhao.mnga.protos.service.ClockInStatsResponse parseFrom(
       java.io.InputStream input,
       com.google.protobuf.ExtensionRegistryLite extensionRegistry)
       throws java.io.IOException {
@@ -347,26 +312,26 @@ private static final long serialVersionUID = 0L;
         .parseWithIOException(PARSER, input, extensionRegistry);
   }
 
-  public static com.bugenzhao.mnga.protos.service.ClockInResponse parseDelimitedFrom(java.io.InputStream input)
+  public static com.bugenzhao.mnga.protos.service.ClockInStatsResponse parseDelimitedFrom(java.io.InputStream input)
       throws java.io.IOException {
     return com.google.protobuf.GeneratedMessage
         .parseDelimitedWithIOException(PARSER, input);
   }
 
-  public static com.bugenzhao.mnga.protos.service.ClockInResponse parseDelimitedFrom(
+  public static com.bugenzhao.mnga.protos.service.ClockInStatsResponse parseDelimitedFrom(
       java.io.InputStream input,
       com.google.protobuf.ExtensionRegistryLite extensionRegistry)
       throws java.io.IOException {
     return com.google.protobuf.GeneratedMessage
         .parseDelimitedWithIOException(PARSER, input, extensionRegistry);
   }
-  public static com.bugenzhao.mnga.protos.service.ClockInResponse parseFrom(
+  public static com.bugenzhao.mnga.protos.service.ClockInStatsResponse parseFrom(
       com.google.protobuf.CodedInputStream input)
       throws java.io.IOException {
     return com.google.protobuf.GeneratedMessage
         .parseWithIOException(PARSER, input);
   }
-  public static com.bugenzhao.mnga.protos.service.ClockInResponse parseFrom(
+  public static com.bugenzhao.mnga.protos.service.ClockInStatsResponse parseFrom(
       com.google.protobuf.CodedInputStream input,
       com.google.protobuf.ExtensionRegistryLite extensionRegistry)
       throws java.io.IOException {
@@ -379,7 +344,7 @@ private static final long serialVersionUID = 0L;
   public static Builder newBuilder() {
     return DEFAULT_INSTANCE.toBuilder();
   }
-  public static Builder newBuilder(com.bugenzhao.mnga.protos.service.ClockInResponse prototype) {
+  public static Builder newBuilder(com.bugenzhao.mnga.protos.service.ClockInStatsResponse prototype) {
     return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
   }
   @java.lang.Override
@@ -395,26 +360,26 @@ private static final long serialVersionUID = 0L;
     return builder;
   }
   /**
-   * Protobuf type {@code ClockInResponse}
+   * Protobuf type {@code ClockInStatsResponse}
    */
   public static final class Builder extends
       com.google.protobuf.GeneratedMessage.Builder<Builder> implements
-      // @@protoc_insertion_point(builder_implements:ClockInResponse)
-      com.bugenzhao.mnga.protos.service.ClockInResponseOrBuilder {
+      // @@protoc_insertion_point(builder_implements:ClockInStatsResponse)
+      com.bugenzhao.mnga.protos.service.ClockInStatsResponseOrBuilder {
     public static final com.google.protobuf.Descriptors.Descriptor
         getDescriptor() {
-      return com.bugenzhao.mnga.protos.service.Service.internal_static_ClockInResponse_descriptor;
+      return com.bugenzhao.mnga.protos.service.Service.internal_static_ClockInStatsResponse_descriptor;
     }
 
     @java.lang.Override
     protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
         internalGetFieldAccessorTable() {
-      return com.bugenzhao.mnga.protos.service.Service.internal_static_ClockInResponse_fieldAccessorTable
+      return com.bugenzhao.mnga.protos.service.Service.internal_static_ClockInStatsResponse_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
-              com.bugenzhao.mnga.protos.service.ClockInResponse.class, com.bugenzhao.mnga.protos.service.ClockInResponse.Builder.class);
+              com.bugenzhao.mnga.protos.service.ClockInStatsResponse.class, com.bugenzhao.mnga.protos.service.ClockInStatsResponse.Builder.class);
     }
 
-    // Construct using com.bugenzhao.mnga.protos.service.ClockInResponse.newBuilder()
+    // Construct using com.bugenzhao.mnga.protos.service.ClockInStatsResponse.newBuilder()
     private Builder() {
 
     }
@@ -429,7 +394,6 @@ private static final long serialVersionUID = 0L;
       super.clear();
       bitField0_ = 0;
       date_ = "";
-      isFirstTime_ = false;
       continuedDays_ = 0;
       totalDays_ = 0;
       money_ = 0;
@@ -441,17 +405,17 @@ private static final long serialVersionUID = 0L;
     @java.lang.Override
     public com.google.protobuf.Descriptors.Descriptor
         getDescriptorForType() {
-      return com.bugenzhao.mnga.protos.service.Service.internal_static_ClockInResponse_descriptor;
+      return com.bugenzhao.mnga.protos.service.Service.internal_static_ClockInStatsResponse_descriptor;
     }
 
     @java.lang.Override
-    public com.bugenzhao.mnga.protos.service.ClockInResponse getDefaultInstanceForType() {
-      return com.bugenzhao.mnga.protos.service.ClockInResponse.getDefaultInstance();
+    public com.bugenzhao.mnga.protos.service.ClockInStatsResponse getDefaultInstanceForType() {
+      return com.bugenzhao.mnga.protos.service.ClockInStatsResponse.getDefaultInstance();
     }
 
     @java.lang.Override
-    public com.bugenzhao.mnga.protos.service.ClockInResponse build() {
-      com.bugenzhao.mnga.protos.service.ClockInResponse result = buildPartial();
+    public com.bugenzhao.mnga.protos.service.ClockInStatsResponse build() {
+      com.bugenzhao.mnga.protos.service.ClockInStatsResponse result = buildPartial();
       if (!result.isInitialized()) {
         throw newUninitializedMessageException(result);
       }
@@ -459,57 +423,51 @@ private static final long serialVersionUID = 0L;
     }
 
     @java.lang.Override
-    public com.bugenzhao.mnga.protos.service.ClockInResponse buildPartial() {
-      com.bugenzhao.mnga.protos.service.ClockInResponse result = new com.bugenzhao.mnga.protos.service.ClockInResponse(this);
+    public com.bugenzhao.mnga.protos.service.ClockInStatsResponse buildPartial() {
+      com.bugenzhao.mnga.protos.service.ClockInStatsResponse result = new com.bugenzhao.mnga.protos.service.ClockInStatsResponse(this);
       if (bitField0_ != 0) { buildPartial0(result); }
       onBuilt();
       return result;
     }
 
-    private void buildPartial0(com.bugenzhao.mnga.protos.service.ClockInResponse result) {
+    private void buildPartial0(com.bugenzhao.mnga.protos.service.ClockInStatsResponse result) {
       int from_bitField0_ = bitField0_;
       if (((from_bitField0_ & 0x00000001) != 0)) {
         result.date_ = date_;
       }
       if (((from_bitField0_ & 0x00000002) != 0)) {
-        result.isFirstTime_ = isFirstTime_;
-      }
-      if (((from_bitField0_ & 0x00000004) != 0)) {
         result.continuedDays_ = continuedDays_;
       }
-      if (((from_bitField0_ & 0x00000008) != 0)) {
+      if (((from_bitField0_ & 0x00000004) != 0)) {
         result.totalDays_ = totalDays_;
       }
-      if (((from_bitField0_ & 0x00000010) != 0)) {
+      if (((from_bitField0_ & 0x00000008) != 0)) {
         result.money_ = money_;
       }
-      if (((from_bitField0_ & 0x00000020) != 0)) {
+      if (((from_bitField0_ & 0x00000010) != 0)) {
         result.moneyN_ = moneyN_;
       }
-      if (((from_bitField0_ & 0x00000040) != 0)) {
+      if (((from_bitField0_ & 0x00000020) != 0)) {
         result.lastTime_ = lastTime_;
       }
     }
 
     @java.lang.Override
     public Builder mergeFrom(com.google.protobuf.Message other) {
-      if (other instanceof com.bugenzhao.mnga.protos.service.ClockInResponse) {
-        return mergeFrom((com.bugenzhao.mnga.protos.service.ClockInResponse)other);
+      if (other instanceof com.bugenzhao.mnga.protos.service.ClockInStatsResponse) {
+        return mergeFrom((com.bugenzhao.mnga.protos.service.ClockInStatsResponse)other);
       } else {
         super.mergeFrom(other);
         return this;
       }
     }
 
-    public Builder mergeFrom(com.bugenzhao.mnga.protos.service.ClockInResponse other) {
-      if (other == com.bugenzhao.mnga.protos.service.ClockInResponse.getDefaultInstance()) return this;
+    public Builder mergeFrom(com.bugenzhao.mnga.protos.service.ClockInStatsResponse other) {
+      if (other == com.bugenzhao.mnga.protos.service.ClockInStatsResponse.getDefaultInstance()) return this;
       if (!other.getDate().isEmpty()) {
         date_ = other.date_;
         bitField0_ |= 0x00000001;
         onChanged();
-      }
-      if (other.getIsFirstTime() != false) {
-        setIsFirstTime(other.getIsFirstTime());
       }
       if (other.getContinuedDays() != 0) {
         setContinuedDays(other.getContinuedDays());
@@ -558,35 +516,30 @@ private static final long serialVersionUID = 0L;
               break;
             } // case 10
             case 16: {
-              isFirstTime_ = input.readBool();
+              continuedDays_ = input.readInt32();
               bitField0_ |= 0x00000002;
               break;
             } // case 16
             case 24: {
-              continuedDays_ = input.readInt32();
+              totalDays_ = input.readInt32();
               bitField0_ |= 0x00000004;
               break;
             } // case 24
             case 32: {
-              totalDays_ = input.readInt32();
+              money_ = input.readInt32();
               bitField0_ |= 0x00000008;
               break;
             } // case 32
             case 40: {
-              money_ = input.readInt32();
+              moneyN_ = input.readInt32();
               bitField0_ |= 0x00000010;
               break;
             } // case 40
             case 48: {
-              moneyN_ = input.readInt32();
+              lastTime_ = input.readInt64();
               bitField0_ |= 0x00000020;
               break;
             } // case 48
-            case 56: {
-              lastTime_ = input.readInt64();
-              bitField0_ |= 0x00000040;
-              break;
-            } // case 56
             default: {
               if (!super.parseUnknownField(input, extensionRegistry, tag)) {
                 done = true; // was an endgroup tag
@@ -676,45 +629,9 @@ private static final long serialVersionUID = 0L;
       return this;
     }
 
-    private boolean isFirstTime_ ;
-    /**
-     * <code>bool is_first_time = 2;</code>
-     * @return The isFirstTime.
-     */
-    @java.lang.Override
-    public boolean getIsFirstTime() {
-      return isFirstTime_;
-    }
-    /**
-     * <code>bool is_first_time = 2;</code>
-     * @param value The isFirstTime to set.
-     * @return This builder for chaining.
-     */
-    public Builder setIsFirstTime(boolean value) {
-
-      isFirstTime_ = value;
-      bitField0_ |= 0x00000002;
-      onChanged();
-      return this;
-    }
-    /**
-     * <code>bool is_first_time = 2;</code>
-     * @return This builder for chaining.
-     */
-    public Builder clearIsFirstTime() {
-      bitField0_ = (bitField0_ & ~0x00000002);
-      isFirstTime_ = false;
-      onChanged();
-      return this;
-    }
-
     private int continuedDays_ ;
     /**
-     * <pre>
-     * 签到统计（签到墙口径）：连续/累计签到天数、货币余额。
-     * </pre>
-     *
-     * <code>int32 continued_days = 3;</code>
+     * <code>int32 continued_days = 2;</code>
      * @return The continuedDays.
      */
     @java.lang.Override
@@ -722,31 +639,23 @@ private static final long serialVersionUID = 0L;
       return continuedDays_;
     }
     /**
-     * <pre>
-     * 签到统计（签到墙口径）：连续/累计签到天数、货币余额。
-     * </pre>
-     *
-     * <code>int32 continued_days = 3;</code>
+     * <code>int32 continued_days = 2;</code>
      * @param value The continuedDays to set.
      * @return This builder for chaining.
      */
     public Builder setContinuedDays(int value) {
 
       continuedDays_ = value;
-      bitField0_ |= 0x00000004;
+      bitField0_ |= 0x00000002;
       onChanged();
       return this;
     }
     /**
-     * <pre>
-     * 签到统计（签到墙口径）：连续/累计签到天数、货币余额。
-     * </pre>
-     *
-     * <code>int32 continued_days = 3;</code>
+     * <code>int32 continued_days = 2;</code>
      * @return This builder for chaining.
      */
     public Builder clearContinuedDays() {
-      bitField0_ = (bitField0_ & ~0x00000004);
+      bitField0_ = (bitField0_ & ~0x00000002);
       continuedDays_ = 0;
       onChanged();
       return this;
@@ -754,7 +663,7 @@ private static final long serialVersionUID = 0L;
 
     private int totalDays_ ;
     /**
-     * <code>int32 total_days = 4;</code>
+     * <code>int32 total_days = 3;</code>
      * @return The totalDays.
      */
     @java.lang.Override
@@ -762,23 +671,23 @@ private static final long serialVersionUID = 0L;
       return totalDays_;
     }
     /**
-     * <code>int32 total_days = 4;</code>
+     * <code>int32 total_days = 3;</code>
      * @param value The totalDays to set.
      * @return This builder for chaining.
      */
     public Builder setTotalDays(int value) {
 
       totalDays_ = value;
-      bitField0_ |= 0x00000008;
+      bitField0_ |= 0x00000004;
       onChanged();
       return this;
     }
     /**
-     * <code>int32 total_days = 4;</code>
+     * <code>int32 total_days = 3;</code>
      * @return This builder for chaining.
      */
     public Builder clearTotalDays() {
-      bitField0_ = (bitField0_ & ~0x00000008);
+      bitField0_ = (bitField0_ & ~0x00000004);
       totalDays_ = 0;
       onChanged();
       return this;
@@ -786,11 +695,7 @@ private static final long serialVersionUID = 0L;
 
     private int money_ ;
     /**
-     * <pre>
-     * 货币总量，以铜币为最小单位（100 铜币 = 1 银币，100 银币 = 1 金币）。
-     * </pre>
-     *
-     * <code>int32 money = 5;</code>
+     * <code>int32 money = 4;</code>
      * @return The money.
      */
     @java.lang.Override
@@ -798,31 +703,23 @@ private static final long serialVersionUID = 0L;
       return money_;
     }
     /**
-     * <pre>
-     * 货币总量，以铜币为最小单位（100 铜币 = 1 银币，100 银币 = 1 金币）。
-     * </pre>
-     *
-     * <code>int32 money = 5;</code>
+     * <code>int32 money = 4;</code>
      * @param value The money to set.
      * @return This builder for chaining.
      */
     public Builder setMoney(int value) {
 
       money_ = value;
-      bitField0_ |= 0x00000010;
+      bitField0_ |= 0x00000008;
       onChanged();
       return this;
     }
     /**
-     * <pre>
-     * 货币总量，以铜币为最小单位（100 铜币 = 1 银币，100 银币 = 1 金币）。
-     * </pre>
-     *
-     * <code>int32 money = 5;</code>
+     * <code>int32 money = 4;</code>
      * @return This builder for chaining.
      */
     public Builder clearMoney() {
-      bitField0_ = (bitField0_ & ~0x00000010);
+      bitField0_ = (bitField0_ & ~0x00000008);
       money_ = 0;
       onChanged();
       return this;
@@ -830,7 +727,7 @@ private static final long serialVersionUID = 0L;
 
     private int moneyN_ ;
     /**
-     * <code>int32 money_n = 6;</code>
+     * <code>int32 money_n = 5;</code>
      * @return The moneyN.
      */
     @java.lang.Override
@@ -838,23 +735,23 @@ private static final long serialVersionUID = 0L;
       return moneyN_;
     }
     /**
-     * <code>int32 money_n = 6;</code>
+     * <code>int32 money_n = 5;</code>
      * @param value The moneyN to set.
      * @return This builder for chaining.
      */
     public Builder setMoneyN(int value) {
 
       moneyN_ = value;
-      bitField0_ |= 0x00000020;
+      bitField0_ |= 0x00000010;
       onChanged();
       return this;
     }
     /**
-     * <code>int32 money_n = 6;</code>
+     * <code>int32 money_n = 5;</code>
      * @return This builder for chaining.
      */
     public Builder clearMoneyN() {
-      bitField0_ = (bitField0_ & ~0x00000020);
+      bitField0_ = (bitField0_ & ~0x00000010);
       moneyN_ = 0;
       onChanged();
       return this;
@@ -862,11 +759,7 @@ private static final long serialVersionUID = 0L;
 
     private long lastTime_ ;
     /**
-     * <pre>
-     * 最近一次签到时间戳（秒，服务器权威，用于判断"今日是否已签"）。
-     * </pre>
-     *
-     * <code>int64 last_time = 7;</code>
+     * <code>int64 last_time = 6;</code>
      * @return The lastTime.
      */
     @java.lang.Override
@@ -874,53 +767,45 @@ private static final long serialVersionUID = 0L;
       return lastTime_;
     }
     /**
-     * <pre>
-     * 最近一次签到时间戳（秒，服务器权威，用于判断"今日是否已签"）。
-     * </pre>
-     *
-     * <code>int64 last_time = 7;</code>
+     * <code>int64 last_time = 6;</code>
      * @param value The lastTime to set.
      * @return This builder for chaining.
      */
     public Builder setLastTime(long value) {
 
       lastTime_ = value;
-      bitField0_ |= 0x00000040;
+      bitField0_ |= 0x00000020;
       onChanged();
       return this;
     }
     /**
-     * <pre>
-     * 最近一次签到时间戳（秒，服务器权威，用于判断"今日是否已签"）。
-     * </pre>
-     *
-     * <code>int64 last_time = 7;</code>
+     * <code>int64 last_time = 6;</code>
      * @return This builder for chaining.
      */
     public Builder clearLastTime() {
-      bitField0_ = (bitField0_ & ~0x00000040);
+      bitField0_ = (bitField0_ & ~0x00000020);
       lastTime_ = 0L;
       onChanged();
       return this;
     }
 
-    // @@protoc_insertion_point(builder_scope:ClockInResponse)
+    // @@protoc_insertion_point(builder_scope:ClockInStatsResponse)
   }
 
-  // @@protoc_insertion_point(class_scope:ClockInResponse)
-  private static final com.bugenzhao.mnga.protos.service.ClockInResponse DEFAULT_INSTANCE;
+  // @@protoc_insertion_point(class_scope:ClockInStatsResponse)
+  private static final com.bugenzhao.mnga.protos.service.ClockInStatsResponse DEFAULT_INSTANCE;
   static {
-    DEFAULT_INSTANCE = new com.bugenzhao.mnga.protos.service.ClockInResponse();
+    DEFAULT_INSTANCE = new com.bugenzhao.mnga.protos.service.ClockInStatsResponse();
   }
 
-  public static com.bugenzhao.mnga.protos.service.ClockInResponse getDefaultInstance() {
+  public static com.bugenzhao.mnga.protos.service.ClockInStatsResponse getDefaultInstance() {
     return DEFAULT_INSTANCE;
   }
 
-  private static final com.google.protobuf.Parser<ClockInResponse>
-      PARSER = new com.google.protobuf.AbstractParser<ClockInResponse>() {
+  private static final com.google.protobuf.Parser<ClockInStatsResponse>
+      PARSER = new com.google.protobuf.AbstractParser<ClockInStatsResponse>() {
     @java.lang.Override
-    public ClockInResponse parsePartialFrom(
+    public ClockInStatsResponse parsePartialFrom(
         com.google.protobuf.CodedInputStream input,
         com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws com.google.protobuf.InvalidProtocolBufferException {
@@ -939,17 +824,17 @@ private static final long serialVersionUID = 0L;
     }
   };
 
-  public static com.google.protobuf.Parser<ClockInResponse> parser() {
+  public static com.google.protobuf.Parser<ClockInStatsResponse> parser() {
     return PARSER;
   }
 
   @java.lang.Override
-  public com.google.protobuf.Parser<ClockInResponse> getParserForType() {
+  public com.google.protobuf.Parser<ClockInStatsResponse> getParserForType() {
     return PARSER;
   }
 
   @java.lang.Override
-  public com.bugenzhao.mnga.protos.service.ClockInResponse getDefaultInstanceForType() {
+  public com.bugenzhao.mnga.protos.service.ClockInStatsResponse getDefaultInstanceForType() {
     return DEFAULT_INSTANCE;
   }
 

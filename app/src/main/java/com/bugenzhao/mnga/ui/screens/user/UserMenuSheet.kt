@@ -183,7 +183,10 @@ fun UserMenuSheet(
                     // 实验室功能「启用签到」：账号分区里的签到入口（点击进签到页）。
                     if (App.prefs.clockInEnabled.value) {
                         val clockedIn by App.currentUser.todayClockedIn.collectAsState()
-                        LaunchedEffect(Unit) { App.currentUser.refreshTodayClockIn() }
+                        LaunchedEffect(Unit) {
+                            App.currentUser.refreshTodayClockIn()
+                            App.currentUser.queryClockInStats()
+                        }
                         MenuRow(
                             icon = Icons.Filled.CheckCircle,
                             title = L.str(context, "Clock In"),

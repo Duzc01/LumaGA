@@ -7,27 +7,27 @@
 @file:Suppress("DEPRECATION")
 package com.bugenzhao.mnga.protos.service;
 
-@kotlin.jvm.JvmName("-initializeclockInResponse")
-public inline fun clockInResponse(block: com.bugenzhao.mnga.protos.service.ClockInResponseKt.Dsl.() -> kotlin.Unit): com.bugenzhao.mnga.protos.service.ClockInResponse =
-  com.bugenzhao.mnga.protos.service.ClockInResponseKt.Dsl._create(com.bugenzhao.mnga.protos.service.ClockInResponse.newBuilder()).apply { block() }._build()
+@kotlin.jvm.JvmName("-initializeclockInStatsResponse")
+public inline fun clockInStatsResponse(block: com.bugenzhao.mnga.protos.service.ClockInStatsResponseKt.Dsl.() -> kotlin.Unit): com.bugenzhao.mnga.protos.service.ClockInStatsResponse =
+  com.bugenzhao.mnga.protos.service.ClockInStatsResponseKt.Dsl._create(com.bugenzhao.mnga.protos.service.ClockInStatsResponse.newBuilder()).apply { block() }._build()
 /**
- * Protobuf type `ClockInResponse`
+ * Protobuf type `ClockInStatsResponse`
  */
-public object ClockInResponseKt {
+public object ClockInStatsResponseKt {
   @kotlin.OptIn(com.google.protobuf.kotlin.OnlyForUseByGeneratedProtoCode::class)
   @com.google.protobuf.kotlin.ProtoDslMarker
   public class Dsl private constructor(
-    private val _builder: com.bugenzhao.mnga.protos.service.ClockInResponse.Builder
+    private val _builder: com.bugenzhao.mnga.protos.service.ClockInStatsResponse.Builder
   ) {
     public companion object {
       @kotlin.jvm.JvmSynthetic
     @kotlin.PublishedApi
-      internal fun _create(builder: com.bugenzhao.mnga.protos.service.ClockInResponse.Builder): Dsl = Dsl(builder)
+      internal fun _create(builder: com.bugenzhao.mnga.protos.service.ClockInStatsResponse.Builder): Dsl = Dsl(builder)
     }
 
     @kotlin.jvm.JvmSynthetic
   @kotlin.PublishedApi
-    internal fun _build(): com.bugenzhao.mnga.protos.service.ClockInResponse = _builder.build()
+    internal fun _build(): com.bugenzhao.mnga.protos.service.ClockInStatsResponse = _builder.build()
 
     /**
      * `string date = 1;`
@@ -47,28 +47,7 @@ public object ClockInResponseKt {
     }
 
     /**
-     * `bool is_first_time = 2;`
-     */
-    public var isFirstTime: kotlin.Boolean
-      @kotlin.jvm.JvmName("getIsFirstTime")
-        get() = _builder.isFirstTime
-      @kotlin.jvm.JvmName("setIsFirstTime")
-        set(value) {
-        _builder.isFirstTime = value
-      }
-    /**
-     * `bool is_first_time = 2;`
-     */
-    public fun clearIsFirstTime() {
-      _builder.clearIsFirstTime()
-    }
-
-    /**
-     * ```
-     * 签到统计（签到墙口径）：连续/累计签到天数、货币余额。
-     * ```
-     *
-     * `int32 continued_days = 3;`
+     * `int32 continued_days = 2;`
      */
     public var continuedDays: kotlin.Int
       @kotlin.jvm.JvmName("getContinuedDays")
@@ -78,18 +57,14 @@ public object ClockInResponseKt {
         _builder.continuedDays = value
       }
     /**
-     * ```
-     * 签到统计（签到墙口径）：连续/累计签到天数、货币余额。
-     * ```
-     *
-     * `int32 continued_days = 3;`
+     * `int32 continued_days = 2;`
      */
     public fun clearContinuedDays() {
       _builder.clearContinuedDays()
     }
 
     /**
-     * `int32 total_days = 4;`
+     * `int32 total_days = 3;`
      */
     public var totalDays: kotlin.Int
       @kotlin.jvm.JvmName("getTotalDays")
@@ -99,18 +74,14 @@ public object ClockInResponseKt {
         _builder.totalDays = value
       }
     /**
-     * `int32 total_days = 4;`
+     * `int32 total_days = 3;`
      */
     public fun clearTotalDays() {
       _builder.clearTotalDays()
     }
 
     /**
-     * ```
-     * 货币总量，以铜币为最小单位（100 铜币 = 1 银币，100 银币 = 1 金币）。
-     * ```
-     *
-     * `int32 money = 5;`
+     * `int32 money = 4;`
      */
     public var money: kotlin.Int
       @kotlin.jvm.JvmName("getMoney")
@@ -120,18 +91,14 @@ public object ClockInResponseKt {
         _builder.money = value
       }
     /**
-     * ```
-     * 货币总量，以铜币为最小单位（100 铜币 = 1 银币，100 银币 = 1 金币）。
-     * ```
-     *
-     * `int32 money = 5;`
+     * `int32 money = 4;`
      */
     public fun clearMoney() {
       _builder.clearMoney()
     }
 
     /**
-     * `int32 money_n = 6;`
+     * `int32 money_n = 5;`
      */
     public var moneyN: kotlin.Int
       @kotlin.jvm.JvmName("getMoneyN")
@@ -141,18 +108,14 @@ public object ClockInResponseKt {
         _builder.moneyN = value
       }
     /**
-     * `int32 money_n = 6;`
+     * `int32 money_n = 5;`
      */
     public fun clearMoneyN() {
       _builder.clearMoneyN()
     }
 
     /**
-     * ```
-     * 最近一次签到时间戳（秒，服务器权威，用于判断"今日是否已签"）。
-     * ```
-     *
-     * `int64 last_time = 7;`
+     * `int64 last_time = 6;`
      */
     public var lastTime: kotlin.Long
       @kotlin.jvm.JvmName("getLastTime")
@@ -162,11 +125,7 @@ public object ClockInResponseKt {
         _builder.lastTime = value
       }
     /**
-     * ```
-     * 最近一次签到时间戳（秒，服务器权威，用于判断"今日是否已签"）。
-     * ```
-     *
-     * `int64 last_time = 7;`
+     * `int64 last_time = 6;`
      */
     public fun clearLastTime() {
       _builder.clearLastTime()
@@ -174,6 +133,6 @@ public object ClockInResponseKt {
   }
 }
 @kotlin.jvm.JvmSynthetic
-public inline fun com.bugenzhao.mnga.protos.service.ClockInResponse.copy(block: `com.bugenzhao.mnga.protos.service`.ClockInResponseKt.Dsl.() -> kotlin.Unit): com.bugenzhao.mnga.protos.service.ClockInResponse =
-  `com.bugenzhao.mnga.protos.service`.ClockInResponseKt.Dsl._create(this.toBuilder()).apply { block() }._build()
+public inline fun com.bugenzhao.mnga.protos.service.ClockInStatsResponse.copy(block: `com.bugenzhao.mnga.protos.service`.ClockInStatsResponseKt.Dsl.() -> kotlin.Unit): com.bugenzhao.mnga.protos.service.ClockInStatsResponse =
+  `com.bugenzhao.mnga.protos.service`.ClockInStatsResponseKt.Dsl._create(this.toBuilder()).apply { block() }._build()
 

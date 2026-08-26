@@ -392,6 +392,16 @@ public final class Service extends com.google.protobuf.GeneratedFile {
     com.google.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_ClockInRequest_fieldAccessorTable;
   static final com.google.protobuf.Descriptors.Descriptor
+    internal_static_ClockInStatsRequest_descriptor;
+  static final 
+    com.google.protobuf.GeneratedMessage.FieldAccessorTable
+      internal_static_ClockInStatsRequest_fieldAccessorTable;
+  static final com.google.protobuf.Descriptors.Descriptor
+    internal_static_ClockInStatsResponse_descriptor;
+  static final 
+    com.google.protobuf.GeneratedMessage.FieldAccessorTable
+      internal_static_ClockInStatsResponse_fieldAccessorTable;
+  static final com.google.protobuf.Descriptors.Descriptor
     internal_static_ClockInResponse_descriptor;
   static final 
     com.google.protobuf.GeneratedMessage.FieldAccessorTable
@@ -470,7 +480,7 @@ public final class Service extends com.google.protobuf.GeneratedFile {
       "questOptionResponse\"\\\n\032UpdateTopicProgre" +
       "ssRequest\022\020\n\010topic_id\030\001 \001(\t\022\025\n\rhighest_f" +
       "loor\030\002 \001(\r\022\025\n\rcurrent_floor\030\003 \001(\r\"\035\n\033Upd" +
-      "ateTopicProgressResponse\"\336\013\n\014AsyncReques" +
+      "ateTopicProgressResponse\"\216\014\n\014AsyncReques" +
       "t\022\'\n\ntopic_list\030\001 \001(\0132\021.TopicListRequest" +
       "H\000\022-\n\rtopic_details\030\002 \001(\0132\024.TopicDetails" +
       "RequestH\000\0221\n\017subforum_filter\030\003 \001(\0132\026.Sub" +
@@ -508,129 +518,135 @@ public final class Service extends com.google.protobuf.GeneratedFile {
       "\0228\n\023favorite_forum_list\030\034 \001(\0132\031.Favorite" +
       "ForumListRequestH\000\022<\n\025favorite_forum_mod" +
       "ify\030\035 \001(\0132\033.FavoriteForumModifyRequestH\000" +
-      "B\007\n\005value\"\267\001\n\020TopicListRequest\022\024\n\002id\030\001 \001" +
-      "(\0132\010.ForumId\022\014\n\004page\030\002 \001(\r\022\026\n\016sort_subfo" +
-      "rums\030\004 \001(\010\022&\n\005order\030\005 \001(\0162\027.TopicListReq" +
-      "uest.Order\022\030\n\020recommended_only\030\006 \001(\010\"%\n\005" +
-      "Order\022\r\n\tLAST_POST\020\000\022\r\n\tPOST_DATE\020\001\"o\n\021T" +
-      "opicListResponse\022\025\n\005forum\030\004 \001(\0132\006.Forum\022" +
-      "\026\n\006topics\030\001 \003(\0132\006.Topic\022\r\n\005pages\030\002 \001(\r\022\034" +
-      "\n\tsubforums\030\003 \003(\0132\t.Subforum\"\237\002\n\023TopicDe" +
-      "tailsRequest\022\020\n\010topic_id\030\001 \001(\t\022\013\n\003fav\030\003 " +
-      "\001(\t\022\017\n\007post_id\030\004 \001(\t\022\021\n\tauthor_id\030\005 \001(\t\022" +
-      "\035\n\025anonymous_author_only\030\007 \001(\010\022\014\n\004page\030\002" +
-      " \001(\r\022\023\n\013local_cache\030\006 \001(\010\022=\n\020web_api_str" +
-      "ategy\030\010 \001(\0162#.TopicDetailsRequest.WebApi" +
-      "Strategy\"D\n\016WebApiStrategy\022\014\n\010DISABLED\020\000" +
-      "\022\r\n\tSECONDARY\020\001\022\013\n\007PRIMARY\020\002\022\010\n\004ONLY\020\003\"\335" +
-      "\001\n\024TopicDetailsResponse\022\025\n\005topic\030\001 \001(\0132\006" +
-      ".Topic\022\026\n\007replies\030\002 \003(\0132\005.Post\022\022\n\nforum_" +
-      "name\030\004 \001(\t\022\r\n\005pages\030\003 \001(\r\022\026\n\016is_local_ca" +
-      "che\030\005 \001(\010\022\031\n\014local_reason\030\007 \001(\tH\000\210\001\001\022\035\n\016" +
-      "in_place_users\030\006 \003(\0132\005.User\022\020\n\010api_used\030" +
-      "\010 \001(\tB\017\n\r_local_reason\"\234\001\n\025SubforumFilte" +
-      "rRequest\0223\n\toperation\030\001 \001(\0162 .SubforumFi" +
-      "lterRequest.Operation\022\020\n\010forum_id\030\002 \001(\t\022" +
-      "\032\n\022subforum_filter_id\030\003 \001(\t\" \n\tOperation" +
-      "\022\010\n\004SHOW\020\000\022\t\n\005BLOCK\020\001\"\030\n\026SubforumFilterR" +
-      "esponse\"\022\n\020ForumListRequest\"2\n\021ForumList" +
-      "Response\022\035\n\ncategories\030\001 \003(\0132\t.Category\"" +
-      "7\n\021RemoteUserRequest\022\017\n\007user_id\030\001 \001(\t\022\021\n" +
-      "\tuser_name\030\002 \001(\t\"7\n\022RemoteUserResponse\022\030" +
-      "\n\004user\030\001 \001(\0132\005.UserH\000\210\001\001B\007\n\005_user\"\201\001\n\017Po" +
-      "stVoteRequest\022-\n\toperation\030\001 \001(\0162\032.PostV" +
-      "oteRequest.Operation\022\030\n\007post_id\030\002 \001(\0132\007." +
-      "PostId\"%\n\tOperation\022\n\n\006UPVOTE\020\000\022\014\n\010DOWNV" +
-      "OTE\020\001\"Z\n\020PostVoteResponse\022\r\n\005delta\030\001 \001(\021" +
-      "\022\022\n\005error\030\002 \001(\tH\000\210\001\001\022\031\n\005state\030\003 \001(\0162\n.Vo" +
-      "teStateB\010\n\006_error\"$\n\023TopicHistoryRequest" +
-      "\022\r\n\005limit\030\001 \001(\004\"6\n\024TopicHistoryResponse\022" +
-      "\036\n\006topics\030\001 \003(\0132\016.TopicSnapshot\"\327\001\n\023HotT" +
-      "opicListRequest\022\024\n\002id\030\001 \001(\0132\010.ForumId\022-\n" +
-      "\005range\030\002 \001(\0162\036.HotTopicListRequest.DateR" +
-      "ange\022\035\n\020fetch_page_limit\030\003 \001(\rH\000\210\001\001\022\022\n\005l" +
-      "imit\030\004 \001(\004H\001\210\001\001\")\n\tDateRange\022\007\n\003DAY\020\000\022\010\n" +
-      "\004WEEK\020\001\022\t\n\005MONTH\020\002B\023\n\021_fetch_page_limitB" +
-      "\010\n\006_limit\"E\n\024HotTopicListResponse\022\026\n\006top" +
-      "ics\030\001 \003(\0132\006.Topic\022\025\n\005forum\030\002 \001(\0132\006.Forum" +
-      "\"!\n\022ForumSearchRequest\022\013\n\003key\030\001 \001(\t\"-\n\023F" +
-      "orumSearchResponse\022\026\n\006forums\030\001 \003(\0132\006.For" +
-      "um\"\032\n\030FavoriteForumListRequest\"3\n\031Favori" +
-      "teForumListResponse\022\026\n\006forums\030\001 \003(\0132\006.Fo" +
-      "rum\"\213\001\n\032FavoriteForumModifyRequest\0228\n\top" +
-      "eration\030\001 \001(\0162%.FavoriteForumModifyReque" +
-      "st.Operation\022\024\n\002id\030\002 \001(\0132\010.ForumId\"\035\n\tOp" +
-      "eration\022\007\n\003ADD\020\000\022\007\n\003DEL\020\001\"\035\n\033FavoriteFor" +
-      "umModifyResponse\";\n\030FavoriteTopicListReq" +
-      "uest\022\014\n\004page\030\001 \001(\r\022\021\n\tfolder_id\030\002 \001(\t\"B\n" +
-      "\031FavoriteTopicListResponse\022\026\n\006topics\030\001 \003" +
-      "(\0132\006.Topic\022\r\n\005pages\030\002 \001(\r\"\033\n\031FavoriteFol" +
-      "derListRequest\"C\n\032FavoriteFolderListResp" +
-      "onse\022%\n\007folders\030\001 \003(\0132\024.FavoriteTopicFol" +
-      "der\"u\n\033FavoriteFolderModifyRequest\022\021\n\tfo" +
-      "lder_id\030\001 \001(\t\022\020\n\006rename\030\002 \001(\tH\000\022\025\n\013set_d" +
-      "efault\030\003 \001(\010H\000\022\020\n\006delete\030\004 \001(\010H\000B\010\n\006chan" +
-      "ge\"\036\n\034FavoriteFolderModifyResponse\"@\n\033Fa" +
-      "voriteFolderCreateRequest\022\014\n\004name\030\001 \001(\t\022" +
-      "\023\n\013set_default\030\002 \001(\010\"1\n\034FavoriteFolderCr" +
-      "eateResponse\022\021\n\tfolder_id\030\001 \001(\t\"\213\001\n\021Topi" +
-      "cFavorRequest\022\020\n\010topic_id\030\001 \001(\t\022/\n\topera" +
-      "tion\030\002 \001(\0162\034.TopicFavorRequest.Operation" +
-      "\022\021\n\tfolder_id\030\003 \001(\t\" \n\tOperation\022\007\n\003ADD\020" +
-      "\000\022\n\n\006DELETE\020\001\"<\n\022TopicFavorResponse\022\022\n\ni" +
-      "s_favored\030\001 \001(\010\022\022\n\nfolder_ids\030\002 \003(\t\"@\n\034P" +
-      "ostReplyFetchContentRequest\022 \n\006action\030\001 " +
-      "\001(\0132\020.PostReplyAction\"x\n\035PostReplyFetchC" +
-      "ontentResponse\022\017\n\007content\030\001 \001(\t\022\024\n\007subje" +
-      "ct\030\002 \001(\tH\000\210\001\001\022$\n\010verbatim\030\003 \001(\0132\022.PostRe" +
-      "plyVerbatimB\n\n\010_subject\"\240\001\n\020PostReplyReq" +
-      "uest\022 \n\006action\030\001 \001(\0132\020.PostReplyAction\022\017" +
-      "\n\007content\030\002 \001(\t\022\024\n\007subject\030\003 \001(\tH\000\210\001\001\022$\n" +
-      "\013attachments\030\004 \003(\0132\017.PostAttachment\022\021\n\ta" +
-      "nonymous\030\005 \001(\010B\n\n\010_subject\"$\n\021PostReplyR" +
-      "esponse\022\017\n\007message\030\001 \001(\t\"\032\n\030FetchNotific" +
-      "ationRequest\"9\n\031FetchNotificationRespons" +
-      "e\022\034\n\005notis\030\001 \003(\0132\r.Notification\"I\n\027Uploa" +
-      "dAttachmentRequest\022 \n\006action\030\001 \001(\0132\020.Pos" +
-      "tReplyAction\022\014\n\004file\030\002 \001(\014\"?\n\030UploadAtta" +
-      "chmentResponse\022#\n\nattachment\030\001 \001(\0132\017.Pos" +
-      "tAttachment\"7\n\024UserTopicListRequest\022\021\n\ta" +
-      "uthor_id\030\001 \001(\t\022\014\n\004page\030\002 \001(\r\">\n\025UserTopi" +
-      "cListResponse\022\026\n\006topics\030\001 \003(\0132\006.Topic\022\r\n" +
-      "\005pages\030\002 \001(\r\"6\n\023UserPostListRequest\022\021\n\ta" +
-      "uthor_id\030\001 \001(\t\022\014\n\004page\030\002 \001(\r\"8\n\024UserPost" +
-      "ListResponse\022 \n\003tps\030\001 \003(\0132\023.TopicWithLig" +
-      "htPost\"\'\n\027ShortMessageListRequest\022\014\n\004pag" +
-      "e\030\001 \001(\r\"J\n\030ShortMessageListResponse\022\037\n\010m" +
-      "essages\030\001 \003(\0132\r.ShortMessage\022\r\n\005pages\030\002 " +
-      "\001(\r\"6\n\032ShortMessageDetailsRequest\022\n\n\002id\030" +
-      "\001 \001(\t\022\014\n\004page\030\002 \001(\r\"d\n\033ShortMessageDetai" +
-      "lsResponse\022 \n\005posts\030\001 \003(\0132\021.ShortMessage" +
-      "Post\022\r\n\005pages\030\002 \001(\r\022\024\n\005users\030\003 \003(\0132\005.Use" +
-      "r\"p\n\027ShortMessagePostRequest\022\'\n\006action\030\001" +
-      " \001(\0132\027.ShortMessagePostAction\022\017\n\007content" +
-      "\030\002 \001(\t\022\017\n\007subject\030\003 \001(\t\022\n\n\002to\030\004 \003(\t\"\032\n\030S" +
-      "hortMessagePostResponse\"/\n\032UserSignature" +
-      "UpdateRequest\022\021\n\tsignature\030\001 \001(\t\"\035\n\033User" +
-      "SignatureUpdateResponse\"w\n\022TopicSearchRe" +
-      "quest\022\024\n\002id\030\001 \001(\0132\010.ForumId\022\014\n\004page\030\002 \001(" +
-      "\r\022\026\n\016search_content\030\003 \001(\010\022\030\n\020recommended" +
-      "_only\030\004 \001(\010\022\013\n\003key\030\005 \001(\t\"<\n\023TopicSearchR" +
-      "esponse\022\026\n\006topics\030\001 \003(\0132\006.Topic\022\r\n\005pages" +
-      "\030\002 \001(\r\"\020\n\016ClockInRequest\"\202\001\n\017ClockInResp" +
-      "onse\022\014\n\004date\030\001 \001(\t\022\025\n\ris_first_time\030\002 \001(" +
-      "\010\022\026\n\016continued_days\030\003 \001(\005\022\022\n\ntotal_days\030" +
-      "\004 \001(\005\022\r\n\005money\030\005 \001(\005\022\017\n\007money_n\030\006 \001(\005\"L\n" +
-      "\014CacheRequest\022\030\n\004type\030\001 \001(\0162\n.CacheType\022" +
-      "\"\n\toperation\030\002 \001(\0162\017.CacheOperation\"2\n\rC" +
-      "acheResponse\022\r\n\005items\030\001 \001(\004\022\022\n\ntotal_siz" +
-      "e\030\002 \001(\004\"\031\n\027InvalidateClientRequest\"\032\n\030In" +
-      "validateClientResponse\"\241\001\n\007MockApi\022(\n\nto" +
-      "pic_list\030\001 \001(\0132\022.MockApi.TopicListH\000\022.\n\r" +
-      "topic_details\030\002 \001(\0132\025.MockApi.TopicDetai" +
-      "lsH\000\032\027\n\tTopicList\022\n\n\002id\030\001 \001(\t\032\032\n\014TopicDe" +
-      "tails\022\n\n\002id\030\001 \001(\tB\007\n\005valueB%\n!com.bugenz" +
-      "hao.mnga.protos.serviceP\001b\006proto3"
+      "\022.\n\016clock_in_stats\030\036 \001(\0132\024.ClockInStatsR" +
+      "equestH\000B\007\n\005value\"\267\001\n\020TopicListRequest\022\024" +
+      "\n\002id\030\001 \001(\0132\010.ForumId\022\014\n\004page\030\002 \001(\r\022\026\n\016so" +
+      "rt_subforums\030\004 \001(\010\022&\n\005order\030\005 \001(\0162\027.Topi" +
+      "cListRequest.Order\022\030\n\020recommended_only\030\006" +
+      " \001(\010\"%\n\005Order\022\r\n\tLAST_POST\020\000\022\r\n\tPOST_DAT" +
+      "E\020\001\"o\n\021TopicListResponse\022\025\n\005forum\030\004 \001(\0132" +
+      "\006.Forum\022\026\n\006topics\030\001 \003(\0132\006.Topic\022\r\n\005pages" +
+      "\030\002 \001(\r\022\034\n\tsubforums\030\003 \003(\0132\t.Subforum\"\237\002\n" +
+      "\023TopicDetailsRequest\022\020\n\010topic_id\030\001 \001(\t\022\013" +
+      "\n\003fav\030\003 \001(\t\022\017\n\007post_id\030\004 \001(\t\022\021\n\tauthor_i" +
+      "d\030\005 \001(\t\022\035\n\025anonymous_author_only\030\007 \001(\010\022\014" +
+      "\n\004page\030\002 \001(\r\022\023\n\013local_cache\030\006 \001(\010\022=\n\020web" +
+      "_api_strategy\030\010 \001(\0162#.TopicDetailsReques" +
+      "t.WebApiStrategy\"D\n\016WebApiStrategy\022\014\n\010DI" +
+      "SABLED\020\000\022\r\n\tSECONDARY\020\001\022\013\n\007PRIMARY\020\002\022\010\n\004" +
+      "ONLY\020\003\"\335\001\n\024TopicDetailsResponse\022\025\n\005topic" +
+      "\030\001 \001(\0132\006.Topic\022\026\n\007replies\030\002 \003(\0132\005.Post\022\022" +
+      "\n\nforum_name\030\004 \001(\t\022\r\n\005pages\030\003 \001(\r\022\026\n\016is_" +
+      "local_cache\030\005 \001(\010\022\031\n\014local_reason\030\007 \001(\tH" +
+      "\000\210\001\001\022\035\n\016in_place_users\030\006 \003(\0132\005.User\022\020\n\010a" +
+      "pi_used\030\010 \001(\tB\017\n\r_local_reason\"\234\001\n\025Subfo" +
+      "rumFilterRequest\0223\n\toperation\030\001 \001(\0162 .Su" +
+      "bforumFilterRequest.Operation\022\020\n\010forum_i" +
+      "d\030\002 \001(\t\022\032\n\022subforum_filter_id\030\003 \001(\t\" \n\tO" +
+      "peration\022\010\n\004SHOW\020\000\022\t\n\005BLOCK\020\001\"\030\n\026Subforu" +
+      "mFilterResponse\"\022\n\020ForumListRequest\"2\n\021F" +
+      "orumListResponse\022\035\n\ncategories\030\001 \003(\0132\t.C" +
+      "ategory\"7\n\021RemoteUserRequest\022\017\n\007user_id\030" +
+      "\001 \001(\t\022\021\n\tuser_name\030\002 \001(\t\"7\n\022RemoteUserRe" +
+      "sponse\022\030\n\004user\030\001 \001(\0132\005.UserH\000\210\001\001B\007\n\005_use" +
+      "r\"\201\001\n\017PostVoteRequest\022-\n\toperation\030\001 \001(\016" +
+      "2\032.PostVoteRequest.Operation\022\030\n\007post_id\030" +
+      "\002 \001(\0132\007.PostId\"%\n\tOperation\022\n\n\006UPVOTE\020\000\022" +
+      "\014\n\010DOWNVOTE\020\001\"Z\n\020PostVoteResponse\022\r\n\005del" +
+      "ta\030\001 \001(\021\022\022\n\005error\030\002 \001(\tH\000\210\001\001\022\031\n\005state\030\003 " +
+      "\001(\0162\n.VoteStateB\010\n\006_error\"$\n\023TopicHistor" +
+      "yRequest\022\r\n\005limit\030\001 \001(\004\"6\n\024TopicHistoryR" +
+      "esponse\022\036\n\006topics\030\001 \003(\0132\016.TopicSnapshot\"" +
+      "\327\001\n\023HotTopicListRequest\022\024\n\002id\030\001 \001(\0132\010.Fo" +
+      "rumId\022-\n\005range\030\002 \001(\0162\036.HotTopicListReque" +
+      "st.DateRange\022\035\n\020fetch_page_limit\030\003 \001(\rH\000" +
+      "\210\001\001\022\022\n\005limit\030\004 \001(\004H\001\210\001\001\")\n\tDateRange\022\007\n\003" +
+      "DAY\020\000\022\010\n\004WEEK\020\001\022\t\n\005MONTH\020\002B\023\n\021_fetch_pag" +
+      "e_limitB\010\n\006_limit\"E\n\024HotTopicListRespons" +
+      "e\022\026\n\006topics\030\001 \003(\0132\006.Topic\022\025\n\005forum\030\002 \001(\013" +
+      "2\006.Forum\"!\n\022ForumSearchRequest\022\013\n\003key\030\001 " +
+      "\001(\t\"-\n\023ForumSearchResponse\022\026\n\006forums\030\001 \003" +
+      "(\0132\006.Forum\"\032\n\030FavoriteForumListRequest\"3" +
+      "\n\031FavoriteForumListResponse\022\026\n\006forums\030\001 " +
+      "\003(\0132\006.Forum\"\213\001\n\032FavoriteForumModifyReque" +
+      "st\0228\n\toperation\030\001 \001(\0162%.FavoriteForumMod" +
+      "ifyRequest.Operation\022\024\n\002id\030\002 \001(\0132\010.Forum" +
+      "Id\"\035\n\tOperation\022\007\n\003ADD\020\000\022\007\n\003DEL\020\001\"\035\n\033Fav" +
+      "oriteForumModifyResponse\";\n\030FavoriteTopi" +
+      "cListRequest\022\014\n\004page\030\001 \001(\r\022\021\n\tfolder_id\030" +
+      "\002 \001(\t\"B\n\031FavoriteTopicListResponse\022\026\n\006to" +
+      "pics\030\001 \003(\0132\006.Topic\022\r\n\005pages\030\002 \001(\r\"\033\n\031Fav" +
+      "oriteFolderListRequest\"C\n\032FavoriteFolder" +
+      "ListResponse\022%\n\007folders\030\001 \003(\0132\024.Favorite" +
+      "TopicFolder\"u\n\033FavoriteFolderModifyReque" +
+      "st\022\021\n\tfolder_id\030\001 \001(\t\022\020\n\006rename\030\002 \001(\tH\000\022" +
+      "\025\n\013set_default\030\003 \001(\010H\000\022\020\n\006delete\030\004 \001(\010H\000" +
+      "B\010\n\006change\"\036\n\034FavoriteFolderModifyRespon" +
+      "se\"@\n\033FavoriteFolderCreateRequest\022\014\n\004nam" +
+      "e\030\001 \001(\t\022\023\n\013set_default\030\002 \001(\010\"1\n\034Favorite" +
+      "FolderCreateResponse\022\021\n\tfolder_id\030\001 \001(\t\"" +
+      "\213\001\n\021TopicFavorRequest\022\020\n\010topic_id\030\001 \001(\t\022" +
+      "/\n\toperation\030\002 \001(\0162\034.TopicFavorRequest.O" +
+      "peration\022\021\n\tfolder_id\030\003 \001(\t\" \n\tOperation" +
+      "\022\007\n\003ADD\020\000\022\n\n\006DELETE\020\001\"<\n\022TopicFavorRespo" +
+      "nse\022\022\n\nis_favored\030\001 \001(\010\022\022\n\nfolder_ids\030\002 " +
+      "\003(\t\"@\n\034PostReplyFetchContentRequest\022 \n\006a" +
+      "ction\030\001 \001(\0132\020.PostReplyAction\"x\n\035PostRep" +
+      "lyFetchContentResponse\022\017\n\007content\030\001 \001(\t\022" +
+      "\024\n\007subject\030\002 \001(\tH\000\210\001\001\022$\n\010verbatim\030\003 \001(\0132" +
+      "\022.PostReplyVerbatimB\n\n\010_subject\"\240\001\n\020Post" +
+      "ReplyRequest\022 \n\006action\030\001 \001(\0132\020.PostReply" +
+      "Action\022\017\n\007content\030\002 \001(\t\022\024\n\007subject\030\003 \001(\t" +
+      "H\000\210\001\001\022$\n\013attachments\030\004 \003(\0132\017.PostAttachm" +
+      "ent\022\021\n\tanonymous\030\005 \001(\010B\n\n\010_subject\"$\n\021Po" +
+      "stReplyResponse\022\017\n\007message\030\001 \001(\t\"\032\n\030Fetc" +
+      "hNotificationRequest\"9\n\031FetchNotificatio" +
+      "nResponse\022\034\n\005notis\030\001 \003(\0132\r.Notification\"" +
+      "I\n\027UploadAttachmentRequest\022 \n\006action\030\001 \001" +
+      "(\0132\020.PostReplyAction\022\014\n\004file\030\002 \001(\014\"?\n\030Up" +
+      "loadAttachmentResponse\022#\n\nattachment\030\001 \001" +
+      "(\0132\017.PostAttachment\"7\n\024UserTopicListRequ" +
+      "est\022\021\n\tauthor_id\030\001 \001(\t\022\014\n\004page\030\002 \001(\r\">\n\025" +
+      "UserTopicListResponse\022\026\n\006topics\030\001 \003(\0132\006." +
+      "Topic\022\r\n\005pages\030\002 \001(\r\"6\n\023UserPostListRequ" +
+      "est\022\021\n\tauthor_id\030\001 \001(\t\022\014\n\004page\030\002 \001(\r\"8\n\024" +
+      "UserPostListResponse\022 \n\003tps\030\001 \003(\0132\023.Topi" +
+      "cWithLightPost\"\'\n\027ShortMessageListReques" +
+      "t\022\014\n\004page\030\001 \001(\r\"J\n\030ShortMessageListRespo" +
+      "nse\022\037\n\010messages\030\001 \003(\0132\r.ShortMessage\022\r\n\005" +
+      "pages\030\002 \001(\r\"6\n\032ShortMessageDetailsReques" +
+      "t\022\n\n\002id\030\001 \001(\t\022\014\n\004page\030\002 \001(\r\"d\n\033ShortMess" +
+      "ageDetailsResponse\022 \n\005posts\030\001 \003(\0132\021.Shor" +
+      "tMessagePost\022\r\n\005pages\030\002 \001(\r\022\024\n\005users\030\003 \003" +
+      "(\0132\005.User\"p\n\027ShortMessagePostRequest\022\'\n\006" +
+      "action\030\001 \001(\0132\027.ShortMessagePostAction\022\017\n" +
+      "\007content\030\002 \001(\t\022\017\n\007subject\030\003 \001(\t\022\n\n\002to\030\004 " +
+      "\003(\t\"\032\n\030ShortMessagePostResponse\"/\n\032UserS" +
+      "ignatureUpdateRequest\022\021\n\tsignature\030\001 \001(\t" +
+      "\"\035\n\033UserSignatureUpdateResponse\"w\n\022Topic" +
+      "SearchRequest\022\024\n\002id\030\001 \001(\0132\010.ForumId\022\014\n\004p" +
+      "age\030\002 \001(\r\022\026\n\016search_content\030\003 \001(\010\022\030\n\020rec" +
+      "ommended_only\030\004 \001(\010\022\013\n\003key\030\005 \001(\t\"<\n\023Topi" +
+      "cSearchResponse\022\026\n\006topics\030\001 \003(\0132\006.Topic\022" +
+      "\r\n\005pages\030\002 \001(\r\"\020\n\016ClockInRequest\"\025\n\023Cloc" +
+      "kInStatsRequest\"\203\001\n\024ClockInStatsResponse" +
+      "\022\014\n\004date\030\001 \001(\t\022\026\n\016continued_days\030\002 \001(\005\022\022" +
+      "\n\ntotal_days\030\003 \001(\005\022\r\n\005money\030\004 \001(\005\022\017\n\007mon" +
+      "ey_n\030\005 \001(\005\022\021\n\tlast_time\030\006 \001(\003\"\225\001\n\017ClockI" +
+      "nResponse\022\014\n\004date\030\001 \001(\t\022\025\n\ris_first_time" +
+      "\030\002 \001(\010\022\026\n\016continued_days\030\003 \001(\005\022\022\n\ntotal_" +
+      "days\030\004 \001(\005\022\r\n\005money\030\005 \001(\005\022\017\n\007money_n\030\006 \001" +
+      "(\005\022\021\n\tlast_time\030\007 \001(\003\"L\n\014CacheRequest\022\030\n" +
+      "\004type\030\001 \001(\0162\n.CacheType\022\"\n\toperation\030\002 \001" +
+      "(\0162\017.CacheOperation\"2\n\rCacheResponse\022\r\n\005" +
+      "items\030\001 \001(\004\022\022\n\ntotal_size\030\002 \001(\004\"\031\n\027Inval" +
+      "idateClientRequest\"\032\n\030InvalidateClientRe" +
+      "sponse\"\241\001\n\007MockApi\022(\n\ntopic_list\030\001 \001(\0132\022" +
+      ".MockApi.TopicListH\000\022.\n\rtopic_details\030\002 " +
+      "\001(\0132\025.MockApi.TopicDetailsH\000\032\027\n\tTopicLis" +
+      "t\022\n\n\002id\030\001 \001(\t\032\032\n\014TopicDetails\022\n\n\002id\030\001 \001(" +
+      "\tB\007\n\005valueB%\n!com.bugenzhao.mnga.protos." +
+      "serviceP\001b\006proto3"
     };
     descriptor = com.google.protobuf.Descriptors.FileDescriptor
       .internalBuildGeneratedFileFrom(descriptorData,
@@ -744,7 +760,7 @@ public final class Service extends com.google.protobuf.GeneratedFile {
     internal_static_AsyncRequest_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_AsyncRequest_descriptor,
-        new java.lang.String[] { "TopicList", "TopicDetails", "SubforumFilter", "ForumList", "RemoteUser", "PostVote", "TopicHistory", "HotTopicList", "ForumSearch", "FavoriteTopicList", "TopicFavor", "PostReplyFetchContent", "PostReply", "FetchNotification", "UploadAttachment", "UserTopicList", "UserPostList", "ShortMessageList", "ShortMessageDetails", "ShortMessagePost", "TopicSearch", "ClockIn", "Cache", "FavoriteFolderList", "FavoriteFolderModify", "FavoriteFolderCreate", "UserSignatureUpdate", "FavoriteForumList", "FavoriteForumModify", "Value", });
+        new java.lang.String[] { "TopicList", "TopicDetails", "SubforumFilter", "ForumList", "RemoteUser", "PostVote", "TopicHistory", "HotTopicList", "ForumSearch", "FavoriteTopicList", "TopicFavor", "PostReplyFetchContent", "PostReply", "FetchNotification", "UploadAttachment", "UserTopicList", "UserPostList", "ShortMessageList", "ShortMessageDetails", "ShortMessagePost", "TopicSearch", "ClockIn", "Cache", "FavoriteFolderList", "FavoriteFolderModify", "FavoriteFolderCreate", "UserSignatureUpdate", "FavoriteForumList", "FavoriteForumModify", "ClockInStats", "Value", });
     internal_static_TopicListRequest_descriptor =
       getDescriptor().getMessageType(18);
     internal_static_TopicListRequest_fieldAccessorTable = new
@@ -1075,38 +1091,50 @@ public final class Service extends com.google.protobuf.GeneratedFile {
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_ClockInRequest_descriptor,
         new java.lang.String[] { });
-    internal_static_ClockInResponse_descriptor =
+    internal_static_ClockInStatsRequest_descriptor =
       getDescriptor().getMessageType(73);
+    internal_static_ClockInStatsRequest_fieldAccessorTable = new
+      com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+        internal_static_ClockInStatsRequest_descriptor,
+        new java.lang.String[] { });
+    internal_static_ClockInStatsResponse_descriptor =
+      getDescriptor().getMessageType(74);
+    internal_static_ClockInStatsResponse_fieldAccessorTable = new
+      com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+        internal_static_ClockInStatsResponse_descriptor,
+        new java.lang.String[] { "Date", "ContinuedDays", "TotalDays", "Money", "MoneyN", "LastTime", });
+    internal_static_ClockInResponse_descriptor =
+      getDescriptor().getMessageType(75);
     internal_static_ClockInResponse_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_ClockInResponse_descriptor,
-        new java.lang.String[] { "Date", "IsFirstTime", "ContinuedDays", "TotalDays", "Money", "MoneyN", });
+        new java.lang.String[] { "Date", "IsFirstTime", "ContinuedDays", "TotalDays", "Money", "MoneyN", "LastTime", });
     internal_static_CacheRequest_descriptor =
-      getDescriptor().getMessageType(74);
+      getDescriptor().getMessageType(76);
     internal_static_CacheRequest_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_CacheRequest_descriptor,
         new java.lang.String[] { "Type", "Operation", });
     internal_static_CacheResponse_descriptor =
-      getDescriptor().getMessageType(75);
+      getDescriptor().getMessageType(77);
     internal_static_CacheResponse_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_CacheResponse_descriptor,
         new java.lang.String[] { "Items", "TotalSize", });
     internal_static_InvalidateClientRequest_descriptor =
-      getDescriptor().getMessageType(76);
+      getDescriptor().getMessageType(78);
     internal_static_InvalidateClientRequest_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_InvalidateClientRequest_descriptor,
         new java.lang.String[] { });
     internal_static_InvalidateClientResponse_descriptor =
-      getDescriptor().getMessageType(77);
+      getDescriptor().getMessageType(79);
     internal_static_InvalidateClientResponse_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_InvalidateClientResponse_descriptor,
         new java.lang.String[] { });
     internal_static_MockApi_descriptor =
-      getDescriptor().getMessageType(78);
+      getDescriptor().getMessageType(80);
     internal_static_MockApi_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_MockApi_descriptor,

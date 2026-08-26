@@ -1,6 +1,7 @@
 use crate::{
     cache::manipulate_cache,
     clock_in::clock_in,
+    clock_in::clock_in_stats,
     error::ServiceResult,
     forum::{
         get_favorite_forum_list, get_forum_list, modify_favorite_forum, search_forum,
@@ -59,5 +60,6 @@ handle!(short_message_details, get_short_msg_details);
 handle!(short_message_post, post_short_msg);
 handle!(topic_search, search_topic);
 handle!(clock_in, clock_in);
+handle!(clock_in_stats, clock_in_stats);
 handle!(cache, manipulate_cache);
 handle!(user_signature_update, update_signature);

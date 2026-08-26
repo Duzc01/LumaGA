@@ -88,6 +88,7 @@ private static final long serialVersionUID = 0L;
     USER_SIGNATURE_UPDATE(27),
     FAVORITE_FORUM_LIST(28),
     FAVORITE_FORUM_MODIFY(29),
+    CLOCK_IN_STATS(30),
     VALUE_NOT_SET(0);
     private final int value;
     private ValueCase(int value) {
@@ -134,6 +135,7 @@ private static final long serialVersionUID = 0L;
         case 27: return USER_SIGNATURE_UPDATE;
         case 28: return FAVORITE_FORUM_LIST;
         case 29: return FAVORITE_FORUM_MODIFY;
+        case 30: return CLOCK_IN_STATS;
         case 0: return VALUE_NOT_SET;
         default: return null;
       }
@@ -1396,6 +1398,49 @@ private static final long serialVersionUID = 0L;
     return com.bugenzhao.mnga.protos.service.FavoriteForumModifyRequest.getDefaultInstance();
   }
 
+  public static final int CLOCK_IN_STATS_FIELD_NUMBER = 30;
+  /**
+   * <pre>
+   * Query clock-in stats only (no sign-in side effect).
+   * </pre>
+   *
+   * <code>.ClockInStatsRequest clock_in_stats = 30;</code>
+   * @return Whether the clockInStats field is set.
+   */
+  @java.lang.Override
+  public boolean hasClockInStats() {
+    return valueCase_ == 30;
+  }
+  /**
+   * <pre>
+   * Query clock-in stats only (no sign-in side effect).
+   * </pre>
+   *
+   * <code>.ClockInStatsRequest clock_in_stats = 30;</code>
+   * @return The clockInStats.
+   */
+  @java.lang.Override
+  public com.bugenzhao.mnga.protos.service.ClockInStatsRequest getClockInStats() {
+    if (valueCase_ == 30) {
+       return (com.bugenzhao.mnga.protos.service.ClockInStatsRequest) value_;
+    }
+    return com.bugenzhao.mnga.protos.service.ClockInStatsRequest.getDefaultInstance();
+  }
+  /**
+   * <pre>
+   * Query clock-in stats only (no sign-in side effect).
+   * </pre>
+   *
+   * <code>.ClockInStatsRequest clock_in_stats = 30;</code>
+   */
+  @java.lang.Override
+  public com.bugenzhao.mnga.protos.service.ClockInStatsRequestOrBuilder getClockInStatsOrBuilder() {
+    if (valueCase_ == 30) {
+       return (com.bugenzhao.mnga.protos.service.ClockInStatsRequest) value_;
+    }
+    return com.bugenzhao.mnga.protos.service.ClockInStatsRequest.getDefaultInstance();
+  }
+
   private byte memoizedIsInitialized = -1;
   @java.lang.Override
   public final boolean isInitialized() {
@@ -1496,6 +1541,9 @@ private static final long serialVersionUID = 0L;
     }
     if (valueCase_ == 29) {
       output.writeMessage(29, (com.bugenzhao.mnga.protos.service.FavoriteForumModifyRequest) value_);
+    }
+    if (valueCase_ == 30) {
+      output.writeMessage(30, (com.bugenzhao.mnga.protos.service.ClockInStatsRequest) value_);
     }
     getUnknownFields().writeTo(output);
   }
@@ -1616,6 +1664,10 @@ private static final long serialVersionUID = 0L;
     if (valueCase_ == 29) {
       size += com.google.protobuf.CodedOutputStream
         .computeMessageSize(29, (com.bugenzhao.mnga.protos.service.FavoriteForumModifyRequest) value_);
+    }
+    if (valueCase_ == 30) {
+      size += com.google.protobuf.CodedOutputStream
+        .computeMessageSize(30, (com.bugenzhao.mnga.protos.service.ClockInStatsRequest) value_);
     }
     return size;
   }
@@ -1759,6 +1811,10 @@ private static final long serialVersionUID = 0L;
         if (!getFavoriteForumModify()
             .equals(other.getFavoriteForumModify())) return false;
         break;
+      case 30:
+        if (!getClockInStats()
+            .equals(other.getClockInStats())) return false;
+        break;
       case 0:
       default:
     }
@@ -1889,6 +1945,10 @@ private static final long serialVersionUID = 0L;
       case 29:
         hash = (37 * hash) + FAVORITE_FORUM_MODIFY_FIELD_NUMBER;
         hash = (53 * hash) + getFavoriteForumModify().hashCode();
+        break;
+      case 30:
+        hash = (37 * hash) + CLOCK_IN_STATS_FIELD_NUMBER;
+        hash = (53 * hash) + getClockInStats().hashCode();
         break;
       case 0:
       default:
@@ -2116,6 +2176,9 @@ private static final long serialVersionUID = 0L;
       if (favoriteForumModifyBuilder_ != null) {
         favoriteForumModifyBuilder_.clear();
       }
+      if (clockInStatsBuilder_ != null) {
+        clockInStatsBuilder_.clear();
+      }
       valueCase_ = 0;
       value_ = null;
       return this;
@@ -2273,6 +2336,10 @@ private static final long serialVersionUID = 0L;
           favoriteForumModifyBuilder_ != null) {
         result.value_ = favoriteForumModifyBuilder_.build();
       }
+      if (valueCase_ == 30 &&
+          clockInStatsBuilder_ != null) {
+        result.value_ = clockInStatsBuilder_.build();
+      }
     }
 
     @java.lang.Override
@@ -2402,6 +2469,10 @@ private static final long serialVersionUID = 0L;
         }
         case FAVORITE_FORUM_MODIFY: {
           mergeFavoriteForumModify(other.getFavoriteForumModify());
+          break;
+        }
+        case CLOCK_IN_STATS: {
+          mergeClockInStats(other.getClockInStats());
           break;
         }
         case VALUE_NOT_SET: {
@@ -2637,6 +2708,13 @@ private static final long serialVersionUID = 0L;
               valueCase_ = 29;
               break;
             } // case 234
+            case 242: {
+              input.readMessage(
+                  internalGetClockInStatsFieldBuilder().getBuilder(),
+                  extensionRegistry);
+              valueCase_ = 30;
+              break;
+            } // case 242
             default: {
               if (!super.parseUnknownField(input, extensionRegistry, tag)) {
                 done = true; // was an endgroup tag
@@ -7829,6 +7907,184 @@ private static final long serialVersionUID = 0L;
       valueCase_ = 29;
       onChanged();
       return favoriteForumModifyBuilder_;
+    }
+
+    private com.google.protobuf.SingleFieldBuilder<
+        com.bugenzhao.mnga.protos.service.ClockInStatsRequest, com.bugenzhao.mnga.protos.service.ClockInStatsRequest.Builder, com.bugenzhao.mnga.protos.service.ClockInStatsRequestOrBuilder> clockInStatsBuilder_;
+    /**
+     * <pre>
+     * Query clock-in stats only (no sign-in side effect).
+     * </pre>
+     *
+     * <code>.ClockInStatsRequest clock_in_stats = 30;</code>
+     * @return Whether the clockInStats field is set.
+     */
+    @java.lang.Override
+    public boolean hasClockInStats() {
+      return valueCase_ == 30;
+    }
+    /**
+     * <pre>
+     * Query clock-in stats only (no sign-in side effect).
+     * </pre>
+     *
+     * <code>.ClockInStatsRequest clock_in_stats = 30;</code>
+     * @return The clockInStats.
+     */
+    @java.lang.Override
+    public com.bugenzhao.mnga.protos.service.ClockInStatsRequest getClockInStats() {
+      if (clockInStatsBuilder_ == null) {
+        if (valueCase_ == 30) {
+          return (com.bugenzhao.mnga.protos.service.ClockInStatsRequest) value_;
+        }
+        return com.bugenzhao.mnga.protos.service.ClockInStatsRequest.getDefaultInstance();
+      } else {
+        if (valueCase_ == 30) {
+          return clockInStatsBuilder_.getMessage();
+        }
+        return com.bugenzhao.mnga.protos.service.ClockInStatsRequest.getDefaultInstance();
+      }
+    }
+    /**
+     * <pre>
+     * Query clock-in stats only (no sign-in side effect).
+     * </pre>
+     *
+     * <code>.ClockInStatsRequest clock_in_stats = 30;</code>
+     */
+    public Builder setClockInStats(com.bugenzhao.mnga.protos.service.ClockInStatsRequest value) {
+      if (clockInStatsBuilder_ == null) {
+        if (value == null) {
+          throw new NullPointerException();
+        }
+        value_ = value;
+        onChanged();
+      } else {
+        clockInStatsBuilder_.setMessage(value);
+      }
+      valueCase_ = 30;
+      return this;
+    }
+    /**
+     * <pre>
+     * Query clock-in stats only (no sign-in side effect).
+     * </pre>
+     *
+     * <code>.ClockInStatsRequest clock_in_stats = 30;</code>
+     */
+    public Builder setClockInStats(
+        com.bugenzhao.mnga.protos.service.ClockInStatsRequest.Builder builderForValue) {
+      if (clockInStatsBuilder_ == null) {
+        value_ = builderForValue.build();
+        onChanged();
+      } else {
+        clockInStatsBuilder_.setMessage(builderForValue.build());
+      }
+      valueCase_ = 30;
+      return this;
+    }
+    /**
+     * <pre>
+     * Query clock-in stats only (no sign-in side effect).
+     * </pre>
+     *
+     * <code>.ClockInStatsRequest clock_in_stats = 30;</code>
+     */
+    public Builder mergeClockInStats(com.bugenzhao.mnga.protos.service.ClockInStatsRequest value) {
+      if (clockInStatsBuilder_ == null) {
+        if (valueCase_ == 30 &&
+            value_ != com.bugenzhao.mnga.protos.service.ClockInStatsRequest.getDefaultInstance()) {
+          value_ = com.bugenzhao.mnga.protos.service.ClockInStatsRequest.newBuilder((com.bugenzhao.mnga.protos.service.ClockInStatsRequest) value_)
+              .mergeFrom(value).buildPartial();
+        } else {
+          value_ = value;
+        }
+        onChanged();
+      } else {
+        if (valueCase_ == 30) {
+          clockInStatsBuilder_.mergeFrom(value);
+        } else {
+          clockInStatsBuilder_.setMessage(value);
+        }
+      }
+      valueCase_ = 30;
+      return this;
+    }
+    /**
+     * <pre>
+     * Query clock-in stats only (no sign-in side effect).
+     * </pre>
+     *
+     * <code>.ClockInStatsRequest clock_in_stats = 30;</code>
+     */
+    public Builder clearClockInStats() {
+      if (clockInStatsBuilder_ == null) {
+        if (valueCase_ == 30) {
+          valueCase_ = 0;
+          value_ = null;
+          onChanged();
+        }
+      } else {
+        if (valueCase_ == 30) {
+          valueCase_ = 0;
+          value_ = null;
+        }
+        clockInStatsBuilder_.clear();
+      }
+      return this;
+    }
+    /**
+     * <pre>
+     * Query clock-in stats only (no sign-in side effect).
+     * </pre>
+     *
+     * <code>.ClockInStatsRequest clock_in_stats = 30;</code>
+     */
+    public com.bugenzhao.mnga.protos.service.ClockInStatsRequest.Builder getClockInStatsBuilder() {
+      return internalGetClockInStatsFieldBuilder().getBuilder();
+    }
+    /**
+     * <pre>
+     * Query clock-in stats only (no sign-in side effect).
+     * </pre>
+     *
+     * <code>.ClockInStatsRequest clock_in_stats = 30;</code>
+     */
+    @java.lang.Override
+    public com.bugenzhao.mnga.protos.service.ClockInStatsRequestOrBuilder getClockInStatsOrBuilder() {
+      if ((valueCase_ == 30) && (clockInStatsBuilder_ != null)) {
+        return clockInStatsBuilder_.getMessageOrBuilder();
+      } else {
+        if (valueCase_ == 30) {
+          return (com.bugenzhao.mnga.protos.service.ClockInStatsRequest) value_;
+        }
+        return com.bugenzhao.mnga.protos.service.ClockInStatsRequest.getDefaultInstance();
+      }
+    }
+    /**
+     * <pre>
+     * Query clock-in stats only (no sign-in side effect).
+     * </pre>
+     *
+     * <code>.ClockInStatsRequest clock_in_stats = 30;</code>
+     */
+    private com.google.protobuf.SingleFieldBuilder<
+        com.bugenzhao.mnga.protos.service.ClockInStatsRequest, com.bugenzhao.mnga.protos.service.ClockInStatsRequest.Builder, com.bugenzhao.mnga.protos.service.ClockInStatsRequestOrBuilder> 
+        internalGetClockInStatsFieldBuilder() {
+      if (clockInStatsBuilder_ == null) {
+        if (!(valueCase_ == 30)) {
+          value_ = com.bugenzhao.mnga.protos.service.ClockInStatsRequest.getDefaultInstance();
+        }
+        clockInStatsBuilder_ = new com.google.protobuf.SingleFieldBuilder<
+            com.bugenzhao.mnga.protos.service.ClockInStatsRequest, com.bugenzhao.mnga.protos.service.ClockInStatsRequest.Builder, com.bugenzhao.mnga.protos.service.ClockInStatsRequestOrBuilder>(
+                (com.bugenzhao.mnga.protos.service.ClockInStatsRequest) value_,
+                getParentForChildren(),
+                isClean());
+        value_ = null;
+      }
+      valueCase_ = 30;
+      onChanged();
+      return clockInStatsBuilder_;
     }
 
     // @@protoc_insertion_point(builder_scope:AsyncRequest)

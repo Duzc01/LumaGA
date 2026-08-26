@@ -4,6 +4,8 @@ import com.bugenzhao.mnga.protos.datamodel.User
 import com.bugenzhao.mnga.protos.service.AsyncRequest
 import com.bugenzhao.mnga.protos.service.ClockInRequest
 import com.bugenzhao.mnga.protos.service.ClockInResponse
+import com.bugenzhao.mnga.protos.service.ClockInStatsRequest
+import com.bugenzhao.mnga.protos.service.ClockInStatsResponse
 import com.bugenzhao.mnga.protos.service.RemoteUserRequest
 import com.bugenzhao.mnga.protos.service.RemoteUserResponse
 import com.bugenzhao.mnga.logicCallAsync
@@ -138,8 +140,9 @@ class CurrentUserModel(
         scope.launch { clockIn() }
     }
 
-    /** 刷新"今日已签到"状态（打开账号菜单/签到页时调用，跨天或切号时更新）。
-     * 签到日期按账号存储（lastClockInDate_{uid}），未登录或非本人数据一律视为未签。 */
+    /** 刷新"今日已签到"状态（打开账号菜单/签到页时调用）。判断依据是
+     * 服务器返回的 last_time（上次签到时间戳）：与今天是同一天即已签，
+     * 跨设备一致。本地只缓存最近一次查询结果用于快速显示。 */
     fun refreshTodayClockIn() {
         val uid = authStorage.authInfo.value.uid
         if (uid.isEmpty()) {
@@ -147,15 +150,51 @@ class CurrentUserModel(
             _clockInStats.value = null
             return
         }
-        val today = java.text.SimpleDateFormat(
-            "yyyy-MM-dd", java.util.Locale.US,
-        ).format(java.util.Date())
         val saved = com.bugenzhao.mnga.App.sharedPreferences
-            .getString("lastClockInDate_$uid", null)
-        _todayClockedIn.value = saved == today
+            .getLong("lastClockInTime_$uid", 0L)
+        _todayClockedIn.value = isTodayTimestamp(saved)
         if (!_todayClockedIn.value) {
-            // 今天还没签（或数据属于旧账号）：统计一并清空，避免残留。
             _clockInStats.value = null
+        }
+    }
+
+    private fun isTodayTimestamp(timestamp: Long): Boolean {
+        if (timestamp <= 0) return false
+        val cal = java.util.Calendar.getInstance().apply { timeInMillis = timestamp * 1000 }
+        val now = java.util.Calendar.getInstance()
+        return cal.get(java.util.Calendar.YEAR) == now.get(java.util.Calendar.YEAR) &&
+            cal.get(java.util.Calendar.DAY_OF_YEAR) == now.get(java.util.Calendar.DAY_OF_YEAR)
+    }
+
+    /** 只查询签到统计与"今日已签"状态（服务器权威，不触发签到）。 */
+    fun queryClockInStats() {
+        scope.launch {
+            val uid = authStorage.authInfo.value.uid
+            if (uid.isEmpty()) return@launch
+            val result = logicCallAsync(
+                AsyncRequest.newBuilder()
+                    .setClockInStats(ClockInStatsRequest.getDefaultInstance())
+                    .build(),
+                ClockInStatsResponse.parser(),
+            )
+            result.onSuccess { response ->
+                // 服务器权威的 last_time（上次签到时间戳）→ "今日已签"判断。
+                if (response.lastTime > 0) {
+                    com.bugenzhao.mnga.App.sharedPreferences.edit()
+                        .putLong("lastClockInTime_$uid", response.lastTime)
+                        .apply()
+                }
+                refreshTodayClockIn()
+                // 同步签到统计（累计/连续天数、金币拆金/银/铜、N币）。
+                _clockInStats.value = ClockInStats(
+                    continuedDays = response.continuedDays,
+                    totalDays = response.totalDays,
+                    gold = response.money / 10000,
+                    silver = (response.money / 100) % 100,
+                    copper = response.money % 100,
+                    nCoins = response.moneyN,
+                )
+            }
         }
     }
 

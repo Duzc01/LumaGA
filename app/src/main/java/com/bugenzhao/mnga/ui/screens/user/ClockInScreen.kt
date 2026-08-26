@@ -62,10 +62,10 @@ fun ClockInScreen(navigator: Navigator? = null) {
     val stats by App.currentUser.clockInStats.collectAsState()
     val clockedIn by App.currentUser.todayClockedIn.collectAsState()
 
-    // 打开页面即刷新状态与统计（签到接口幂等：已签只查统计）。
+    // 打开页面即刷新状态与统计（只查询，不自动签到；签到由按钮触发）。
     LaunchedEffect(Unit) {
         App.currentUser.refreshTodayClockIn()
-        App.currentUser.clockInOnce()
+        App.currentUser.queryClockInStats()
     }
 
     BackHandler(enabled = navigator != null && navigator.size > 1) { navigator?.pop() }

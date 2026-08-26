@@ -1077,6 +1077,42 @@ public object AsyncRequestKt {
     public fun hasFavoriteForumModify(): kotlin.Boolean {
       return _builder.hasFavoriteForumModify()
     }
+
+    /**
+     * ```
+     * Query clock-in stats only (no sign-in side effect).
+     * ```
+     *
+     * `.ClockInStatsRequest clock_in_stats = 30;`
+     */
+    public var clockInStats: com.bugenzhao.mnga.protos.service.ClockInStatsRequest
+      @kotlin.jvm.JvmName("getClockInStats")
+        get() = _builder.clockInStats
+      @kotlin.jvm.JvmName("setClockInStats")
+        set(value) {
+        _builder.clockInStats = value
+      }
+    /**
+     * ```
+     * Query clock-in stats only (no sign-in side effect).
+     * ```
+     *
+     * `.ClockInStatsRequest clock_in_stats = 30;`
+     */
+    public fun clearClockInStats() {
+      _builder.clearClockInStats()
+    }
+    /**
+     * ```
+     * Query clock-in stats only (no sign-in side effect).
+     * ```
+     *
+     * `.ClockInStatsRequest clock_in_stats = 30;`
+     * @return Whether the clockInStats field is set.
+     */
+    public fun hasClockInStats(): kotlin.Boolean {
+      return _builder.hasClockInStats()
+    }
     public val valueCase: com.bugenzhao.mnga.protos.service.AsyncRequest.ValueCase
     @kotlin.jvm.JvmName("getValueCase")
       get() = _builder.getValueCase()
@@ -1176,4 +1212,7 @@ public val com.bugenzhao.mnga.protos.service.AsyncRequestOrBuilder.favoriteForum
 
 public val com.bugenzhao.mnga.protos.service.AsyncRequestOrBuilder.favoriteForumModifyOrNull: com.bugenzhao.mnga.protos.service.FavoriteForumModifyRequest?
   get() = if (hasFavoriteForumModify()) getFavoriteForumModify() else null
+
+public val com.bugenzhao.mnga.protos.service.AsyncRequestOrBuilder.clockInStatsOrNull: com.bugenzhao.mnga.protos.service.ClockInStatsRequest?
+  get() = if (hasClockInStats()) getClockInStats() else null
 
