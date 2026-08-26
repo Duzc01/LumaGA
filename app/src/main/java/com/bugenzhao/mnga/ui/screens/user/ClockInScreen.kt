@@ -125,10 +125,11 @@ fun ClockInScreen(navigator: Navigator? = null) {
 
             Spacer(Modifier.height(32.dp))
 
-            // 货币四宫格。
+            // 货币四宫格（银灰底，与淡金月历区分）。
             Surface(
                 shape = RoundedCornerShape(16.dp),
-                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                color = Silver.copy(alpha = 0.15f),
+                border = BorderStroke(1.dp, Silver.copy(alpha = 0.35f)),
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Column(Modifier.padding(vertical = 16.dp)) {
@@ -231,7 +232,9 @@ private fun ClockMonthGrid(continued: Int, clockedIn: Boolean) {
 
     Surface(
         shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+        // 淡金底（签到墙主题），与页面中性底和银灰货币卡区分。
+        color = Gold.copy(alpha = 0.12f),
+        border = BorderStroke(1.dp, Gold.copy(alpha = 0.35f)),
         modifier = Modifier.fillMaxWidth(),
     ) {
         Column(
