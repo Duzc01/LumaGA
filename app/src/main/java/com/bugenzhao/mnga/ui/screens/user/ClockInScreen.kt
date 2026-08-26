@@ -221,7 +221,7 @@ private fun CoinRow(coins: List<CoinBadge>) {
     }
 }
 
-/** 月历网格：连续签到覆盖的日期金砖点亮（从今天往前推 [continued] 天），
+/** 月历卡片：连续签到覆盖的日期金砖点亮（从今天往前推 [continued] 天），
  * 今天未签时金色描边；连续跨月时上月一并展示。 */
 @Composable
 private fun ClockMonthGrid(continued: Int, clockedIn: Boolean) {
@@ -229,15 +229,23 @@ private fun ClockMonthGrid(continued: Int, clockedIn: Boolean) {
     val thisMonth = java.time.YearMonth.from(today)
     val start = today.minusDays((continued - 1).toLong())
 
-    MonthGrid(month = thisMonth, start = start, today = today, clockedIn = clockedIn)
-    if (start.isBefore(thisMonth.atDay(1))) {
-        Spacer(Modifier.height(10.dp))
-        MonthGrid(
-            month = thisMonth.minusMonths(1),
-            start = start,
-            today = today,
-            clockedIn = clockedIn,
-        )
+    Surface(
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column(Modifier.padding(horizontal = 14.dp, vertical = 14.dp)) {
+            MonthGrid(month = thisMonth, start = start, today = today, clockedIn = clockedIn)
+            if (start.isBefore(thisMonth.atDay(1))) {
+                Spacer(Modifier.height(12.dp))
+                MonthGrid(
+                    month = thisMonth.minusMonths(1),
+                    start = start,
+                    today = today,
+                    clockedIn = clockedIn,
+                )
+            }
+        }
     }
 }
 
@@ -258,20 +266,22 @@ private fun MonthGrid(
     val days = month.lengthOfMonth()
     val totalCells = leading + days
     val rows = (totalCells + 6) / 7
+    val cellSize = 28.dp
+    val cellGap = 4.dp
 
     Text(
         month.format(java.time.format.DateTimeFormatter.ofPattern("yyyy年M月")),
-        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
+        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
     Spacer(Modifier.height(6.dp))
 
     // 星期表头（周一开头）。
-    Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+    Row(horizontalArrangement = Arrangement.spacedBy(cellGap)) {
         listOf("一", "二", "三", "四", "五", "六", "日").forEach { w ->
             Text(
                 w,
-                Modifier.width(34.dp),
+                Modifier.width(cellSize),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
@@ -280,16 +290,16 @@ private fun MonthGrid(
     }
     Spacer(Modifier.height(4.dp))
 
-    Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(cellGap)) {
         repeat(rows) { r ->
-            Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(cellGap)) {
                 repeat(7) { c ->
                     val day = r * 7 + c - leading + 1
                     if (day in 1..days) {
                         val date = month.atDay(day)
                         val signed = !date.isAfter(today) && !date.isBefore(start)
                         val isToday = date == today
-                        val cell = Modifier.size(34.dp)
+                        val cell = Modifier.size(cellSize)
                         when {
                             isToday && !signed -> Box(
                                 cell.border(1.5.dp, Gold, RoundedCornerShape(6.dp)),
@@ -327,7 +337,7 @@ private fun MonthGrid(
                             }
                         }
                     } else {
-                        Spacer(Modifier.size(34.dp))
+                        Spacer(Modifier.size(cellSize))
                     }
                 }
             }
