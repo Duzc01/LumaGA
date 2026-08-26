@@ -138,12 +138,25 @@ class CurrentUserModel(
         scope.launch { clockIn() }
     }
 
-    /** 刷新"今日已签到"状态（打开账号菜单时调用，跨天时更新）。 */
+    /** 刷新"今日已签到"状态（打开账号菜单/签到页时调用，跨天或切号时更新）。
+     * 签到日期按账号存储（lastClockInDate_{uid}），未登录或非本人数据一律视为未签。 */
     fun refreshTodayClockIn() {
+        val uid = authStorage.authInfo.value.uid
+        if (uid.isEmpty()) {
+            _todayClockedIn.value = false
+            _clockInStats.value = null
+            return
+        }
         val today = java.text.SimpleDateFormat(
             "yyyy-MM-dd", java.util.Locale.US,
         ).format(java.util.Date())
-        _todayClockedIn.value = com.bugenzhao.mnga.App.prefs.lastClockInDate.value == today
+        val saved = com.bugenzhao.mnga.App.sharedPreferences
+            .getString("lastClockInDate_$uid", null)
+        _todayClockedIn.value = saved == today
+        if (!_todayClockedIn.value) {
+            // 今天还没签（或数据属于旧账号）：统计一并清空，避免残留。
+            _clockInStats.value = null
+        }
     }
 
     private suspend fun clockIn() {
@@ -156,10 +169,14 @@ class CurrentUserModel(
         result.onSuccess { response ->
             // 无论是否今日首次，都同步本地"已签到"状态——逻辑层缓存判定
             // 今天是否已签（重复点击也不会重复签到），首次成功才弹提示。
-            com.bugenzhao.mnga.App.prefs.lastClockInDate.value =
-                java.text.SimpleDateFormat(
-                    "yyyy-MM-dd", java.util.Locale.US,
-                ).format(java.util.Date())
+            com.bugenzhao.mnga.App.sharedPreferences.edit()
+                .putString(
+                    "lastClockInDate_$uid",
+                    java.text.SimpleDateFormat(
+                        "yyyy-MM-dd", java.util.Locale.US,
+                    ).format(java.util.Date()),
+                )
+                .apply()
             refreshTodayClockIn()
             // 同步签到统计（累计/连续天数、金币拆金/银/铜、N币）。
             _clockInStats.value = ClockInStats(
