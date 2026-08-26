@@ -99,6 +99,58 @@ private static final long serialVersionUID = 0L;
     return isFirstTime_;
   }
 
+  public static final int CONTINUED_DAYS_FIELD_NUMBER = 3;
+  private int continuedDays_ = 0;
+  /**
+   * <pre>
+   * 签到统计（签到墙口径）：连续/累计签到天数、货币余额。
+   * </pre>
+   *
+   * <code>int32 continued_days = 3;</code>
+   * @return The continuedDays.
+   */
+  @java.lang.Override
+  public int getContinuedDays() {
+    return continuedDays_;
+  }
+
+  public static final int TOTAL_DAYS_FIELD_NUMBER = 4;
+  private int totalDays_ = 0;
+  /**
+   * <code>int32 total_days = 4;</code>
+   * @return The totalDays.
+   */
+  @java.lang.Override
+  public int getTotalDays() {
+    return totalDays_;
+  }
+
+  public static final int MONEY_FIELD_NUMBER = 5;
+  private int money_ = 0;
+  /**
+   * <pre>
+   * 货币总量，以铜币为最小单位（100 铜币 = 1 银币，100 银币 = 1 金币）。
+   * </pre>
+   *
+   * <code>int32 money = 5;</code>
+   * @return The money.
+   */
+  @java.lang.Override
+  public int getMoney() {
+    return money_;
+  }
+
+  public static final int MONEY_N_FIELD_NUMBER = 6;
+  private int moneyN_ = 0;
+  /**
+   * <code>int32 money_n = 6;</code>
+   * @return The moneyN.
+   */
+  @java.lang.Override
+  public int getMoneyN() {
+    return moneyN_;
+  }
+
   private byte memoizedIsInitialized = -1;
   @java.lang.Override
   public final boolean isInitialized() {
@@ -119,6 +171,18 @@ private static final long serialVersionUID = 0L;
     if (isFirstTime_ != false) {
       output.writeBool(2, isFirstTime_);
     }
+    if (continuedDays_ != 0) {
+      output.writeInt32(3, continuedDays_);
+    }
+    if (totalDays_ != 0) {
+      output.writeInt32(4, totalDays_);
+    }
+    if (money_ != 0) {
+      output.writeInt32(5, money_);
+    }
+    if (moneyN_ != 0) {
+      output.writeInt32(6, moneyN_);
+    }
     getUnknownFields().writeTo(output);
   }
   private int computeSerializedSize_0() {
@@ -129,6 +193,22 @@ private static final long serialVersionUID = 0L;
     if (isFirstTime_ != false) {
       size += com.google.protobuf.CodedOutputStream
         .computeBoolSize(2, isFirstTime_);
+    }
+    if (continuedDays_ != 0) {
+      size += com.google.protobuf.CodedOutputStream
+        .computeInt32Size(3, continuedDays_);
+    }
+    if (totalDays_ != 0) {
+      size += com.google.protobuf.CodedOutputStream
+        .computeInt32Size(4, totalDays_);
+    }
+    if (money_ != 0) {
+      size += com.google.protobuf.CodedOutputStream
+        .computeInt32Size(5, money_);
+    }
+    if (moneyN_ != 0) {
+      size += com.google.protobuf.CodedOutputStream
+        .computeInt32Size(6, moneyN_);
     }
     return size;
   }
@@ -158,6 +238,14 @@ private static final long serialVersionUID = 0L;
         .equals(other.getDate())) return false;
     if (getIsFirstTime()
         != other.getIsFirstTime()) return false;
+    if (getContinuedDays()
+        != other.getContinuedDays()) return false;
+    if (getTotalDays()
+        != other.getTotalDays()) return false;
+    if (getMoney()
+        != other.getMoney()) return false;
+    if (getMoneyN()
+        != other.getMoneyN()) return false;
     if (!getUnknownFields().equals(other.getUnknownFields())) return false;
     return true;
   }
@@ -174,6 +262,14 @@ private static final long serialVersionUID = 0L;
     hash = (37 * hash) + IS_FIRST_TIME_FIELD_NUMBER;
     hash = (53 * hash) + com.google.protobuf.Internal.hashBoolean(
         getIsFirstTime());
+    hash = (37 * hash) + CONTINUED_DAYS_FIELD_NUMBER;
+    hash = (53 * hash) + getContinuedDays();
+    hash = (37 * hash) + TOTAL_DAYS_FIELD_NUMBER;
+    hash = (53 * hash) + getTotalDays();
+    hash = (37 * hash) + MONEY_FIELD_NUMBER;
+    hash = (53 * hash) + getMoney();
+    hash = (37 * hash) + MONEY_N_FIELD_NUMBER;
+    hash = (53 * hash) + getMoneyN();
     hash = (29 * hash) + getUnknownFields().hashCode();
     memoizedHashCode = hash;
     return hash;
@@ -307,6 +403,10 @@ private static final long serialVersionUID = 0L;
       bitField0_ = 0;
       date_ = "";
       isFirstTime_ = false;
+      continuedDays_ = 0;
+      totalDays_ = 0;
+      money_ = 0;
+      moneyN_ = 0;
       return this;
     }
 
@@ -346,6 +446,18 @@ private static final long serialVersionUID = 0L;
       if (((from_bitField0_ & 0x00000002) != 0)) {
         result.isFirstTime_ = isFirstTime_;
       }
+      if (((from_bitField0_ & 0x00000004) != 0)) {
+        result.continuedDays_ = continuedDays_;
+      }
+      if (((from_bitField0_ & 0x00000008) != 0)) {
+        result.totalDays_ = totalDays_;
+      }
+      if (((from_bitField0_ & 0x00000010) != 0)) {
+        result.money_ = money_;
+      }
+      if (((from_bitField0_ & 0x00000020) != 0)) {
+        result.moneyN_ = moneyN_;
+      }
     }
 
     @java.lang.Override
@@ -367,6 +479,18 @@ private static final long serialVersionUID = 0L;
       }
       if (other.getIsFirstTime() != false) {
         setIsFirstTime(other.getIsFirstTime());
+      }
+      if (other.getContinuedDays() != 0) {
+        setContinuedDays(other.getContinuedDays());
+      }
+      if (other.getTotalDays() != 0) {
+        setTotalDays(other.getTotalDays());
+      }
+      if (other.getMoney() != 0) {
+        setMoney(other.getMoney());
+      }
+      if (other.getMoneyN() != 0) {
+        setMoneyN(other.getMoneyN());
       }
       this.mergeUnknownFields(other.getUnknownFields());
       onChanged();
@@ -404,6 +528,26 @@ private static final long serialVersionUID = 0L;
               bitField0_ |= 0x00000002;
               break;
             } // case 16
+            case 24: {
+              continuedDays_ = input.readInt32();
+              bitField0_ |= 0x00000004;
+              break;
+            } // case 24
+            case 32: {
+              totalDays_ = input.readInt32();
+              bitField0_ |= 0x00000008;
+              break;
+            } // case 32
+            case 40: {
+              money_ = input.readInt32();
+              bitField0_ |= 0x00000010;
+              break;
+            } // case 40
+            case 48: {
+              moneyN_ = input.readInt32();
+              bitField0_ |= 0x00000020;
+              break;
+            } // case 48
             default: {
               if (!super.parseUnknownField(input, extensionRegistry, tag)) {
                 done = true; // was an endgroup tag
@@ -521,6 +665,158 @@ private static final long serialVersionUID = 0L;
     public Builder clearIsFirstTime() {
       bitField0_ = (bitField0_ & ~0x00000002);
       isFirstTime_ = false;
+      onChanged();
+      return this;
+    }
+
+    private int continuedDays_ ;
+    /**
+     * <pre>
+     * 签到统计（签到墙口径）：连续/累计签到天数、货币余额。
+     * </pre>
+     *
+     * <code>int32 continued_days = 3;</code>
+     * @return The continuedDays.
+     */
+    @java.lang.Override
+    public int getContinuedDays() {
+      return continuedDays_;
+    }
+    /**
+     * <pre>
+     * 签到统计（签到墙口径）：连续/累计签到天数、货币余额。
+     * </pre>
+     *
+     * <code>int32 continued_days = 3;</code>
+     * @param value The continuedDays to set.
+     * @return This builder for chaining.
+     */
+    public Builder setContinuedDays(int value) {
+
+      continuedDays_ = value;
+      bitField0_ |= 0x00000004;
+      onChanged();
+      return this;
+    }
+    /**
+     * <pre>
+     * 签到统计（签到墙口径）：连续/累计签到天数、货币余额。
+     * </pre>
+     *
+     * <code>int32 continued_days = 3;</code>
+     * @return This builder for chaining.
+     */
+    public Builder clearContinuedDays() {
+      bitField0_ = (bitField0_ & ~0x00000004);
+      continuedDays_ = 0;
+      onChanged();
+      return this;
+    }
+
+    private int totalDays_ ;
+    /**
+     * <code>int32 total_days = 4;</code>
+     * @return The totalDays.
+     */
+    @java.lang.Override
+    public int getTotalDays() {
+      return totalDays_;
+    }
+    /**
+     * <code>int32 total_days = 4;</code>
+     * @param value The totalDays to set.
+     * @return This builder for chaining.
+     */
+    public Builder setTotalDays(int value) {
+
+      totalDays_ = value;
+      bitField0_ |= 0x00000008;
+      onChanged();
+      return this;
+    }
+    /**
+     * <code>int32 total_days = 4;</code>
+     * @return This builder for chaining.
+     */
+    public Builder clearTotalDays() {
+      bitField0_ = (bitField0_ & ~0x00000008);
+      totalDays_ = 0;
+      onChanged();
+      return this;
+    }
+
+    private int money_ ;
+    /**
+     * <pre>
+     * 货币总量，以铜币为最小单位（100 铜币 = 1 银币，100 银币 = 1 金币）。
+     * </pre>
+     *
+     * <code>int32 money = 5;</code>
+     * @return The money.
+     */
+    @java.lang.Override
+    public int getMoney() {
+      return money_;
+    }
+    /**
+     * <pre>
+     * 货币总量，以铜币为最小单位（100 铜币 = 1 银币，100 银币 = 1 金币）。
+     * </pre>
+     *
+     * <code>int32 money = 5;</code>
+     * @param value The money to set.
+     * @return This builder for chaining.
+     */
+    public Builder setMoney(int value) {
+
+      money_ = value;
+      bitField0_ |= 0x00000010;
+      onChanged();
+      return this;
+    }
+    /**
+     * <pre>
+     * 货币总量，以铜币为最小单位（100 铜币 = 1 银币，100 银币 = 1 金币）。
+     * </pre>
+     *
+     * <code>int32 money = 5;</code>
+     * @return This builder for chaining.
+     */
+    public Builder clearMoney() {
+      bitField0_ = (bitField0_ & ~0x00000010);
+      money_ = 0;
+      onChanged();
+      return this;
+    }
+
+    private int moneyN_ ;
+    /**
+     * <code>int32 money_n = 6;</code>
+     * @return The moneyN.
+     */
+    @java.lang.Override
+    public int getMoneyN() {
+      return moneyN_;
+    }
+    /**
+     * <code>int32 money_n = 6;</code>
+     * @param value The moneyN to set.
+     * @return This builder for chaining.
+     */
+    public Builder setMoneyN(int value) {
+
+      moneyN_ = value;
+      bitField0_ |= 0x00000020;
+      onChanged();
+      return this;
+    }
+    /**
+     * <code>int32 money_n = 6;</code>
+     * @return This builder for chaining.
+     */
+    public Builder clearMoneyN() {
+      bitField0_ = (bitField0_ & ~0x00000020);
+      moneyN_ = 0;
       onChanged();
       return this;
     }

@@ -617,18 +617,20 @@ public final class Service extends com.google.protobuf.GeneratedFile {
       "\r\022\026\n\016search_content\030\003 \001(\010\022\030\n\020recommended" +
       "_only\030\004 \001(\010\022\013\n\003key\030\005 \001(\t\"<\n\023TopicSearchR" +
       "esponse\022\026\n\006topics\030\001 \003(\0132\006.Topic\022\r\n\005pages" +
-      "\030\002 \001(\r\"\020\n\016ClockInRequest\"6\n\017ClockInRespo" +
-      "nse\022\014\n\004date\030\001 \001(\t\022\025\n\ris_first_time\030\002 \001(\010" +
-      "\"L\n\014CacheRequest\022\030\n\004type\030\001 \001(\0162\n.CacheTy" +
-      "pe\022\"\n\toperation\030\002 \001(\0162\017.CacheOperation\"2" +
-      "\n\rCacheResponse\022\r\n\005items\030\001 \001(\004\022\022\n\ntotal_" +
-      "size\030\002 \001(\004\"\031\n\027InvalidateClientRequest\"\032\n" +
-      "\030InvalidateClientResponse\"\241\001\n\007MockApi\022(\n" +
-      "\ntopic_list\030\001 \001(\0132\022.MockApi.TopicListH\000\022" +
-      ".\n\rtopic_details\030\002 \001(\0132\025.MockApi.TopicDe" +
-      "tailsH\000\032\027\n\tTopicList\022\n\n\002id\030\001 \001(\t\032\032\n\014Topi" +
-      "cDetails\022\n\n\002id\030\001 \001(\tB\007\n\005valueB%\n!com.bug" +
-      "enzhao.mnga.protos.serviceP\001b\006proto3"
+      "\030\002 \001(\r\"\020\n\016ClockInRequest\"\202\001\n\017ClockInResp" +
+      "onse\022\014\n\004date\030\001 \001(\t\022\025\n\ris_first_time\030\002 \001(" +
+      "\010\022\026\n\016continued_days\030\003 \001(\005\022\022\n\ntotal_days\030" +
+      "\004 \001(\005\022\r\n\005money\030\005 \001(\005\022\017\n\007money_n\030\006 \001(\005\"L\n" +
+      "\014CacheRequest\022\030\n\004type\030\001 \001(\0162\n.CacheType\022" +
+      "\"\n\toperation\030\002 \001(\0162\017.CacheOperation\"2\n\rC" +
+      "acheResponse\022\r\n\005items\030\001 \001(\004\022\022\n\ntotal_siz" +
+      "e\030\002 \001(\004\"\031\n\027InvalidateClientRequest\"\032\n\030In" +
+      "validateClientResponse\"\241\001\n\007MockApi\022(\n\nto" +
+      "pic_list\030\001 \001(\0132\022.MockApi.TopicListH\000\022.\n\r" +
+      "topic_details\030\002 \001(\0132\025.MockApi.TopicDetai" +
+      "lsH\000\032\027\n\tTopicList\022\n\n\002id\030\001 \001(\t\032\032\n\014TopicDe" +
+      "tails\022\n\n\002id\030\001 \001(\tB\007\n\005valueB%\n!com.bugenz" +
+      "hao.mnga.protos.serviceP\001b\006proto3"
     };
     descriptor = com.google.protobuf.Descriptors.FileDescriptor
       .internalBuildGeneratedFileFrom(descriptorData,
@@ -1078,7 +1080,7 @@ public final class Service extends com.google.protobuf.GeneratedFile {
     internal_static_ClockInResponse_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_ClockInResponse_descriptor,
-        new java.lang.String[] { "Date", "IsFirstTime", });
+        new java.lang.String[] { "Date", "IsFirstTime", "ContinuedDays", "TotalDays", "Money", "MoneyN", });
     internal_static_CacheRequest_descriptor =
       getDescriptor().getMessageType(74);
     internal_static_CacheRequest_fieldAccessorTable = new

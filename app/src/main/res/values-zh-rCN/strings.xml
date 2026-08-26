@@ -198,6 +198,14 @@
     <string name="anonymous_user">匿名用户</string>
     <string name="clock_in">签到</string>
     <string name="clocked_in_successfully">签到成功</string>
+    <string name="clock_streak">连续签到</string>
+    <string name="clock_streak_days">天</string>
+    <string name="clock_total_days">累计签到 %1$d 天</string>
+    <string name="clock_gold">金币</string>
+    <string name="clock_silver">银币</string>
+    <string name="clock_copper">铜币</string>
+    <string name="clock_n_coin">N币</string>
+    <string name="clock_stats">连续 %1$d 天 · 累计 %2$d 天 · 金币 %3$d 银币 %4$d 铜币 %5$d · N币 %6$d</string>
     <string name="clocked_in">已签到</string>
     <string name="laboratory">实验室功能</string>
     <string name="enable_clock_in">启用签到</string>

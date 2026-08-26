@@ -212,6 +212,9 @@ private fun NavigationHost(
         composable(RouteCodec.ROUTE_NOTIFICATIONS) {
             RouteDispatcher(navigator, Route.Notifications, editor)
         }
+        composable(RouteCodec.ROUTE_CLOCK_IN) {
+            RouteDispatcher(navigator, Route.ClockIn, editor)
+        }
     }
 }
 
@@ -257,6 +260,7 @@ fun RouteDispatcher(
         is Route.CacheSettings -> CacheScreen(navigator)
         is Route.BlockWords -> BlockWordsScreen(navigator)
         is Route.About -> AboutScreen(navigator)
+        is Route.ClockIn -> com.bugenzhao.mnga.ui.screens.user.ClockInScreen(navigator)
         is Route.Settings ->
             com.bugenzhao.mnga.ui.screens.prefs.PreferencesSheet(
                 onDismiss = { navigator.pop() },

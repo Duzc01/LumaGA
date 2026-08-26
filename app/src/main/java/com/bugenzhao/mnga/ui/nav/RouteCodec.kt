@@ -39,6 +39,7 @@ object RouteCodec {
     const val ROUTE_ABOUT = "about"
     const val ROUTE_SETTINGS = "settings"
     const val ROUTE_NOTIFICATIONS = "notifications"
+    const val ROUTE_CLOCK_IN = "clock-in"
 
     /** The route string a [Route] maps to, navigable via NavController. */
     fun encode(route: Route): String = when (route) {
@@ -88,6 +89,7 @@ object RouteCodec {
         Route.About -> ROUTE_ABOUT
         Route.Settings -> ROUTE_SETTINGS
         Route.Notifications -> ROUTE_NOTIFICATIONS
+        Route.ClockIn -> ROUTE_CLOCK_IN
     }
 
     /** Decodes the route carried by a back-stack entry; null when unparseable. */
@@ -113,6 +115,7 @@ object RouteCodec {
             ROUTE_ABOUT -> Route.About
             ROUTE_SETTINGS -> Route.Settings
             ROUTE_NOTIFICATIONS -> Route.Notifications
+            ROUTE_CLOCK_IN -> Route.ClockIn
             else -> null
         }
     }

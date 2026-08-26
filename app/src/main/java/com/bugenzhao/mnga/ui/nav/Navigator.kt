@@ -135,6 +135,7 @@ sealed class Route {
     data object About : Route()
     data object Settings : Route()
     data object Notifications : Route()
+    data object ClockIn : Route()
 }
 
 enum class TopicListMode { NORMAL, HOT, RECOMMENDED }

@@ -62,6 +62,90 @@ public object ClockInResponseKt {
     public fun clearIsFirstTime() {
       _builder.clearIsFirstTime()
     }
+
+    /**
+     * ```
+     * 签到统计（签到墙口径）：连续/累计签到天数、货币余额。
+     * ```
+     *
+     * `int32 continued_days = 3;`
+     */
+    public var continuedDays: kotlin.Int
+      @kotlin.jvm.JvmName("getContinuedDays")
+        get() = _builder.continuedDays
+      @kotlin.jvm.JvmName("setContinuedDays")
+        set(value) {
+        _builder.continuedDays = value
+      }
+    /**
+     * ```
+     * 签到统计（签到墙口径）：连续/累计签到天数、货币余额。
+     * ```
+     *
+     * `int32 continued_days = 3;`
+     */
+    public fun clearContinuedDays() {
+      _builder.clearContinuedDays()
+    }
+
+    /**
+     * `int32 total_days = 4;`
+     */
+    public var totalDays: kotlin.Int
+      @kotlin.jvm.JvmName("getTotalDays")
+        get() = _builder.totalDays
+      @kotlin.jvm.JvmName("setTotalDays")
+        set(value) {
+        _builder.totalDays = value
+      }
+    /**
+     * `int32 total_days = 4;`
+     */
+    public fun clearTotalDays() {
+      _builder.clearTotalDays()
+    }
+
+    /**
+     * ```
+     * 货币总量，以铜币为最小单位（100 铜币 = 1 银币，100 银币 = 1 金币）。
+     * ```
+     *
+     * `int32 money = 5;`
+     */
+    public var money: kotlin.Int
+      @kotlin.jvm.JvmName("getMoney")
+        get() = _builder.money
+      @kotlin.jvm.JvmName("setMoney")
+        set(value) {
+        _builder.money = value
+      }
+    /**
+     * ```
+     * 货币总量，以铜币为最小单位（100 铜币 = 1 银币，100 银币 = 1 金币）。
+     * ```
+     *
+     * `int32 money = 5;`
+     */
+    public fun clearMoney() {
+      _builder.clearMoney()
+    }
+
+    /**
+     * `int32 money_n = 6;`
+     */
+    public var moneyN: kotlin.Int
+      @kotlin.jvm.JvmName("getMoneyN")
+        get() = _builder.moneyN
+      @kotlin.jvm.JvmName("setMoneyN")
+        set(value) {
+        _builder.moneyN = value
+      }
+    /**
+     * `int32 money_n = 6;`
+     */
+    public fun clearMoneyN() {
+      _builder.clearMoneyN()
+    }
   }
 }
 @kotlin.jvm.JvmSynthetic

@@ -27,4 +27,36 @@ public interface ClockInResponseOrBuilder extends
    * @return The isFirstTime.
    */
   boolean getIsFirstTime();
+
+  /**
+   * <pre>
+   * 签到统计（签到墙口径）：连续/累计签到天数、货币余额。
+   * </pre>
+   *
+   * <code>int32 continued_days = 3;</code>
+   * @return The continuedDays.
+   */
+  int getContinuedDays();
+
+  /**
+   * <code>int32 total_days = 4;</code>
+   * @return The totalDays.
+   */
+  int getTotalDays();
+
+  /**
+   * <pre>
+   * 货币总量，以铜币为最小单位（100 铜币 = 1 银币，100 银币 = 1 金币）。
+   * </pre>
+   *
+   * <code>int32 money = 5;</code>
+   * @return The money.
+   */
+  int getMoney();
+
+  /**
+   * <code>int32 money_n = 6;</code>
+   * @return The moneyN.
+   */
+  int getMoneyN();
 }

@@ -31,6 +31,19 @@ class CurrentUserModel(
     private val _todayClockedIn = MutableStateFlow(false)
     val todayClockedIn: StateFlow<Boolean> = _todayClockedIn
 
+    /** 签到统计：连续/累计天数、金币（拆金/银/铜）、N币。 */
+    data class ClockInStats(
+        val continuedDays: Int,
+        val totalDays: Int,
+        val gold: Int,
+        val silver: Int,
+        val copper: Int,
+        val nCoins: Int,
+    )
+
+    private val _clockInStats = MutableStateFlow<ClockInStats?>(null)
+    val clockInStats: StateFlow<ClockInStats?> = _clockInStats
+
     private var lastUid: String? = null
     private var clockInJob: Job? = null
     private var switchToastShown = false
@@ -148,6 +161,15 @@ class CurrentUserModel(
                     "yyyy-MM-dd", java.util.Locale.US,
                 ).format(java.util.Date())
             refreshTodayClockIn()
+            // 同步签到统计（累计/连续天数、金币拆金/银/铜、N币）。
+            _clockInStats.value = ClockInStats(
+                continuedDays = response.continuedDays,
+                totalDays = response.totalDays,
+                gold = response.money / 10000,
+                silver = (response.money / 100) % 100,
+                copper = response.money % 100,
+                nCoins = response.moneyN,
+            )
             if (response.isFirstTime) {
                 val name = _user.value?.name?.display() ?: "???"
                 ToastModel.showAuto(ToastModel.Message.ClockIn("$name @ ${response.date}"))

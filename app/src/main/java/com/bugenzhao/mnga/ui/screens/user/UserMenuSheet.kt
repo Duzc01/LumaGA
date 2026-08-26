@@ -199,7 +199,7 @@ fun UserMenuSheet(
                             App.authStorage.clearCurrentAuth()
                         }
                     }
-                    // 实验室功能「启用签到」：账号分区里的手动签到入口。
+                    // 实验室功能「启用签到」：账号分区里的签到入口（点击进签到页）。
                     if (App.prefs.clockInEnabled.value) {
                         val clockedIn by App.currentUser.todayClockedIn.collectAsState()
                         LaunchedEffect(Unit) { App.currentUser.refreshTodayClockIn() }
@@ -216,7 +216,8 @@ fun UserMenuSheet(
                                 }
                             } else null,
                         ) {
-                            if (!clockedIn) App.currentUser.clockInOnce()
+                            onDismiss()
+                            navigator.push(Route.ClockIn)
                         }
                     }
                 }

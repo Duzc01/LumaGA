@@ -198,6 +198,14 @@
     <string name="anonymous_user">Anonymous User</string>
     <string name="clock_in">Clock in</string>
     <string name="clocked_in_successfully">Clocked in Successfully</string>
+    <string name="clock_streak">Streak</string>
+    <string name="clock_streak_days">days</string>
+    <string name="clock_total_days">Total %1$d days</string>
+    <string name="clock_gold">Gold</string>
+    <string name="clock_silver">Silver</string>
+    <string name="clock_copper">Copper</string>
+    <string name="clock_n_coin">N Coin</string>
+    <string name="clock_stats">Continued %1$d d · Total %2$d d · Gold %3$d Silver %4$d Copper %5$d · N Coin %6$d</string>
     <string name="clocked_in">Clocked In</string>
     <string name="laboratory">Laboratory</string>
     <string name="enable_clock_in">Enable Clock In</string>

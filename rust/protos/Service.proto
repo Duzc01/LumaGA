@@ -375,6 +375,12 @@ message ClockInRequest {}
 message ClockInResponse {
   string date = 1;
   bool is_first_time = 2;
+  // 签到统计（签到墙口径）：连续/累计签到天数、货币余额。
+  int32 continued_days = 3;
+  int32 total_days = 4;
+  // 货币总量，以铜币为最小单位（100 铜币 = 1 银币，100 银币 = 1 金币）。
+  int32 money = 5;
+  int32 money_n = 6;
 }
 
 message CacheRequest {
