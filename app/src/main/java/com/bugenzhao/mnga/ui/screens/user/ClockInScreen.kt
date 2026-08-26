@@ -234,7 +234,10 @@ private fun ClockMonthGrid(continued: Int, clockedIn: Boolean) {
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
         modifier = Modifier.fillMaxWidth(),
     ) {
-        Column(Modifier.padding(horizontal = 14.dp, vertical = 14.dp)) {
+        Column(
+            Modifier.padding(horizontal = 14.dp, vertical = 14.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
             MonthGrid(month = thisMonth, start = start, today = today, clockedIn = clockedIn)
             if (start.isBefore(thisMonth.atDay(1))) {
                 Spacer(Modifier.height(12.dp))
