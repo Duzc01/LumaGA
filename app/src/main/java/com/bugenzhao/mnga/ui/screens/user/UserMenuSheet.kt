@@ -180,25 +180,6 @@ fun UserMenuSheet(
                             }
                         }
                     }
-                    MenuRow(
-                        icon = Icons.Filled.PersonAddAlt1,
-                        title = L.str(context, "Add Account"),
-                    ) {
-                        if (checkPlusFeature(PlusFeature.MULTI_ACCOUNT)) {
-                            App.authStorage.setIsSigning(true)
-                            onShowLogin()
-                            onDismiss()
-                        }
-                    }
-                    if (signedIn) {
-                        MenuRow(
-                            icon = Icons.Filled.PersonRemoveAlt1,
-                            title = L.str(context, "Sign Out"),
-                            tint = MaterialTheme.colorScheme.error,
-                        ) {
-                            App.authStorage.clearCurrentAuth()
-                        }
-                    }
                     // 实验室功能「启用签到」：账号分区里的签到入口（点击进签到页）。
                     if (App.prefs.clockInEnabled.value) {
                         val clockedIn by App.currentUser.todayClockedIn.collectAsState()
@@ -218,6 +199,25 @@ fun UserMenuSheet(
                         ) {
                             onDismiss()
                             navigator.push(Route.ClockIn)
+                        }
+                    }
+                    MenuRow(
+                        icon = Icons.Filled.PersonAddAlt1,
+                        title = L.str(context, "Add Account"),
+                    ) {
+                        if (checkPlusFeature(PlusFeature.MULTI_ACCOUNT)) {
+                            App.authStorage.setIsSigning(true)
+                            onShowLogin()
+                            onDismiss()
+                        }
+                    }
+                    if (signedIn) {
+                        MenuRow(
+                            icon = Icons.Filled.PersonRemoveAlt1,
+                            title = L.str(context, "Sign Out"),
+                            tint = MaterialTheme.colorScheme.error,
+                        ) {
+                            App.authStorage.clearCurrentAuth()
                         }
                     }
                 }

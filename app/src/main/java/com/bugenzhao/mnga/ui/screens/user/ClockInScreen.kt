@@ -114,8 +114,8 @@ fun ClockInScreen(navigator: Navigator? = null) {
             )
             Spacer(Modifier.height(20.dp))
 
-            // 砖墙：已签的金砖 + 今日描边砖（未签时）+ 剩余灰砖。
-            ClockBrickWall(continued = continued, clockedIn = clockedIn)
+            // 月历：连续签到覆盖的日期点亮（当月 + 跨月时上月）。
+            ClockMonthGrid(continued = continued, clockedIn = clockedIn)
             Spacer(Modifier.height(14.dp))
             Text(
                 L.str(context, "Clock Total Days", stats?.totalDays ?: 0),
@@ -221,37 +221,114 @@ private fun CoinRow(coins: List<CoinBadge>) {
     }
 }
 
-/** 砖墙：14 格——前 [continued] 格金砖，未签时今日格金色描边，其余灰砖。 */
+/** 月历网格：连续签到覆盖的日期金砖点亮（从今天往前推 [continued] 天），
+ * 今天未签时金色描边；连续跨月时上月一并展示。 */
 @Composable
-private fun ClockBrickWall(continued: Int, clockedIn: Boolean) {
+private fun ClockMonthGrid(continued: Int, clockedIn: Boolean) {
+    val today = java.time.LocalDate.now()
+    val thisMonth = java.time.YearMonth.from(today)
+    val start = today.minusDays((continued - 1).toLong())
+
+    MonthGrid(month = thisMonth, start = start, today = today, clockedIn = clockedIn)
+    if (start.isBefore(thisMonth.atDay(1))) {
+        Spacer(Modifier.height(10.dp))
+        MonthGrid(
+            month = thisMonth.minusMonths(1),
+            start = start,
+            today = today,
+            clockedIn = clockedIn,
+        )
+    }
+}
+
+/** 单个月的日历：7 列周网格，周一开头。 */
+@Composable
+private fun MonthGrid(
+    month: java.time.YearMonth,
+    start: java.time.LocalDate,
+    today: java.time.LocalDate,
+    clockedIn: Boolean,
+) {
     val goldBrush = Brush.linearGradient(
         listOf(Gold.copy(alpha = 0.85f), Gold.copy(alpha = 1f)),
     )
     val grey = MaterialTheme.colorScheme.outlineVariant
-    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-        repeat(14) { i ->
-            val brick = Modifier
-                .size(width = 22.dp, height = 30.dp)
-                .then(
-                    when {
-                        // 今日未签：金色描边砖，等待点亮。
-                        !clockedIn && i == continued -> Modifier.border(
-                            1.5.dp, Gold, RoundedCornerShape(5.dp),
-                        )
-                        i < continued -> Modifier.background(goldBrush, RoundedCornerShape(5.dp))
-                        else -> Modifier.border(1.dp, grey, RoundedCornerShape(5.dp))
-                    },
-                )
-            Box(brick, contentAlignment = Alignment.Center) {
-                if (!clockedIn && i == continued) {
-                    Text(
-                        "今",
-                        style = MaterialTheme.typography.labelSmall.copy(
-                            fontWeight = FontWeight.Bold,
-                            color = Gold,
-                        ),
-                        textAlign = TextAlign.Center,
-                    )
+    val firstDay = month.atDay(1)
+    val leading = firstDay.dayOfWeek.value - 1 // 周一 = 0 偏移
+    val days = month.lengthOfMonth()
+    val totalCells = leading + days
+    val rows = (totalCells + 6) / 7
+
+    Text(
+        month.format(java.time.format.DateTimeFormatter.ofPattern("yyyy年M月")),
+        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    Spacer(Modifier.height(6.dp))
+
+    // 星期表头（周一开头）。
+    Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+        listOf("一", "二", "三", "四", "五", "六", "日").forEach { w ->
+            Text(
+                w,
+                Modifier.width(34.dp),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+            )
+        }
+    }
+    Spacer(Modifier.height(4.dp))
+
+    Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
+        repeat(rows) { r ->
+            Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                repeat(7) { c ->
+                    val day = r * 7 + c - leading + 1
+                    if (day in 1..days) {
+                        val date = month.atDay(day)
+                        val signed = !date.isAfter(today) && !date.isBefore(start)
+                        val isToday = date == today
+                        val cell = Modifier.size(34.dp)
+                        when {
+                            isToday && !signed -> Box(
+                                cell.border(1.5.dp, Gold, RoundedCornerShape(6.dp)),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Text(
+                                    day.toString(),
+                                    style = MaterialTheme.typography.labelSmall.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        color = Gold,
+                                    ),
+                                )
+                            }
+                            signed -> Box(
+                                cell.background(goldBrush, RoundedCornerShape(6.dp)),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Text(
+                                    day.toString(),
+                                    style = MaterialTheme.typography.labelSmall.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White,
+                                    ),
+                                )
+                            }
+                            else -> Box(
+                                cell.border(1.dp, grey, RoundedCornerShape(6.dp)),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Text(
+                                    day.toString(),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
+                    } else {
+                        Spacer(Modifier.size(34.dp))
+                    }
                 }
             }
         }
