@@ -198,6 +198,15 @@
     <string name="anonymous_user">Anonymous User</string>
     <string name="clock_in">Clock in</string>
     <string name="clocked_in_successfully">Clocked in Successfully</string>
+    <string name="clocked_in">Clocked In</string>
+    <string name="laboratory">Laboratory</string>
+    <string name="enable_clock_in">Enable Clock In</string>
+    <string name="auto_clock_in_on_launch">Auto Clock In on Launch</string>
+    <string name="general">General</string>
+    <string name="topic_list">Topic List</string>
+    <string name="topic_details">Topic Details</string>
+    <string name="post_row">Post Row</string>
+
     <string name="lumaga_link">LumaGA Link</string>
     <string name="nga_link">NGA Link</string>
     <string name="screenshot">Screenshot</string>

@@ -27,6 +27,10 @@ class CurrentUserModel(
     private val _user = MutableStateFlow<User?>(null)
     val user: StateFlow<User?> = _user
 
+    /** 今日是否已签到（本地记录，供账号菜单显示"已签到"）。 */
+    private val _todayClockedIn = MutableStateFlow(false)
+    val todayClockedIn: StateFlow<Boolean> = _todayClockedIn
+
     private var lastUid: String? = null
     private var clockInJob: Job? = null
     private var switchToastShown = false
@@ -47,6 +51,7 @@ class CurrentUserModel(
         scope.launch { loadData(authStorage.authInfo.value.uid) }
 
         // 2. Periodic clock-in every 2 minutes, skipping the first tick.
+        //    仅实验室功能"启动自动签到"开启时运行（每日一次由逻辑层缓存保证）。
         scope.launch {
             var first = true
             while (true) {
@@ -55,7 +60,7 @@ class CurrentUserModel(
                     first = false
                     continue
                 }
-                clockIn()
+                if (autoClockInEnabled()) clockIn()
             }
         }
 
@@ -110,6 +115,24 @@ class CurrentUserModel(
         }
     }
 
+    /** 实验室功能开关：自动签到 = 启用签到 + 启动自动签到。 */
+    private fun autoClockInEnabled(): Boolean =
+        com.bugenzhao.mnga.App.prefs.clockInEnabled.value &&
+            com.bugenzhao.mnga.App.prefs.autoClockInOnLaunch.value
+
+    /** 账号菜单手动签到入口。 */
+    fun clockInOnce() {
+        scope.launch { clockIn() }
+    }
+
+    /** 刷新"今日已签到"状态（打开账号菜单时调用，跨天时更新）。 */
+    fun refreshTodayClockIn() {
+        val today = java.text.SimpleDateFormat(
+            "yyyy-MM-dd", java.util.Locale.US,
+        ).format(java.util.Date())
+        _todayClockedIn.value = com.bugenzhao.mnga.App.prefs.lastClockInDate.value == today
+    }
+
     private suspend fun clockIn() {
         val uid = authStorage.authInfo.value.uid
         if (uid.isEmpty()) return
@@ -118,6 +141,13 @@ class CurrentUserModel(
             ClockInResponse.parser(),
         )
         result.onSuccess { response ->
+            // 无论是否今日首次，都同步本地"已签到"状态——逻辑层缓存判定
+            // 今天是否已签（重复点击也不会重复签到），首次成功才弹提示。
+            com.bugenzhao.mnga.App.prefs.lastClockInDate.value =
+                java.text.SimpleDateFormat(
+                    "yyyy-MM-dd", java.util.Locale.US,
+                ).format(java.util.Date())
+            refreshTodayClockIn()
             if (response.isFirstTime) {
                 val name = _user.value?.name?.display() ?: "???"
                 ToastModel.showAuto(ToastModel.Message.ClockIn("$name @ ${response.date}"))

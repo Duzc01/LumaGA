@@ -14,6 +14,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.HistoryEdu
 import androidx.compose.material.icons.filled.Notifications
@@ -29,6 +30,7 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -195,6 +197,26 @@ fun UserMenuSheet(
                             tint = MaterialTheme.colorScheme.error,
                         ) {
                             App.authStorage.clearCurrentAuth()
+                        }
+                    }
+                    // 实验室功能「启用签到」：账号分区里的手动签到入口。
+                    if (App.prefs.clockInEnabled.value) {
+                        val clockedIn by App.currentUser.todayClockedIn.collectAsState()
+                        LaunchedEffect(Unit) { App.currentUser.refreshTodayClockIn() }
+                        MenuRow(
+                            icon = Icons.Filled.CheckCircle,
+                            title = L.str(context, "Clock In"),
+                            trailing = if (clockedIn) {
+                                {
+                                    Text(
+                                        L.str(context, "Clocked In"),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                            } else null,
+                        ) {
+                            if (!clockedIn) App.currentUser.clockInOnce()
                         }
                     }
                 }

@@ -159,6 +159,12 @@ class PreferencesStorage(private val prefs: SharedPreferences) {
     val alwaysShareImageAsFile = boolPref("alwaysShareImageAsFile", false)
     val useClassicIcon = boolPref("useClassicIcon", false)
 
+    // 实验室功能：签到
+    val clockInEnabled = boolPref("clockInEnabled", false)
+    val autoClockInOnLaunch = boolPref("autoClockInOnLaunch", false)
+    /** 最近一次签到成功的本地日期（yyyy-MM-dd），用于界面显示"已签到"。 */
+    val lastClockInDate = stringPref("lastClockInDate", "")
+
     val defaultTopicListOrderRaw = intPref("defaultTopicListOrder", 0)
     val themeColorRaw = intPref("themeColorNew", 0)
     val colorSchemeRaw = intPref("colorScheme", 0)

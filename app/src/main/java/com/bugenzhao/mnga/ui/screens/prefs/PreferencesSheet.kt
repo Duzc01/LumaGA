@@ -112,6 +112,8 @@ fun PreferencesSheet(onDismiss: () -> Unit, navigator: Navigator? = null) {
     val alwaysShareImageAsFile by prefs.alwaysShareImageAsFile.flow.collectAsState()
     val useClassicIcon by prefs.useClassicIcon.flow.collectAsState()
     val compactTopicList by prefs.topicListRowStyle.flow.collectAsState()
+    val clockInEnabled by prefs.clockInEnabled.flow.collectAsState()
+    val autoClockInOnLaunch by prefs.autoClockInOnLaunch.flow.collectAsState()
 
     val defaultOrderRaw by prefs.defaultTopicListOrderRaw.flow.collectAsState()
     val hideBlocked by prefs.topicListHideBlocked.flow.collectAsState()
@@ -366,6 +368,23 @@ fun PreferencesSheet(onDismiss: () -> Unit, navigator: Navigator? = null) {
                             ) { Text(L.str(context, "Apply")) }
                         }
                     }
+                }
+            }
+            // endregion
+
+            // region Laboratory
+            item(key = "laboratory") {
+                Section(header = L.str(context, "Laboratory")) {
+                    SwitchRow(
+                        title = L.str(context, "Enable Clock In"),
+                        checked = clockInEnabled,
+                        onChange = { prefs.clockInEnabled.value = it },
+                    )
+                    SwitchRow(
+                        title = L.str(context, "Auto Clock In on Launch"),
+                        checked = autoClockInOnLaunch,
+                        onChange = { prefs.autoClockInOnLaunch.value = it },
+                    )
                 }
             }
             // endregion

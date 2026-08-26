@@ -2,7 +2,10 @@ use cache::CACHE;
 use protos::Service::{ClockInRequest, ClockInResponse};
 
 use crate::{
-    auth::current_uid, error::ServiceResult, fetch::fetch_json_value, utils::server_today_string,
+    auth::current_uid,
+    error::{ServiceError, ServiceResult},
+    fetch::fetch_json_value,
+    utils::server_today_string,
 };
 
 fn clock_in_key() -> String {
@@ -23,14 +26,21 @@ pub async fn clock_in(_request: ClockInRequest) -> ServiceResult<ClockInResponse
     };
 
     if !clocked_in_today()? {
-        let _value = fetch_json_value(
+        match fetch_json_value(
             "nuke.php",
             vec![("__lib", "check_in"), ("__act", "check_in")],
             vec![],
         )
-        .await?;
+        .await
+        {
+            Ok(_) => response.is_first_time = true,
+            // 服务器提示"今天已经签过"（本地缓存过期 / 其他端已签）：视为
+            // 已签，记录缓存并返回成功，避免每次点击都重复请求。
+            Err(ServiceError::Nga(e))
+                if e.info.contains("已经签到") || e.info.contains("已签到") => {}
+            Err(e) => return Err(e),
+        }
         let _ = CACHE.insert_msg(&clock_in_key(), &response)?;
-        response.is_first_time = true;
     }
 
     Ok(response)

@@ -198,6 +198,15 @@
     <string name="anonymous_user">匿名用户</string>
     <string name="clock_in">签到</string>
     <string name="clocked_in_successfully">签到成功</string>
+    <string name="clocked_in">已签到</string>
+    <string name="laboratory">实验室功能</string>
+    <string name="enable_clock_in">启用签到</string>
+    <string name="auto_clock_in_on_launch">启动自动签到</string>
+    <string name="general">通用</string>
+    <string name="topic_list">话题列表</string>
+    <string name="topic_details">帖子详情</string>
+    <string name="post_row">楼层样式</string>
+
     <string name="lumaga_link">LumaGA 链接</string>
     <string name="nga_link">NGA 链接</string>
     <string name="screenshot">截图</string>

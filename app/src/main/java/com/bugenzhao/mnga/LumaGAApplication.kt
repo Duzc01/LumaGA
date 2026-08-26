@@ -93,8 +93,17 @@ class LumaGAApplication : Application() {
         }
         appScope.launch {
             App.authStorage.authChanged.collect {
-                App.currentUser.scheduleClockInAfterAuth()
+                if (autoClockInOn()) {
+                    App.currentUser.scheduleClockInAfterAuth()
+                }
                 App.favoriteForums.initialSync()
+            }
+        }
+
+        // 实验室功能「启动自动签到」：启动 App 5 秒后签到一次。
+        appScope.launch {
+            if (autoClockInOn()) {
+                App.currentUser.scheduleClockInAfterAuth()
             }
         }
 
@@ -104,6 +113,9 @@ class LumaGAApplication : Application() {
                 model.haptic = { type -> com.bugenzhao.mnga.util.Haptics.vibrate(this, type) }
             }
     }
+
+    private fun autoClockInOn(): Boolean =
+        App.prefs.clockInEnabled.value && App.prefs.autoClockInOnLaunch.value
 
     private fun isEmulator(): Boolean =
         (android.os.Build.FINGERPRINT.contains("generic", ignoreCase = true) ||
