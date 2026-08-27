@@ -137,6 +137,19 @@ private fun NavigationHost(
     // presses included), keeping navigator.stack/size/lastOp in sync.
     LaunchedEffect(navigator) { navigator.observe(this) }
 
+    // 实验室功能「启动自动签到」：任意页面打开/切换时补一次签到检查
+    // （Rust 缓存判定当天已签则零网络开销）。配合回前台触发覆盖所有
+    // 应用活跃时机。
+    LaunchedEffect(navigator.navController) {
+        navigator.navController.addOnDestinationChangedListener { _, _, _ ->
+            if (App.prefs.clockInEnabled.value &&
+                App.prefs.autoClockInOnLaunch.value
+            ) {
+                App.currentUser.clockInOnce()
+            }
+        }
+    }
+
     NavHost(
         navController = navigator.navController,
         startDestination = RouteCodec.ROUTE_FORUM_LIST,
