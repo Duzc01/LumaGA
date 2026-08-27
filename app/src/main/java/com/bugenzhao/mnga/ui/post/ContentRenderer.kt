@@ -828,7 +828,12 @@ internal class ContentCombiner(
             ?.trim('%')?.toDoubleOrNull() ?: 100.0
         val factor = (scale / 100.0).toFloat()
         val combiner = ContentCombiner(host, parent = this, fontModifier = { f ->
-            if (f == null) f else f.copy(fontSize = f.fontSize * factor)
+            if (f == null) f else {
+                val size = f.fontSize
+                // Unspecified（样式链未设置字号）不能参与 TextUnit 乘法
+                // （checkArithmetic 只允许 sp/em），保持原样避免崩溃。
+                f.copy(fontSize = if (size == TextUnit.Unspecified) size else size * factor)
+            }
         })
         combiner.visit(tagged.spansList)
         appendBuilt(combiner.build())
