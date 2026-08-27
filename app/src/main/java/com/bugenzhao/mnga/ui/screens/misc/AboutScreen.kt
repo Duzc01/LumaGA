@@ -79,7 +79,8 @@ fun AboutScreen(navigator: Navigator? = null) {
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     Image(
-                        painter = painterResource(R.mipmap.ic_launcher),
+                        // 用独立 PNG（adaptive-icon XML 不支持 painterResource）。
+                        painter = painterResource(R.drawable.ic_launcher_about),
                         contentDescription = null,
                         modifier = Modifier.size(96.dp).clip(RoundedCornerShape(22.dp)),
                     )
