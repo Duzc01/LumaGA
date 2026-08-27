@@ -12,8 +12,11 @@ object L {
         val name = StringsMap.map[key] ?: return formatFallback(key, args)
         val id = context.resources.getIdentifier(name, "string", context.packageName)
         if (id == 0) return formatFallback(key, args)
-        return if (args.isEmpty()) context.getString(id)
-        else context.getString(id, *args)
+        return if (args.isEmpty()) {
+            // 无参数：取原始文本（getText 不解析格式符）。资源值可能残留
+            // iOS 风格占位符（%@ 等），走 getString 的 Java format 会崩。
+            context.resources.getText(id).toString()
+        } else context.getString(id, *args)
     }
 
     private fun formatFallback(key: String, args: Array<out Any>): String =

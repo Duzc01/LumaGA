@@ -30,7 +30,7 @@
     <string name="sign_in_to_nga">Sign in to NGA</string>
     <string name="from_nga">From NGA</string>
     <string name="cancel">Cancel</string>
-    <string name="subforums_of_s">Subforums of %@</string>
+    <string name="subforums_of_s">Subforums of %1$s</string>
     <string name="history">History</string>
     <string name="no_history">No History</string>
     <string name="hot_topics">Hot Topics</string>
@@ -117,8 +117,8 @@
     <string name="support">Support</string>
     <string name="success">Success</string>
     <string name="draft_saved">Draft Saved</string>
-    <string name="s_s_topics">%@\'s Topics</string>
-    <string name="s_s_posts">%@\'s Posts</string>
+    <string name="s_s_topics">%1$s\'s Topics</string>
+    <string name="s_s_posts">%1$s\'s Posts</string>
     <string name="posts">Posts</string>
     <string name="my_profile">My Profile</string>
     <string name="edit_favorites">Edit Favorites</string>
@@ -153,7 +153,7 @@
     <string name="sent_you_a_short_message">sent you a short message</string>
     <string name="mentioned_you_in_a_post">mentioned you in a post</string>
     <string name="mentioned_you_in_a_topic">mentioned you in a topic</string>
-    <string name="goto_s">Goto %@</string>
+    <string name="goto_s">Goto %1$s</string>
     <string name="goto_forum">Goto Forum</string>
     <string name="color_scheme">Color Scheme</string>
     <string name="auto">Auto</string>
@@ -161,7 +161,7 @@
     <string name="dark">Dark</string>
     <string name="search_results">Search Results</string>
     <string name="search_topics">Search Topics</string>
-    <string name="topic_s">Topic %@</string>
+    <string name="topic_s">Topic %1$s</string>
     <string name="floor">Floor</string>
     <string name="floor_d">Floor %lld</string>
     <string name="floor_bracketed">[Floor %1$d]</string>
@@ -184,7 +184,7 @@
     <string name="copy_all">Copy All</string>
     <string name="empty">Empty</string>
     <string name="cached_topic">Cached Topic</string>
-    <string name="search_s_in">Search \"%@\" in...</string>
+    <string name="search_s_in">Search \"%1$s\" in...</string>
     <string name="all_topics">All Topics</string>
     <string name="all_users">All Users</string>
     <string name="search">Search</string>
@@ -283,13 +283,13 @@
     <string name="plus_explanation">Plus Explanation</string>
     <string name="try_plus">Try Plus</string>
     <string name="you_re_enjoying_a_plus_trial">You\'re enjoying a Plus trial</string>
-    <string name="trial_ends_on_s">Trial ends on %@</string>
+    <string name="trial_ends_on_s">Trial ends on %1$s</string>
     <string name="your_plus_trial_has_expired">Your Plus trial has expired</string>
     <string name="products_unavailable_please_try_again_later">Products unavailable. Please try again later.</string>
     <string name="restore_purchases">Restore Purchases</string>
     <string name="redeem_code">Redeem Code</string>
     <string name="we_couldn_t_verify_your_purchase_please_try_again">We couldn\'t verify your purchase. Please try again.</string>
-    <string name="s_is_a_plus_feature">\"%@\" is a Plus feature</string>
+    <string name="s_is_a_plus_feature">\"%1$s\" is a Plus feature</string>
     <string name="unlock_lumaga_plus_to_access_this_feature">Unlock LumaGA Plus to access this feature.</string>
     <string name="tap_to_unlock_lumaga_plus_to_access_this_feature">Tap to unlock LumaGA Plus to access this feature</string>
     <string name="show_plus_in_title">Show Plus in Title</string>
