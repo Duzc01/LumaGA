@@ -65,21 +65,7 @@ class CurrentUserModel(
         lastUid = authStorage.authInfo.value.uid
         scope.launch { loadData(authStorage.authInfo.value.uid) }
 
-        // 2. Periodic clock-in every 2 minutes, skipping the first tick.
-        //    仅实验室功能"启动自动签到"开启时运行（每日一次由逻辑层缓存保证）。
-        scope.launch {
-            var first = true
-            while (true) {
-                delay(2 * 60 * 1000L)
-                if (first) {
-                    first = false
-                    continue
-                }
-                if (autoClockInEnabled()) clockIn()
-            }
-        }
-
-        // 3. Toast on subsequent account switches.
+        // 2. Toast on subsequent account switches.
         scope.launch {
             var lastId: String? = null
             _user.collect { user ->
@@ -129,11 +115,6 @@ class CurrentUserModel(
             }
         }
     }
-
-    /** 实验室功能开关：自动签到 = 启用签到 + 启动自动签到。 */
-    private fun autoClockInEnabled(): Boolean =
-        com.bugenzhao.mnga.App.prefs.clockInEnabled.value &&
-            com.bugenzhao.mnga.App.prefs.autoClockInOnLaunch.value
 
     /** 账号菜单手动签到入口。 */
     fun clockInOnce() {

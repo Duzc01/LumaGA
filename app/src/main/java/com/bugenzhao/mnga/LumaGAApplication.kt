@@ -100,12 +100,34 @@ class LumaGAApplication : Application() {
             }
         }
 
-        // 实验室功能「启动自动签到」：启动 App 5 秒后签到一次。
-        appScope.launch {
-            if (autoClockInOn()) {
-                App.currentUser.scheduleClockInAfterAuth()
+        // 实验室功能「启动自动签到」：应用回到前台（启动/从后台切回）时补一次
+        // 签到检查。Rust 缓存判定当天已签则零网络开销；跨天由每次回前台兜底。
+        // 单 Activity 架构下 onActivityResumed 只发生在启动/回前台，频率极低。
+        registerActivityLifecycleCallbacks(
+            object : android.app.Application.ActivityLifecycleCallbacks {
+                override fun onActivityResumed(activity: android.app.Activity) {
+                    if (autoClockInOn()) {
+                        App.currentUser.clockInOnce()
+                    }
+                }
+
+                override fun onActivityStarted(activity: android.app.Activity) {}
+                override fun onActivityDestroyed(activity: android.app.Activity) {}
+                override fun onActivityPaused(activity: android.app.Activity) {}
+                override fun onActivityStopped(activity: android.app.Activity) {}
+                override fun onActivityCreated(
+                    activity: android.app.Activity,
+                    savedInstanceState: android.os.Bundle?,
+                ) {
+                }
+
+                override fun onActivitySaveInstanceState(
+                    activity: android.app.Activity,
+                    outState: android.os.Bundle,
+                ) {
+                }
             }
-        }
+        )
 
         // Route toast haptics.
         listOf(ToastModel.hud, ToastModel.banner, ToastModel.editorAlert)
