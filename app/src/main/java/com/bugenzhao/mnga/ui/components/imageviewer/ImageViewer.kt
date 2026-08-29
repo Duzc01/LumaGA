@@ -265,7 +265,11 @@ private fun ZoomableImagePage(
     var offset by remember { mutableStateOf(Offset.Zero) }
     val context = LocalContext.current
 
-    fun clampScale(value: Float): Float = value.coerceIn(1f, 5f)
+    // coerceIn 对 NaN 会原样返回 NaN（比较全为 false），导致缩放卡死；
+    // 第二指落下的瞬间 calculateZoom 可能产生异常值，这里统一兜底。
+    fun clampScale(value: Float): Float =
+        if (value.isNaN() || value.isInfinite() || value <= 0f) 1f
+        else value.coerceIn(1f, 5f)
 
     Box(
         Modifier
@@ -299,7 +303,10 @@ private fun ZoomableImagePage(
                         if (pastSlop) {
                             if (zooming || scale > 1f) {
                                 // Pinch zoom / pan of the zoomed image.
-                                scale = clampScale(scale * zoomChange)
+                                // 只应用有效的 zoom（第二指落下的瞬间可能是 NaN/0）。
+                                if (zoomChange.isFinite() && zoomChange > 0f) {
+                                    scale = clampScale(scale * zoomChange)
+                                }
                                 if (scale > 1f) {
                                     offset = (offset + panChange).let { o ->
                                         val bound = 2000f * (scale - 1f)
