@@ -22,6 +22,8 @@ import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.calculatePan
 import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.rememberTransformableState
+import androidx.compose.foundation.gestures.transformable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -266,77 +268,69 @@ private fun ZoomableImagePage(
     val context = LocalContext.current
 
     // coerceIn 对 NaN 会原样返回 NaN（比较全为 false），导致缩放卡死；
-    // 第二指落下的瞬间 calculateZoom 可能产生异常值，这里统一兜底。
+    // 第二指落下的瞬间 zoom 可能产生异常值，这里统一兜底。
     fun clampScale(value: Float): Float =
         if (value.isNaN() || value.isInfinite() || value <= 0f) 1f
         else value.coerceIn(1f, 5f)
 
+    // 官方 transformable：双指捏合缩放 + 放大后单指/双指平移。
+    // canPan = scale > 1f：1x 时平移放行（pager 切页、下拉关闭），
+    // 放大后才消费拖动移动图片。
+    val transformableState = rememberTransformableState { zoomChange, panChange, _ ->
+        if (zoomChange.isFinite() && zoomChange > 0f) {
+            scale = clampScale(scale * zoomChange)
+        }
+        if (scale > 1f) {
+            offset = (offset + panChange).let { o ->
+                val bound = 2000f * (scale - 1f)
+                Offset(
+                    o.x.coerceIn(-bound, bound),
+                    o.y.coerceIn(-bound, bound),
+                )
+            }
+        }
+    }
+
     Box(
         Modifier
             .fillMaxSize()
+            .transformable(
+                state = transformableState,
+                canPan = { scale > 1f },
+            )
             .pointerInput(url) {
                 awaitEachGesture {
                     awaitFirstDown(pass = PointerEventPass.Main)
                     var pastSlop = false
-                    var zooming = false
                     val touchSlop = viewConfiguration.touchSlop
                     var totalPan = Offset.Zero
                     var dragDown = 0f
 
                     while (true) {
                         val event = awaitPointerEvent(PointerEventPass.Main)
-                        val zoomChange = event.calculateZoom()
                         val panChange = event.calculatePan()
-
-                        if (event.changes.size > 1) zooming = true
 
                         if (!pastSlop) {
                             totalPan += panChange
-                            val zoomed = zoomChange != 1f
-                            if (zoomed || abs(totalPan) > touchSlop ||
-                                event.changes.size > 1
-                            ) {
+                            if (abs(totalPan) > touchSlop || event.changes.size > 1) {
                                 pastSlop = true
                             }
                         }
 
-                        if (pastSlop) {
-                            if (zooming || scale > 1f) {
-                                // Pinch zoom / pan of the zoomed image.
-                                // 只应用有效的 zoom（第二指落下的瞬间可能是 NaN/0）。
-                                if (zoomChange.isFinite() && zoomChange > 0f) {
-                                    scale = clampScale(scale * zoomChange)
-                                }
-                                if (scale > 1f) {
-                                    offset = (offset + panChange).let { o ->
-                                        val bound = 2000f * (scale - 1f)
-                                        Offset(
-                                            o.x.coerceIn(-bound, bound),
-                                            o.y.coerceIn(-bound, bound),
-                                        )
-                                    }
-                                } else {
-                                    offset = Offset.Zero
-                                }
-                                // Consume while interacting with the image.
+                        // 只处理 1x 时的垂直下拉关闭；缩放/平移/双指交给
+                        // transformable，水平拖动放行给 pager 切页。
+                        if (pastSlop && event.changes.size <= 1 && scale <= 1f) {
+                            dragDown += panChange.y
+                            if (dragDown > 0) {
+                                onDismissAlpha(1f - (dragDown / 700f).coerceIn(0f, 0.9f))
                                 event.changes.forEach {
                                     if (it.positionChanged()) it.consume()
-                                }
-                            } else {
-                                // Not zoomed: only a downward drag dismisses.
-                                dragDown += panChange.y
-                                if (dragDown > 0) {
-                                    onDismissAlpha(1f - (dragDown / 700f).coerceIn(0f, 0.9f))
-                                    event.changes.forEach {
-                                        if (it.positionChanged()) it.consume()
-                                    }
                                 }
                             }
                         }
 
                         if (event.changes.none { it.pressed }) {
-                            // Released.
-                            if (pastSlop && !zooming && scale <= 1f) {
+                            if (pastSlop && scale <= 1f) {
                                 if (dragDown > 160f) onDismiss() else onDismissAlpha(1f)
                                 scale = 1f
                                 offset = Offset.Zero
