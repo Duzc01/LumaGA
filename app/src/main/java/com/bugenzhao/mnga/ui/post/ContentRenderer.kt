@@ -267,6 +267,8 @@ internal class ContentCombiner(
     private val otherStylesModifier: (Int) -> Int = { it },
     overrideAlignment: HAlign? = null,
     private val rootStyle: StyleSpec? = null,
+    /** 本楼层全部图片 URL：点任意一张在查看器里可左右滑动浏览所有图。 */
+    private val allImages: List<String>? = null,
 ) {
     companion object {
         private const val UNDERLINE = 1
@@ -574,14 +576,19 @@ internal class ContentCombiner(
             return
         }
         val onlyThumbs = inQuote && replyTo != null
-        appendOther(ContentImageViewNode(url, onlyThumbs))
+        appendOther(ContentImageViewNode(url, onlyThumbs, allImages))
     }
 
-    private fun ContentImageViewNode(url: String, onlyThumbs: Boolean): ContentNode =
+    private fun ContentImageViewNode(
+        url: String,
+        onlyThumbs: Boolean,
+        siblingUrls: List<String>?,
+    ): ContentNode =
         ContentNode.View {
             ContentImageView(
                 url = url,
                 onlyThumbs = onlyThumbs,
+                siblingUrls = siblingUrls,
                 onViewImage = { urls, current -> host.actions.viewImages(urls, current) },
             )
         }
@@ -613,7 +620,7 @@ internal class ContentCombiner(
             return
         }
         val onlyThumbs = inQuote && replyTo != null
-        appendOther(ContentImageViewNode(url, onlyThumbs))
+        appendOther(ContentImageViewNode(url, onlyThumbs, allImages))
     }
 
     private class QuoteMeta(val pid: PostId, val uid: String, val username: String?, val envs: Map<String, Any?>)
@@ -1293,6 +1300,26 @@ fun ContentButton(
  * Rich post content renderer, ported from `Views/PostContentView.swift` +
  * `Utilities/ContentCombiner.swift`.
  */
+/** 收集楼层内容里的全部图片 URL（img 标签与相册 album 的子图）。 */
+private fun collectViewerImages(spans: List<Span>): List<String> {
+    val out = mutableListOf<String>()
+    fun scan(list: List<Span>) {
+        for (span in list) {
+            if (!span.hasTagged()) continue
+            when (span.tagged.tag) {
+                "img" -> span.tagged.spansList.firstOrNull { it.hasPlain() }?.plain?.text
+                    ?.let { URLs.attachmentURL(it) }?.let { out += it }
+                "album" -> span.tagged.spansList.filter { it.hasPlain() }.forEach {
+                    URLs.attachmentURL(it.plain.text)?.let { u -> out += u }
+                }
+                else -> scan(span.tagged.spansList)
+            }
+        }
+    }
+    scan(spans)
+    return out.distinct()
+}
+
 @Composable
 fun PostContent(
     content: PostContent,
@@ -1321,9 +1348,12 @@ fun PostContent(
 
     val host = RenderHost(context, env.actions, accent, onSurface, secondary, appVersion, counter)
     val post = env.diceContext
+    // 楼层内全部图片（img + album）：点图打开整个相册，可左右滑动浏览。
+    val allImages = remember(content) { collectViewerImages(content.spansList) }
     val root = ContentCombiner(
         host,
         rootStyle = StyleSpec(fontSize = effectiveSize, color = resolvedColor),
+        allImages = allImages.takeIf { it.size > 1 },
     )
     root.seedRoot(post?.id, post?.postDate, post?.authorId)
     if (env.inQuote) root.markInQuote()

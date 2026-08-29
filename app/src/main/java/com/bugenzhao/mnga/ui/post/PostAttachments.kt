@@ -72,6 +72,8 @@ fun ContentImageView(
     url: String,
     onlyThumbs: Boolean = false,
     forceNotThumb: Boolean = false,
+    /** 同级图片（同一楼层的全部图片）；非空时查看器可左右滑动浏览。 */
+    siblingUrls: List<String>? = null,
     onViewImage: (urls: List<String>, current: String) -> Unit,
     alt: String? = null,
     sizeBytes: Long? = null,
@@ -94,7 +96,7 @@ fun ContentImageView(
             icon = Icons.Outlined.Image,
             title = { Text(L.str(context, "View Image")) },
             inQuote = true,
-        ) { onViewImage(listOf(url), url) }
+        ) { onViewImage(siblingUrls ?: listOf(url), url) }
         return
     }
 
@@ -142,7 +144,7 @@ fun ContentImageView(
                     }
                 )
                 .clip(RoundedCornerShape(8.dp))
-                .clickable(enabled = isReady) { onViewImage(listOf(url), url) },
+                .clickable(enabled = isReady) { onViewImage(siblingUrls ?: listOf(url), url) },
             contentAlignment = Alignment.Center,
         ) {
             // The painter must stay composed (and drawn) even before the image
