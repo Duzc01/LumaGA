@@ -135,10 +135,15 @@ fun SearchScreen(
 
     BackHandler(enabled = navigator.size > 1) { navigator.pop() }
 
-    // Open with the keyboard up: the screen exists only to be typed into. The
-    // field may attach a frame later than this effect, hence the guard.
+    // 首次进入自动弹键盘：该页面就是用来输入的。返回（组合恢复）时不再
+    // 自动请求焦点，避免从详情页返回时输入法突然弹出——用户再次点击搜索
+    // 框才会唤起键盘。
+    var focusRequestedOnce by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(Unit) {
-        runCatching { fieldFocus.requestFocus() }
+        if (!focusRequestedOnce) {
+            focusRequestedOnce = true
+            runCatching { fieldFocus.requestFocus() }
+        }
     }
 
     val topicDataSource = remember(committedText, currentForumOnly, searchContent) {
