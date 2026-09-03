@@ -94,7 +94,7 @@ class LumaGAApplication : Application() {
         appScope.launch {
             App.authStorage.authChanged.collect {
                 if (autoClockInOn()) {
-                    App.currentUser.scheduleClockInAfterAuth()
+                    App.currentUser.scheduleClockIn()
                 }
                 App.favoriteForums.initialSync()
             }
@@ -107,7 +107,7 @@ class LumaGAApplication : Application() {
             object : android.app.Application.ActivityLifecycleCallbacks {
                 override fun onActivityResumed(activity: android.app.Activity) {
                     if (autoClockInOn()) {
-                        App.currentUser.clockInOnce()
+                        App.currentUser.scheduleClockIn()
                     }
                 }
 

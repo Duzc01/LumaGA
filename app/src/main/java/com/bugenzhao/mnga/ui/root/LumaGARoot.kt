@@ -145,7 +145,7 @@ private fun NavigationHost(
             if (App.prefs.clockInEnabled.value &&
                 App.prefs.autoClockInOnLaunch.value
             ) {
-                App.currentUser.clockInOnce()
+                App.currentUser.scheduleClockIn()
             }
         }
     }

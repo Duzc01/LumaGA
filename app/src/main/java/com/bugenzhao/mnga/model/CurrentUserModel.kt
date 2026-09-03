@@ -80,11 +80,12 @@ class CurrentUserModel(
         }
     }
 
-    /** Called by AuthStorage watchers after auth sync (delays 5 s like iOS). */
-    fun scheduleClockInAfterAuth() {
+    /** 延迟 [delayMillis] 后签到——自动路径（回前台/页面切换/登录）统一
+     * 延迟 5 秒，等界面稳定；手动按钮用 [clockInOnce] 立即签到。 */
+    fun scheduleClockIn(delayMillis: Long = 5_000) {
         clockInJob?.cancel()
         clockInJob = scope.launch {
-            delay(5_000)
+            delay(delayMillis)
             clockIn()
         }
     }
