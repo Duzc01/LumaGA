@@ -4,6 +4,7 @@ import androidx.activity.compose.BackHandler
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -32,10 +33,12 @@ import androidx.compose.material.icons.outlined.ThumbUp
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -394,6 +397,30 @@ fun TopicListScreen(
                 },
             )
         },
+        floatingActionButton = {
+            if (showRefreshButton && !dataSource.isInitialLoading) {
+                SmallFloatingActionButton(
+                    onClick = {
+                        if (!state.isLoading && !state.isRefreshing) triggerRefresh()
+                    },
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                ) {
+                    if (state.isRefreshing) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            strokeWidth = 2.dp,
+                        )
+                    } else {
+                        Icon(
+                            Icons.Outlined.Refresh,
+                            contentDescription = L.str(context, "Refresh"),
+                        )
+                    }
+                }
+            }
+        },
     ) { padding ->
         val headerLabel = when (mode) {
             TopicListMode.HOT -> L.str(context, hotRangeLabel(hotRange))
@@ -422,6 +449,12 @@ fun TopicListScreen(
                 showInitialLoading = false,
                 emptyPlaceholder = L.str(context, "No Results"),
                 header = header,
+                contentPadding = PaddingValues(
+                    start = 16.dp,
+                    top = 8.dp,
+                    end = 16.dp,
+                    bottom = if (showRefreshButton) 72.dp else 8.dp,
+                ),
                 scrollToTopSignal = refreshScrollEpoch,
                 itemContent = { _, topic ->
                     TopicListItem(

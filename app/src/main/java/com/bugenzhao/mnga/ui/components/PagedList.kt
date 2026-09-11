@@ -34,6 +34,7 @@ fun <Item : Any> PagedList(
     showInitialLoading: Boolean = true,
     emptyPlaceholder: String = "No Results",
     header: (@Composable () -> Unit)? = null,
+    contentPadding: PaddingValues = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
     /** True when this list was freshly entered (not a return from a pushed
      * screen). The saveable scroll position is restored from the route
      * registry even after a fresh push, so it is explicitly reset to the top
@@ -96,7 +97,7 @@ fun <Item : Any> PagedList(
             else -> LazyColumn(
                 state = listState,
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                contentPadding = contentPadding,
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 if (header != null) {
