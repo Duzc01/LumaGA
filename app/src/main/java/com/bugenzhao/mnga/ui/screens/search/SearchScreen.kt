@@ -128,8 +128,22 @@ fun SearchScreen(
     // 会重建为空；与列表页的跨路由状态保留是同一机制）。
     var savedTopicsB64 by rememberSaveable { mutableStateOf<List<String>>(emptyList()) }
     var savedTopicsLoadedPage by rememberSaveable { mutableIntStateOf(0) }
+    var savedTopicsRequestKey by rememberSaveable { mutableStateOf<String?>(null) }
     var savedForumsB64 by rememberSaveable { mutableStateOf<List<String>>(emptyList()) }
     var savedForumsLoadedPage by rememberSaveable { mutableIntStateOf(0) }
+    var savedForumsRequestKey by rememberSaveable { mutableStateOf<String?>(null) }
+
+    // A snapshot is only valid for the exact request that produced it. Without
+    // this key, committing B after A creates a new data source but restores A's
+    // saved items into it, which also prevents B's initial request from running.
+    val topicRequestKey = committedText?.let { query ->
+        listOf(
+            query,
+            forumId?.idDescription.takeIf { currentForumOnly }.orEmpty(),
+            searchContent.toString(),
+        ).joinToString("\u0000")
+    }
+    val forumRequestKey = committedText
 
     val pagerState = rememberPagerState(pageCount = { SearchTab.entries.size })
 
@@ -163,7 +177,7 @@ fun SearchScreen(
     // 恢复快照或首载：dataSource 随 committedText 重建，恢复时列表回到顶部。
     LaunchedEffect(topicDataSource) {
         val ds = topicDataSource ?: return@LaunchedEffect
-        if (savedTopicsB64.isNotEmpty()) {
+        if (savedTopicsRequestKey == topicRequestKey && savedTopicsB64.isNotEmpty()) {
             ds.restoreItems(
                 items = savedTopicsB64.map {
                     Topic.parseFrom(android.util.Base64.decode(it, android.util.Base64.NO_WRAP))
@@ -178,7 +192,7 @@ fun SearchScreen(
     }
     LaunchedEffect(forumDataSource) {
         val ds = forumDataSource ?: return@LaunchedEffect
-        if (savedForumsB64.isNotEmpty()) {
+        if (savedForumsRequestKey == forumRequestKey && savedForumsB64.isNotEmpty()) {
             ds.restoreItems(
                 items = savedForumsB64.map {
                     Forum.parseFrom(android.util.Base64.decode(it, android.util.Base64.NO_WRAP))
@@ -202,6 +216,11 @@ fun SearchScreen(
                     android.util.Base64.encodeToString(it.toByteArray(), android.util.Base64.NO_WRAP)
                 }
                 savedTopicsLoadedPage = ds.loadedPage
+                savedTopicsRequestKey = topicRequestKey
+            } else {
+                savedTopicsB64 = emptyList()
+                savedTopicsLoadedPage = 0
+                savedTopicsRequestKey = topicRequestKey
             }
         }
         forumDataSource?.let { ds ->
@@ -210,6 +229,11 @@ fun SearchScreen(
                     android.util.Base64.encodeToString(it.toByteArray(), android.util.Base64.NO_WRAP)
                 }
                 savedForumsLoadedPage = ds.loadedPage
+                savedForumsRequestKey = forumRequestKey
+            } else {
+                savedForumsB64 = emptyList()
+                savedForumsLoadedPage = 0
+                savedForumsRequestKey = forumRequestKey
             }
         }
     }
