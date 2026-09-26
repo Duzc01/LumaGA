@@ -163,6 +163,28 @@ fun UserMenuSheet(
                                 navigator.push(Route.History)
                             }
                         }
+                        MenuRow(
+                            icon = Icons.Outlined.Shield,
+                            title = L.str(context, "Block Management"),
+                            trailing = if (blockedUserCount > 0) {
+                                {
+                                    Surface(
+                                        shape = RoundedCornerShape(10.dp),
+                                        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                                    ) {
+                                        Text(
+                                            blockedUserCount.toString(),
+                                            Modifier.padding(horizontal = 7.dp, vertical = 2.dp),
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
+                                    }
+                                }
+                            } else null,
+                        ) {
+                            onDismiss()
+                            navigator.push(Route.BlockedUsers)
+                        }
                     }
                 }
             }
@@ -233,28 +255,6 @@ fun UserMenuSheet(
             // App settings entry.
             item(key = "section-links") {
                 MenuCard {
-                    MenuRow(
-                        icon = Icons.Outlined.Shield,
-                        title = L.str(context, "Block Management"),
-                        trailing = if (blockedUserCount > 0) {
-                            {
-                                Surface(
-                                    shape = RoundedCornerShape(10.dp),
-                                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                                ) {
-                                    Text(
-                                        blockedUserCount.toString(),
-                                        Modifier.padding(horizontal = 7.dp, vertical = 2.dp),
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
-                                }
-                            }
-                        } else null,
-                    ) {
-                        onDismiss()
-                        navigator.push(Route.BlockedUsers)
-                    }
                     MenuRow(
                         icon = Icons.Filled.Settings,
                         title = L.str(context, "Settings"),
