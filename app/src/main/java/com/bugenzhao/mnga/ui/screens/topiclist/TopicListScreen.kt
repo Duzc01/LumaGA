@@ -76,7 +76,6 @@ import com.bugenzhao.mnga.protos.service.HotTopicListRequest
 import com.bugenzhao.mnga.protos.service.HotTopicListResponse
 import com.bugenzhao.mnga.protos.service.TopicListRequest
 import com.bugenzhao.mnga.protos.service.TopicListResponse
-import com.bugenzhao.mnga.storage.BlockWordsStorage
 import com.bugenzhao.mnga.storage.TopicListOrder
 import com.bugenzhao.mnga.ui.components.PagedList
 import com.bugenzhao.mnga.ui.components.SwipeToFavorBox
@@ -124,18 +123,6 @@ fun TopicListScreen(
         if (latest != order) order = latest
     }
     val orderOrDefault = order ?: TopicListOrder.fromRaw(defaultOrderRaw)
-
-    // -- Block words + forum-shortcut filtering (SS5 maybeFiltered).
-    fun maybeFiltered(topics: List<Topic>): List<Topic> {
-        var result = topics
-        if (App.prefs.topicListHideBlocked.value) {
-            result = result.filter { !App.blockWords.blocked(BlockWordsStorage.content(it)) }
-        }
-        if (!App.prefs.topicListShowForumShortcut.value) {
-            result = result.filter { !it.hasShortcutForum() }
-        }
-        return result
-    }
 
     // -- Data sources: held by the entry-scoped ViewModel so the loaded data
     // survives being covered by a pushed screen (composition is disposed,

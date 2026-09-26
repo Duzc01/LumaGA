@@ -81,7 +81,7 @@ private fun BannerToast(model: ToastModel) {
             is ToastModel.Message.Success ->
                 ToastVisual(
                     L.str(context, "Success"),
-                    msg.message,
+                    L.str(context, msg.message),
                     green,
                     Icons.Filled.CheckCircle,
                 )

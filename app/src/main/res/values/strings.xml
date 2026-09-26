@@ -117,6 +117,7 @@
     <string name="support">Support</string>
     <string name="success">Success</string>
     <string name="draft_saved">Draft Saved</string>
+    <string name="download_location">Download Location</string>
     <string name="s_s_topics">%1$s\'s Topics</string>
     <string name="s_s_posts">%1$s\'s Posts</string>
     <string name="posts">Posts</string>

@@ -158,6 +158,7 @@ class PreferencesStorage(private val prefs: SharedPreferences) {
     val autoOpenInBrowserWhenBanned = boolPref("autoOpenInBrowserWhenBannedNew", false)
     val alwaysShareImageAsFile = boolPref("alwaysShareImageAsFile", false)
     val useClassicIcon = boolPref("useClassicIcon", false)
+    val downloadDirectoryUri = stringPref("downloadDirectoryUri", "")
 
     // 实验室功能：签到
     val clockInEnabled = boolPref("clockInEnabled", false)

@@ -1,5 +1,9 @@
 package com.bugenzhao.mnga.ui.screens.prefs
 
+import android.content.Intent
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -66,6 +70,7 @@ import com.bugenzhao.mnga.ui.nav.Navigator
 import com.bugenzhao.mnga.ui.nav.Route
 import com.bugenzhao.mnga.ui.screens.misc.CheckForUpdatesRow
 import com.bugenzhao.mnga.ui.screens.misc.UpdateFlowDialogs
+import com.bugenzhao.mnga.util.DownloadDestination
 import com.bugenzhao.mnga.util.L
 import kotlinx.coroutines.launch
 
@@ -111,6 +116,7 @@ fun PreferencesSheet(onDismiss: () -> Unit, navigator: Navigator? = null) {
     val useInAppSafari by prefs.useInAppSafari.flow.collectAsState()
     val alwaysShareImageAsFile by prefs.alwaysShareImageAsFile.flow.collectAsState()
     val useClassicIcon by prefs.useClassicIcon.flow.collectAsState()
+    val downloadDirectoryUri by prefs.downloadDirectoryUri.flow.collectAsState()
     val compactTopicList by prefs.topicListRowStyle.flow.collectAsState()
     val clockInEnabled by prefs.clockInEnabled.flow.collectAsState()
     val autoClockInOnLaunch by prefs.autoClockInOnLaunch.flow.collectAsState()
@@ -119,6 +125,7 @@ fun PreferencesSheet(onDismiss: () -> Unit, navigator: Navigator? = null) {
     val hideBlocked by prefs.topicListHideBlocked.flow.collectAsState()
     val showForumShortcut by prefs.topicListShowForumShortcut.flow.collectAsState()
     val subjectMulticolor by prefs.topicListSubjectMulticolor.flow.collectAsState()
+    val showRefreshButton by prefs.topicListShowRefreshButton.flow.collectAsState()
 
     val webApiStrategyRaw by prefs.topicDetailsWebApiStrategyRaw.flow.collectAsState()
     val resumeFromRaw by prefs.resumeTopicFromRaw.flow.collectAsState()
@@ -132,6 +139,37 @@ fun PreferencesSheet(onDismiss: () -> Unit, navigator: Navigator? = null) {
 
     val requestOption by prefs.requestOption.collectAsState()
     val device = requestOption.device
+
+    fun releaseDownloadDirectoryPermission(uriString: String) {
+        if (uriString.isBlank()) return
+        runCatching {
+            context.contentResolver.releasePersistableUriPermission(
+                Uri.parse(uriString),
+                Intent.FLAG_GRANT_READ_URI_PERMISSION or
+                    Intent.FLAG_GRANT_WRITE_URI_PERMISSION,
+            )
+        }
+    }
+
+    val downloadFolderPicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocumentTree(),
+    ) { uri ->
+        if (uri != null) {
+            val permissionPersisted = runCatching {
+                context.contentResolver.takePersistableUriPermission(
+                    uri,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION or
+                        Intent.FLAG_GRANT_WRITE_URI_PERMISSION,
+                )
+            }.isSuccess
+            if (permissionPersisted) {
+                if (downloadDirectoryUri != uri.toString()) {
+                    releaseDownloadDirectoryPermission(downloadDirectoryUri)
+                }
+                prefs.downloadDirectoryUri.value = uri.toString()
+            }
+        }
+    }
 
 
     var picker by remember { mutableStateOf<PickerKind?>(null) }
@@ -259,6 +297,11 @@ fun PreferencesSheet(onDismiss: () -> Unit, navigator: Navigator? = null) {
                         checked = compactTopicList,
                         onChange = { prefs.topicListRowStyle.value = it },
                     )
+                    SwitchRow(
+                        title = L.str(context, "Refresh Button"),
+                        checked = showRefreshButton,
+                        onChange = { prefs.topicListShowRefreshButton.value = it },
+                    )
                 }
             }
             // endregion
@@ -327,6 +370,20 @@ fun PreferencesSheet(onDismiss: () -> Unit, navigator: Navigator? = null) {
                         title = L.str(context, "Always Share Image as File"),
                         checked = alwaysShareImageAsFile,
                         onChange = { prefs.alwaysShareImageAsFile.value = it },
+                    )
+                    DownloadLocationRow(
+                        title = L.str(context, "Download Location"),
+                        valueLabel = DownloadDestination.label(downloadDirectoryUri),
+                        isCustom = downloadDirectoryUri.isNotBlank(),
+                        onChoose = {
+                            downloadFolderPicker.launch(
+                                downloadDirectoryUri.takeIf { it.isNotBlank() }?.let(Uri::parse)
+                            )
+                        },
+                        onUseDefault = {
+                            releaseDownloadDirectoryPermission(downloadDirectoryUri)
+                            prefs.downloadDirectoryUri.value = ""
+                        },
                     )
                 }
             }
@@ -556,6 +613,32 @@ private fun PickerRow(
         title = title,
         subtitle = valueLabel,
         trailing = { RowChevron() },
+    )
+}
+
+@Composable
+private fun DownloadLocationRow(
+    title: String,
+    valueLabel: String,
+    isCustom: Boolean,
+    onChoose: () -> Unit,
+    onUseDefault: () -> Unit,
+) {
+    val context = LocalContext.current
+    GroupedRow(
+        onClick = onChoose,
+        title = title,
+        subtitle = valueLabel,
+        trailing = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (isCustom) {
+                    TextButton(onClick = onUseDefault) {
+                        Text(L.str(context, "Default"))
+                    }
+                }
+                RowChevron()
+            }
+        },
     )
 }
 

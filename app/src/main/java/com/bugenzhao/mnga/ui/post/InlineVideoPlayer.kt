@@ -62,6 +62,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.bugenzhao.mnga.BuildConfig
+import com.bugenzhao.mnga.util.DownloadDestination
 import com.bugenzhao.mnga.util.URLs
 import java.io.File
 import java.net.HttpURLConnection
@@ -432,12 +433,12 @@ private fun hasStoragePermission(context: Context): Boolean =
 private fun toastVideoResult(context: Context, ok: Boolean) {
     android.widget.Toast.makeText(
         context,
-        if (ok) "已保存到 下载/LumaGA/" else "下载失败",
+        if (ok) "已保存到 ${DownloadDestination.currentLabel()}" else "下载失败",
         android.widget.Toast.LENGTH_SHORT,
     ).show()
 }
 
-/** 下载视频到公共「下载/LumaGA」目录（API 29+ 用 MediaStore）。 */
+/** 下载视频到自定义目录，未配置时沿用公共「下载/LumaGA」目录。 */
 private fun saveVideo(
     scope: kotlinx.coroutines.CoroutineScope,
     context: Context,
@@ -457,10 +458,20 @@ private fun saveVideo(
                 }
                 try {
                     if (conn.responseCode !in 200..299) return@runCatching false
-                    if (Build.VERSION.SDK_INT >= 29) {
+                    val fileName = "LumaGA-${System.currentTimeMillis()}.mp4"
+                    val customResult = DownloadDestination.writeCustom(
+                        context = context,
+                        fileName = fileName,
+                        mimeType = "video/mp4",
+                    ) { output ->
+                        conn.inputStream.use { input -> input.copyTo(output) }
+                    }
+                    if (customResult != null) {
+                        customResult
+                    } else if (Build.VERSION.SDK_INT >= 29) {
                         val resolver = context.contentResolver
                         val values = ContentValues().apply {
-                            put(MediaStore.MediaColumns.DISPLAY_NAME, "LumaGA-${System.currentTimeMillis()}.mp4")
+                            put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
                             put(MediaStore.MediaColumns.MIME_TYPE, "video/mp4")
                             put(
                                 MediaStore.MediaColumns.RELATIVE_PATH,
@@ -483,7 +494,7 @@ private fun saveVideo(
                             Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
                             "LumaGA",
                         ).apply { mkdirs() }
-                        val target = File(dir, "LumaGA-${System.currentTimeMillis()}.mp4")
+                        val target = File(dir, fileName)
                         conn.inputStream.use { input ->
                             target.outputStream().use { output -> input.copyTo(output) }
                         }

@@ -265,6 +265,9 @@ fun TopicRow(
     onClick: (() -> Unit)? = null,
     onLongClick: (() -> Unit)? = null,
 ) {
+    val blockWords by App.blockWords.words.collectAsState()
+    if (blockWords.contains(BlockWordsStorage.fromUser(topicAuthorName(topic)))) return
+
     val blocked = App.blockWords.blocked(BlockWordsStorage.content(topic))
     val favored = isFavored ?: topic.isFavored
     val shouldDim = dimmedSubject && !topic.isMNGAMockID() && topic.hasRepliesNumLastVisit()

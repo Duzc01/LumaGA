@@ -117,6 +117,7 @@
     <string name="support">支持</string>
     <string name="success">完成</string>
     <string name="draft_saved">草稿已保存</string>
+    <string name="download_location">下载位置</string>
     <string name="s_s_topics">%1$s 的话题</string>
     <string name="s_s_posts">%1$s 的回复</string>
     <string name="posts">回复</string>

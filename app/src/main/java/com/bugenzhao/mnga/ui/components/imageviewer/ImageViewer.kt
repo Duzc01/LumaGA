@@ -70,6 +70,7 @@ import coil.request.ImageRequest
 import com.bugenzhao.mnga.App
 import com.bugenzhao.mnga.BuildConfig
 import com.bugenzhao.mnga.model.ViewingImageModel
+import com.bugenzhao.mnga.util.DownloadDestination
 import com.bugenzhao.mnga.util.URLs
 import java.io.File
 import java.net.HttpURLConnection
@@ -211,7 +212,7 @@ fun ImageViewerDialog(model: ViewingImageModel) {
                 }
             }
 
-            // Bottom-right download button (saved to 下载/LumaGA, same as videos).
+            // Bottom-right download button (uses the shared image/video destination).
             val scope = rememberCoroutineScope()
             val permissionLauncher = rememberLauncherForActivityResult(
                 ActivityResultContracts.RequestPermission(),
@@ -512,12 +513,12 @@ private fun hasStoragePermission(context: Context): Boolean =
 private fun toastImageResult(context: Context, ok: Boolean) {
     android.widget.Toast.makeText(
         context,
-        if (ok) "已保存到 下载/LumaGA/" else "下载失败",
+        if (ok) "已保存到 ${DownloadDestination.currentLabel()}" else "下载失败",
         android.widget.Toast.LENGTH_SHORT,
     ).show()
 }
 
-/** 下载图片到公共「下载/LumaGA」目录（API 29+ 用 MediaStore），与视频一致。 */
+/** 下载图片到自定义目录，未配置时沿用公共「下载/LumaGA」目录。 */
 private fun saveImage(
     scope: kotlinx.coroutines.CoroutineScope,
     context: Context,
@@ -539,13 +540,20 @@ private fun saveImage(
                     if (conn.responseCode !in 200..299) return@runCatching false
                     val ext = imageExtFor(url)
                     val mime = mimeFor(ext)
-                    if (Build.VERSION.SDK_INT >= 29) {
+                    val fileName = "LumaGA-${System.currentTimeMillis()}.$ext"
+                    val customResult = DownloadDestination.writeCustom(
+                        context = context,
+                        fileName = fileName,
+                        mimeType = mime,
+                    ) { output ->
+                        conn.inputStream.use { input -> input.copyTo(output) }
+                    }
+                    if (customResult != null) {
+                        customResult
+                    } else if (Build.VERSION.SDK_INT >= 29) {
                         val resolver = context.contentResolver
                         val values = ContentValues().apply {
-                            put(
-                                MediaStore.MediaColumns.DISPLAY_NAME,
-                                "LumaGA-${System.currentTimeMillis()}.$ext",
-                            )
+                            put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
                             put(MediaStore.MediaColumns.MIME_TYPE, mime)
                             put(
                                 MediaStore.MediaColumns.RELATIVE_PATH,
@@ -570,7 +578,7 @@ private fun saveImage(
                             Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
                             "LumaGA",
                         ).apply { mkdirs() }
-                        val target = File(dir, "LumaGA-${System.currentTimeMillis()}.$ext")
+                        val target = File(dir, fileName)
                         conn.inputStream.use { input ->
                             target.outputStream().use { output -> input.copyTo(output) }
                         }

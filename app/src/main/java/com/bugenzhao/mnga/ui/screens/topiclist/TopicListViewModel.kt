@@ -32,7 +32,7 @@ class TopicListViewModel(
 
     /** Block words + forum-shortcut filtering (SS5 maybeFiltered). */
     private fun maybeFiltered(topics: List<Topic>): List<Topic> {
-        var result = topics
+        var result = topics.filterNot { App.blockWords.blocked(topicAuthorName(it)) }
         if (App.prefs.topicListHideBlocked.value) {
             result = result.filter { !App.blockWords.blocked(BlockWordsStorage.content(it)) }
         }
@@ -123,7 +123,7 @@ class TopicListViewModel(
                         )
                         .build()
                 },
-                onResponse = { response -> Pair(response.topicsList, 1) },
+                onResponse = { response -> Pair(maybeFiltered(response.topicsList), 1) },
                 id = { it.id },
             )
         }

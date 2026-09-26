@@ -266,6 +266,22 @@ fun TopicDetailsScreen(
     val first = remember(items) {
         items.minByOrNull { it.floor }?.takeIf { it.id.pid == "0" }
     }
+    val blockWords by App.blockWords.words.collectAsState()
+    fun isBlockedUserPost(post: Post): Boolean =
+        App.users.cachedUser(post.authorId)?.let { user ->
+            blockWords.contains(com.bugenzhao.mnga.storage.BlockWordsStorage.fromUser(user.name))
+        } == true
+    val visibleItems = remember(items, blockWords) {
+        items.filterNot(::isBlockedUserPost)
+    }
+    val visibleFirst = remember(first, blockWords) {
+        first?.takeUnless(::isBlockedUserPost)?.let { mainPost ->
+            mainPost.toBuilder()
+                .clearHotReplies()
+                .addAllHotReplies(mainPost.hotRepliesList.filterNot(::isBlockedUserPost))
+                .build()
+        }
+    }
     val atForum = remember(response, items) {
         val name = response?.forumName?.takeIf { it.isNotEmpty() } ?: return@remember null
         val fid = items.firstOrNull()?.fid?.takeIf { it.isNotEmpty() } ?: return@remember null
@@ -314,10 +330,10 @@ fun TopicDetailsScreen(
     }
 
     // Scroll targets from the action model.
-    val rows = remember(items, first, response, atForum, onlyPostId) {
+    val rows = remember(visibleItems, visibleFirst, response, atForum, onlyPostId) {
         buildRows(
-            items = items,
-            first = first,
+            items = visibleItems,
+            first = visibleFirst,
             showTail = shouldShowTailSection(dataSource, state, response, onlyPostId != null),
         )
     }
@@ -905,6 +921,7 @@ fun TopicDetailsScreen(
                                 row = row,
                                 index = index,
                                 isLoading = state.isLoading,
+                                first = visibleFirst,
                                 topic = topic,
                                 action = action,
                                 votes = votes,
@@ -1200,6 +1217,7 @@ private fun TopicDetailsRow(
     row: RowSpec,
     index: Int,
     isLoading: Boolean,
+    first: Post?,
     topic: Topic,
     action: TopicDetailsActionModel,
     votes: VotesModel,
@@ -1223,10 +1241,6 @@ private fun TopicDetailsRow(
                 HorizontalDivider(
                     color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
                 )
-                val items = dataSource.items
-                val first = remember(items) {
-                    items.minByOrNull { it.floor }?.takeIf { it.id.pid == "0" }
-                }
                 if (first != null) {
                     PostRow(
                         post = first,

@@ -55,6 +55,7 @@ abstract class GenericPostModel(private val scope: CoroutineScope) {
     val sent: StateFlow<Context?> = _sent
 
     private val contexts = HashMap<String, Context>()
+    private val initialContexts = HashMap<UUID, Context>()
 
     /** Present the editor after a short delay (let the trigger menu dismiss). */
     fun showAfter(action: Task) {
@@ -67,6 +68,7 @@ abstract class GenericPostModel(private val scope: CoroutineScope) {
     fun show(action: Task) {
         val key = action.hashKey
         if (_showEditor.value) return
+        _sent.value = null
         _context.value = null
         _showEditor.value = true
         val draft = contexts[key]
@@ -90,7 +92,10 @@ abstract class GenericPostModel(private val scope: CoroutineScope) {
     }
 
     private fun reset() {
-        _context.value?.let { contexts.remove(it.task.hashKey) }
+        _context.value?.let {
+            contexts.remove(it.task.hashKey)
+            initialContexts.remove(it.seed)
+        }
         _context.value = null
         _isSending.value = false
     }
@@ -110,14 +115,29 @@ abstract class GenericPostModel(private val scope: CoroutineScope) {
 
     /** Called when the editor is dismissed without sending. */
     fun editorDismissed() {
-        if (_context.value != null && _sent.value == null) {
-            // Keep the draft for the task, toast like iOS.
-            ToastModel.showAuto(ToastModel.Message.Success("Draft Saved"))
+        val current = _context.value
+        if (current != null && _sent.value == null) {
+            val hasDraftContent = initialContexts[current.seed]?.let { initial ->
+                (current.content != initial.content && !current.content.isNullOrBlank()) ||
+                    (current.subject != initial.subject && !current.subject.isNullOrBlank()) ||
+                    (current.to != initial.to && !current.to.isNullOrBlank()) ||
+                    (current.attachments != initial.attachments && current.attachments.isNotEmpty())
+            } ?: false
+            if (hasDraftContent) {
+                ToastModel.showAuto(ToastModel.Message.Success("Draft Saved"))
+            } else {
+                // An untouched editor is not a draft. Drop the fetched empty
+                // context so opening the editor again starts a fresh session.
+                contexts.remove(current.task.hashKey)
+                initialContexts.remove(current.seed)
+            }
+            _context.value = null
         }
         _showEditor.value = false
     }
 
     protected fun onBuildContextSuccess(task: Task, context: Context) {
+        initialContexts.putIfAbsent(context.seed, context)
         contexts[task.hashKey] = context
         _context.value = context
     }

@@ -120,6 +120,7 @@ object StringsMap {
         "Support" to "support",
         "Success" to "success",
         "Draft Saved" to "draft_saved",
+        "Download Location" to "download_location",
         "%@'s Topics" to "s_s_topics",
         "%@'s Posts" to "s_s_posts",
         "Posts" to "posts",

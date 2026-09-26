@@ -52,6 +52,9 @@ class UsersModel {
         users[user.id] = user
     }
 
+    /** Returns only the in-memory value and never performs a bridge call. */
+    fun cachedUser(id: String): User? = users[id]
+
     fun localUser(id: String): User? {
         users[id]?.let { return it }
         return try {
