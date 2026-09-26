@@ -23,6 +23,7 @@ import androidx.compose.material.icons.filled.PersonAddAlt1
 import androidx.compose.material.icons.filled.PersonRemoveAlt1
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.outlined.Badge
+import androidx.compose.material.icons.outlined.Shield
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -45,6 +46,7 @@ import com.bugenzhao.mnga.App
 import com.bugenzhao.mnga.model.PlusFeature
 import com.bugenzhao.mnga.protos.datamodel.AuthInfo
 import com.bugenzhao.mnga.protos.datamodel.User
+import com.bugenzhao.mnga.storage.BlockWordsStorage
 import com.bugenzhao.mnga.ui.nav.Navigator
 import com.bugenzhao.mnga.ui.nav.Route
 import com.bugenzhao.mnga.util.L
@@ -65,6 +67,8 @@ fun UserMenuSheet(
     val allAuthInfos by App.authStorage.allAuthInfos.collectAsState()
     val currentUser by App.currentUser.user.collectAsState()
     val unreadCount by App.notis.unreadCountAnimated.collectAsState()
+    val blockWords by App.blockWords.words.collectAsState()
+    val blockedUserCount = blockWords.count { it.word.startsWith(BlockWordsStorage.userPrefix) }
 
     val signedIn = authInfo.token.isNotEmpty()
 
@@ -229,6 +233,28 @@ fun UserMenuSheet(
             // App settings entry.
             item(key = "section-links") {
                 MenuCard {
+                    MenuRow(
+                        icon = Icons.Outlined.Shield,
+                        title = L.str(context, "Block Management"),
+                        trailing = if (blockedUserCount > 0) {
+                            {
+                                Surface(
+                                    shape = RoundedCornerShape(10.dp),
+                                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                                ) {
+                                    Text(
+                                        blockedUserCount.toString(),
+                                        Modifier.padding(horizontal = 7.dp, vertical = 2.dp),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                            }
+                        } else null,
+                    ) {
+                        onDismiss()
+                        navigator.push(Route.BlockedUsers)
+                    }
                     MenuRow(
                         icon = Icons.Filled.Settings,
                         title = L.str(context, "Settings"),

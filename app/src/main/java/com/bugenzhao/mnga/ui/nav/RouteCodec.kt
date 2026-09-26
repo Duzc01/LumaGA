@@ -36,6 +36,7 @@ object RouteCodec {
     const val ROUTE_UNKNOWN_FORUM = "unknown-forum/{payload}"
     const val ROUTE_CACHE_SETTINGS = "cache-settings"
     const val ROUTE_BLOCK_WORDS = "block-words"
+    const val ROUTE_BLOCKED_USERS = "blocked-users"
     const val ROUTE_ABOUT = "about"
     const val ROUTE_SETTINGS = "settings"
     const val ROUTE_NOTIFICATIONS = "notifications"
@@ -86,6 +87,7 @@ object RouteCodec {
         }
         Route.CacheSettings -> ROUTE_CACHE_SETTINGS
         Route.BlockWords -> ROUTE_BLOCK_WORDS
+        Route.BlockedUsers -> ROUTE_BLOCKED_USERS
         Route.About -> ROUTE_ABOUT
         Route.Settings -> ROUTE_SETTINGS
         Route.Notifications -> ROUTE_NOTIFICATIONS
@@ -112,6 +114,7 @@ object RouteCodec {
             ROUTE_UNKNOWN_FORUM -> decodePayload(args) { decodeUnknownForum(it) }
             ROUTE_CACHE_SETTINGS -> Route.CacheSettings
             ROUTE_BLOCK_WORDS -> Route.BlockWords
+            ROUTE_BLOCKED_USERS -> Route.BlockedUsers
             ROUTE_ABOUT -> Route.About
             ROUTE_SETTINGS -> Route.Settings
             ROUTE_NOTIFICATIONS -> Route.Notifications

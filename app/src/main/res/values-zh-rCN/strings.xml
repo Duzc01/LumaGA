@@ -75,6 +75,17 @@
     <string name="comment">贴条</string>
     <string name="block_contents">屏蔽内容</string>
     <string name="blocked">已屏蔽</string>
+    <string name="block_management">屏蔽管理</string>
+    <string name="blocked_users">已屏蔽用户</string>
+    <string name="d_blocked_users">已屏蔽 %1$d 位用户</string>
+    <string name="topics_and_replies_from_these_users_are_hidden">这些用户的主题和回复不会显示。</string>
+    <string name="topics_and_replies_hidden">已隐藏主题和回复</string>
+    <string name="no_blocked_users">暂无已屏蔽用户</string>
+    <string name="people_you_block_will_appear_here">屏蔽用户后，他们会出现在这里。</string>
+    <string name="unblock">解除屏蔽</string>
+    <string name="unblock_all">全部解除</string>
+    <string name="unblock_all_users">解除全部用户的屏蔽？</string>
+    <string name="their_topics_and_replies_will_be_visible_again">解除后，这些用户的主题和回复会重新显示。</string>
     <string name="no_block_words">没有屏蔽词</string>
     <string name="new_word">新关键词</string>
     <string name="settings">设置</string>

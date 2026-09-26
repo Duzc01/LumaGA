@@ -49,6 +49,7 @@ import com.bugenzhao.mnga.ui.screens.subforums.SubforumListScreen
 import com.bugenzhao.mnga.ui.screens.topicdetails.TopicDetailsScreen
 import com.bugenzhao.mnga.ui.screens.topiclist.TopicListScreen
 import com.bugenzhao.mnga.ui.screens.user.UserProfileScreen
+import com.bugenzhao.mnga.ui.screens.user.BlockedUsersScreen
 import com.bugenzhao.mnga.ui.theme.LumaGATheme
 import com.bugenzhao.mnga.model.appScope
 import kotlinx.coroutines.flow.filter
@@ -216,6 +217,9 @@ private fun NavigationHost(
         composable(RouteCodec.ROUTE_BLOCK_WORDS) {
             RouteDispatcher(navigator, Route.BlockWords, editor)
         }
+        composable(RouteCodec.ROUTE_BLOCKED_USERS) {
+            RouteDispatcher(navigator, Route.BlockedUsers, editor)
+        }
         composable(RouteCodec.ROUTE_ABOUT) {
             RouteDispatcher(navigator, Route.About, editor)
         }
@@ -272,6 +276,7 @@ fun RouteDispatcher(
         is Route.SubforumList -> SubforumListScreen(navigator, route.forumId)
         is Route.CacheSettings -> CacheScreen(navigator)
         is Route.BlockWords -> BlockWordsScreen(navigator)
+        is Route.BlockedUsers -> BlockedUsersScreen(navigator)
         is Route.About -> AboutScreen(navigator)
         is Route.ClockIn -> com.bugenzhao.mnga.ui.screens.user.ClockInScreen(navigator)
         is Route.Settings ->

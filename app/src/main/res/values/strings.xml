@@ -75,6 +75,17 @@
     <string name="comment">Comment</string>
     <string name="block_contents">Block Contents</string>
     <string name="blocked">Blocked</string>
+    <string name="block_management">Block Management</string>
+    <string name="blocked_users">Blocked Users</string>
+    <string name="d_blocked_users">%1$d blocked users</string>
+    <string name="topics_and_replies_from_these_users_are_hidden">Topics and replies from these users are hidden.</string>
+    <string name="topics_and_replies_hidden">Topics and replies hidden</string>
+    <string name="no_blocked_users">No Blocked Users</string>
+    <string name="people_you_block_will_appear_here">People you block will appear here.</string>
+    <string name="unblock">Unblock</string>
+    <string name="unblock_all">Unblock All</string>
+    <string name="unblock_all_users">Unblock All Users?</string>
+    <string name="their_topics_and_replies_will_be_visible_again">Their topics and replies will be visible again.</string>
     <string name="no_block_words">No Block Words</string>
     <string name="new_word">New word</string>
     <string name="settings">Settings</string>
