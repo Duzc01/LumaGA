@@ -28,6 +28,8 @@ android {
         versionCode = 10116
         versionName = "1.1.16"
 
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
         // 腾讯 Bugly 崩溃监控。AppID 通过 gradle 属性注入（本地
         // gradle.properties 或 CI secrets），未配置时监控不启用。
         val buglyAppId = (project.findProperty("buglyAppId") as? String).orEmpty()
@@ -108,4 +110,11 @@ dependencies {
     implementation(libs.bugly.nativecrashreport)
     implementation(libs.kotlinx.coroutines.android)
     debugImplementation(libs.androidx.compose.ui.tooling)
+
+    // Instrumented tests (run on an emulator in CI, see
+    // .github/workflows/emulator-test.yml).
+    androidTestImplementation("androidx.test.ext:junit:1.2.1")
+    androidTestImplementation("androidx.test:core:1.6.1")
+    androidTestImplementation("androidx.test:runner:1.6.1")
+    androidTestImplementation("androidx.test.uiautomator:uiautomator:2.3.0")
 }
