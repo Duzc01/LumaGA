@@ -23,6 +23,7 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.HistoryEdu
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.CloudDone
@@ -75,6 +76,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.bugenzhao.mnga.App
 import com.bugenzhao.mnga.model.NavigationIdentifier
+import com.bugenzhao.mnga.model.PlusFeature
+import com.bugenzhao.mnga.model.PlusModel
 import com.bugenzhao.mnga.protos.datamodel.Forum
 import com.bugenzhao.mnga.protos.service.AsyncRequest
 import com.bugenzhao.mnga.ui.components.Avatar
@@ -275,6 +278,7 @@ fun ForumListScreen(
                                 App.favoriteForums.showAll.value = mode.raw
                             },
                             onEditFavorites = { editMode = true },
+                            onHistory = { navigator.push(Route.History) },
                             anyCollapsed = collapsedCategories.isNotEmpty(),
                             onCollapseAll = {
                                 collapsedCategories = categories.map { it.id }.toSet()
@@ -675,6 +679,7 @@ private fun MoreMenu(
     filterMode: FilterMode,
     onFilterModeChange: (FilterMode) -> Unit,
     onEditFavorites: () -> Unit,
+    onHistory: () -> Unit,
     anyCollapsed: Boolean,
     onCollapseAll: () -> Unit,
     onExpandAll: () -> Unit,
@@ -688,6 +693,16 @@ private fun MoreMenu(
             },
             onClick = {
                 onEditFavorites()
+                onDismiss()
+            },
+        )
+        DropdownMenuItem(
+            text = { Text(L.str(context, "History")) },
+            leadingIcon = {
+                Icon(Icons.Filled.HistoryEdu, contentDescription = null)
+            },
+            onClick = {
+                if (PlusModel.checkPlus(PlusFeature.TOPIC_HISTORY)) onHistory()
                 onDismiss()
             },
         )

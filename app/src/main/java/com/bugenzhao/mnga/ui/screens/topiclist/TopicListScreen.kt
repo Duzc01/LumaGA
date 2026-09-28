@@ -12,9 +12,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.HistoryEdu
 import androidx.compose.material.icons.outlined.ArrowForward
 import androidx.compose.material.icons.outlined.Category
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.DateRange
@@ -367,6 +368,7 @@ fun TopicListScreen(
                                 onTopicSearch = {
                                     navigator.push(Route.TopicSearch(forumId = forumId))
                                 },
+                                onHistory = { navigator.push(Route.History) },
                                 onRefresh = { triggerRefresh() },
                                 signedIn = signedIn,
                                 isFavorite = isForumFavorite,
@@ -660,6 +662,7 @@ private fun TopicListMoreMenu(
     hasSubforums: Boolean,
     onSubforums: () -> Unit,
     onTopicSearch: () -> Unit,
+    onHistory: () -> Unit,
     onRefresh: () -> Unit,
     signedIn: Boolean,
     isFavorite: Boolean,
@@ -793,6 +796,14 @@ private fun TopicListMoreMenu(
                 },
             )
         }
+        DropdownMenuItem(
+            text = { Text(L.str(context, "History")) },
+            leadingIcon = { Icon(Icons.Filled.HistoryEdu, contentDescription = null) },
+            onClick = {
+                if (PlusModel.checkPlus(PlusFeature.TOPIC_HISTORY)) onHistory()
+                onDismiss()
+            },
+        )
         DropdownMenuItem(
             text = { Text(L.str(context, "Refresh")) },
             leadingIcon = { Icon(Icons.Outlined.Refresh, contentDescription = null) },

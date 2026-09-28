@@ -2,6 +2,7 @@ package com.bugenzhao.mnga.ui.screens.history
 
 import androidx.activity.compose.BackHandler
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -26,10 +27,13 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -82,6 +86,7 @@ fun HistoryScreen(navigator: Navigator) {
     val historyVM: HistoryViewModel = viewModel()
     val dataSource = historyVM.dataSource
     val state by dataSource.state.collectAsState()
+    val tombstones by historyVM.deletedAt.collectAsState()
     LaunchedEffect(dataSource) {
         if (dataSource.notLoaded) dataSource.initialLoad()
     }
@@ -105,12 +110,19 @@ fun HistoryScreen(navigator: Navigator) {
                     .build(),
                 CacheResponse.parser(),
             )
-            result.onSuccess { dataSource.refresh() }
+            result.onSuccess {
+                historyVM.clearDeleted()
+                dataSource.refresh()
+            }
         }
     }
 
+    // Tombstoned entries are hidden client-side; a topic viewed again carries
+    // a newer snapshot timestamp than its tombstone and reappears.
+    val visibleItems = state.items.filter { !isTombstoned(it, tombstones) }
+
     // Snapshot display topic: dates replaced by the visit timestamp (ms -> s).
-    val displayTopics = state.items.mapNotNull { snapshot ->
+    val displayTopics = visibleItems.mapNotNull { snapshot ->
         val topic = snapshot.topicSnapshot
         if (topic.id.isEmpty()) return@mapNotNull null
         val visitDate = snapshot.timestamp / 1000
@@ -227,18 +239,53 @@ fun HistoryScreen(navigator: Navigator) {
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         itemsIndexed(filteredTopics, key = { _, topic -> topic.id }) { _, topic ->
-                            TopicRow(
-                                topic = topic,
-                                dimmedSubject = false,
-                                onClick = {
-                                    navigator.push(
-                                        Route.TopicDetails(
-                                            topicId = topic.id,
-                                            fav = topic.fav.takeIf { it.isNotEmpty() },
-                                        )
-                                    )
+                            val dismissState = rememberSwipeToDismissBoxState(
+                                confirmValueChange = { value ->
+                                    if (value == SwipeToDismissBoxValue.StartToEnd ||
+                                        value == SwipeToDismissBoxValue.EndToStart
+                                    ) {
+                                        historyVM.deleteTopic(topic.id)
+                                        true
+                                    } else {
+                                        false
+                                    }
                                 },
                             )
+                            SwipeToDismissBox(
+                                state = dismissState,
+                                backgroundContent = {
+                                    val alignment = when (dismissState.dismissDirection) {
+                                        SwipeToDismissBoxValue.StartToEnd -> Alignment.CenterStart
+                                        else -> Alignment.CenterEnd
+                                    }
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .background(MaterialTheme.colorScheme.errorContainer)
+                                            .padding(horizontal = 20.dp),
+                                        contentAlignment = alignment,
+                                    ) {
+                                        Icon(
+                                            Icons.Outlined.Delete,
+                                            contentDescription = L.str(context, "Delete"),
+                                            tint = MaterialTheme.colorScheme.onErrorContainer,
+                                        )
+                                    }
+                                },
+                            ) {
+                                TopicRow(
+                                    topic = topic,
+                                    dimmedSubject = false,
+                                    onClick = {
+                                        navigator.push(
+                                            Route.TopicDetails(
+                                                topicId = topic.id,
+                                                fav = topic.fav.takeIf { it.isNotEmpty() },
+                                            )
+                                        )
+                                    },
+                                )
+                            }
                         }
                         item(key = "footer") {
                             AdaptiveFooter(loading = state.isLoading, noMore = !dataSource.hasMore)
