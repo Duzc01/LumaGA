@@ -15,12 +15,12 @@ concurrency:
 jobs:
   instrumented-test:
     name: Instrumented tests on emulator
-    # macOS runners provide hardware acceleration (Hypervisor.framework);
-    # the ubuntu runners available here have no KVM, so the emulator falls
-    # back to `-accel off` software rendering and becomes flaky.
-    # macos-latest is Apple Silicon -> use the arm64 system image.
-    runs-on: macos-latest
-    timeout-minutes: 45
+    # NOTE: the ubuntu runners here have no KVM and the macOS runners have no
+    # nested virtualization (HVF error), so the emulator always runs with
+    # software rendering. .github/scripts/run-emulator-tests.sh manages the
+    # emulator lifecycle itself and retries the test run on infra flakes.
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
 
@@ -40,18 +40,13 @@ jobs:
           mkdir -p "$ANDROID_HOME/licenses"
           printf "\n24333f8a63b6825ea9c5514f83c2829b004d1fee" > "$ANDROID_HOME/licenses/android-sdk-license"
 
-      - name: Run instrumented tests
-        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
-        with:
-          api-level: 30
-          target: google_apis
-          arch: arm64-v8a
-          ram-size: 2048M
-          heap-size: 512M
-          # NOTE: keep this a single line — the action feeds `script` to
-          # `sh -c`, so YAML backslash continuations arrive literally and
-          # break Gradle task selection.
-          script: ./gradlew connectedDebugAndroidTest -Dorg.gradle.jvmargs="-Xmx2g -Dfile.encoding=UTF-8" --stacktrace
+      # Build everything BEFORE the emulator starts so the heavy Kotlin/dex
+      # work doesn't compete with the software-rendered emulator for CPU.
+      - name: Pre-build APKs
+        run: ./gradlew assembleDebug assembleDebugAndroidTest -Dorg.gradle.jvmargs="-Xmx2g -Dfile.encoding=UTF-8" --stacktrace
+
+      - name: Run instrumented tests on emulator
+        run: bash .github/scripts/run-emulator-tests.sh
 
       - name: Upload test reports
         if: failure()
