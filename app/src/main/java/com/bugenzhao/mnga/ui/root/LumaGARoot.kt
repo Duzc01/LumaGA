@@ -88,7 +88,7 @@ fun LumaGARoot(onNewIntent: (android.content.Intent) -> Unit) {
         val view = androidx.compose.ui.platform.LocalView.current
         DisposableEffect(view) {
             val listener = android.view.ViewTreeObserver.OnWindowFocusChangeListener { hasFocus ->
-                if (hasFocus) view.post { maybeNavigateToPasteboardLink() }
+                if (hasFocus) view.post { maybeNavigateToPasteboardLink(navigator) }
             }
             view.viewTreeObserver.addOnWindowFocusChangeListener(listener)
             onDispose {
@@ -105,7 +105,7 @@ fun LumaGARoot(onNewIntent: (android.content.Intent) -> Unit) {
                     // before touching the clipboard, otherwise the read is
                     // denied on Android 12+.
                     kotlinx.coroutines.delay(350)
-                    maybeNavigateToPasteboardLink()
+                    maybeNavigateToPasteboardLink(navigator)
                 }
         }
     }
@@ -408,9 +408,31 @@ private fun recordJumpedPasteboardLink(link: String) {
     App.sharedPreferences.edit().putStringSet(JumpedPasteboardLinksKey, set).apply()
 }
 
-private fun maybeNavigateToPasteboardLink() {
+/**
+ * Whether this deep-link destination is already displayed as [route].
+ * Used to skip the pasteboard auto-jump when the clipboard link points at
+ * the page the user is already viewing (e.g. the "LumaGA Link" just copied
+ * from the current topic's menu) instead of pointlessly reopening it.
+ */
+private fun NavigationIdentifier.matchesRoute(route: Route): Boolean = when (this) {
+    is NavigationIdentifier.TopicID -> route is Route.TopicDetails && route.topicId == tid
+    is NavigationIdentifier.PostID -> route is Route.TopicDetails && route.postId == pid
+    is NavigationIdentifier.ForumID -> route is Route.TopicList && route.forumId == id
+    is NavigationIdentifier.UserID -> route is Route.UserProfile && route.userId == uid
+    is NavigationIdentifier.UserNameID -> route is Route.UserProfile && route.userName == name
+}
+
+private fun maybeNavigateToPasteboardLink(navigator: Navigator) {
     val link = App.schemes.pasteboardLink() ?: return
     if (link in jumpedPasteboardLinks()) return
+    // Skip the auto-jump when the clipboard link resolves to the destination
+    // already on screen. This happens right after copying the current page's
+    // own "LumaGA Link": without the check the app would dismiss and
+    // re-present the very topic the user is reading.
+    val id = runCatching { android.net.Uri.parse(link) }.getOrNull()
+        ?.let { NavigationIdentifier.parse(it) }
+    val current = navigator.current
+    if (id != null && current != null && id.matchesRoute(current)) return
     // Only record the link once a jump actually happened (an invalid
     // clipboard entry is reported by navigateToPasteboardURL and returns
     // false, leaving the link eligible for the next resume).
