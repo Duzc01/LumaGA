@@ -28,6 +28,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.bugenzhao.mnga.App
+import com.bugenzhao.mnga.model.anonymousDisplayName
 import com.bugenzhao.mnga.model.display
 import com.bugenzhao.mnga.ui.components.AvatarImage
 import kotlinx.coroutines.Dispatchers
@@ -75,7 +76,10 @@ fun QuoteUserView(
     onNavigateToUser: (String) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
-    var name by remember(uid) { mutableStateOf(nameHint) }
+    // The name hint comes from the raw quote header text, which for anonymous
+    // users is the `#anony_<hex>` id rather than a display name. Convert it
+    // the same way `UserName.display()` does; fall back to the raw hint.
+    var name by remember(uid) { mutableStateOf(nameHint?.let { anonymousDisplayName(it) ?: it }) }
     var avatarURL by remember(uid) { mutableStateOf<String?>(null) }
 
     LaunchedEffect(uid) {

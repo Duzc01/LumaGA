@@ -45,6 +45,9 @@ jobs:
       - name: Pre-build APKs
         run: ./gradlew assembleDebug assembleDebugAndroidTest -Dorg.gradle.jvmargs="-Xmx2g -Dfile.encoding=UTF-8" --stacktrace
 
+      - name: Run local unit tests
+        run: ./gradlew testDebugUnitTest -Dorg.gradle.jvmargs="-Xmx2g -Dfile.encoding=UTF-8" --stacktrace
+
       - name: Run instrumented tests on emulator
         run: bash .github/scripts/run-emulator-tests.sh
 
@@ -56,3 +59,4 @@ jobs:
           path: |
             app/build/reports/androidTests
             app/build/outputs/androidTest-results
+            app/build/test-results/testDebugUnitTest
