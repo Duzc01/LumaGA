@@ -15,7 +15,11 @@ concurrency:
 jobs:
   instrumented-test:
     name: Instrumented tests on emulator
-    runs-on: ubuntu-latest
+    # macOS runners provide hardware acceleration (Hypervisor.framework);
+    # the ubuntu runners available here have no KVM, so the emulator falls
+    # back to `-accel off` software rendering and becomes flaky.
+    # macos-latest is Apple Silicon -> use the arm64 system image.
+    runs-on: macos-latest
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
@@ -37,11 +41,11 @@ jobs:
           printf "\n24333f8a63b6825ea9c5514f83c2829b004d1fee" > "$ANDROID_HOME/licenses/android-sdk-license"
 
       - name: Run instrumented tests
-        uses: reactivecircus/android-emulator-runner@v2
+        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
         with:
           api-level: 30
           target: google_apis
-          arch: x86_64
+          arch: arm64-v8a
           ram-size: 2048M
           heap-size: 512M
           # NOTE: keep this a single line — the action feeds `script` to
