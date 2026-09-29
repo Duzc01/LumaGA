@@ -999,8 +999,10 @@ fun TopicDetailsScreen(
                     isListScrolling = listState.isScrollInProgress,
                     onJumpToPage = { page ->
                         if (page != indicatorCurrentPage) {
-                            // 复用右上角菜单已有的跳转路径：从目标页重载并滚到顶部。
-                            floorToJump = 0
+                            // 复用右上角菜单已有的跳转路径：目标页首楼层 + 从目标页重载。
+                            // 楼层是唯一真相来源（TopicJumpSelector）：page = (floor + 20) / 20，
+                            // 反推首楼层 floor = (page - 1) * 20。
+                            floorToJump = (page - 1) * Constants.postPerPage
                             dataSource.loadFromPage = page
                         }
                     },

@@ -38,6 +38,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -318,9 +319,14 @@ private fun PageNumberList(
  *
  * 用于自定义长按时长（Compose 默认长按阈值不可配置），以及长按后
  * 无缝衔接滑动：页码列表在展开瞬间才被组合，无法接管进行中的
- * 手势流，故由本手势手动把拖动增量转发给 [listState]
- *（列表自身的触摸滚动已关闭，避免双重处理）。
+ * 手势流，故由本手势手动把拖动增量转发给列表（列表自身的触摸滚动
+ * 已关闭，避免双重处理）。
+ *
+ * 注意：[enabled] 不作为 pointerInput 的 key——展开时若重启手势块，
+ * 进行中的按压会被取消，导致"长按后必须松手才能滑动"。改为常驻手势，
+ * 内部用 [enabled] 的最新值区分"胶囊态按压检测"与"展开态拖动转发"。
  */
+@Composable
 private fun Modifier.capsulePressDrag(
     scope: CoroutineScope,
     timeoutMs: Long,
@@ -328,52 +334,77 @@ private fun Modifier.capsulePressDrag(
     onLongPress: () -> Unit,
     onTap: () -> Unit,
     onDrag: (Float) -> Unit,
-): Modifier = pointerInput(scope, enabled, timeoutMs) {
-    if (!enabled) return@pointerInput
-    awaitEachGesture {
-        val down = awaitFirstDown(requireUnconsumed = false)
-        var longPressed = false
-        val job = scope.launch {
-            delay(timeoutMs)
-            longPressed = true
-            onLongPress()
-        }
-        try {
-            // 阶段一：touch slop，区分点击与拖动。
-            val slopChange = awaitTouchSlopOrCancellation(down.id) { change, _ ->
-                change.consume()
-            }
-            if (slopChange == null) {
-                // 未拖动即松开：纯按压（取消态触发 onTap 也无妨，onTap 目前是预留空实现）。
-                job.cancel()
-                if (!longPressed) onTap()
-                return@awaitEachGesture
-            }
-            if (!longPressed) {
-                // 长按触发前就拖动了：不是长按手势，吃掉剩余事件。
-                job.cancel()
-                var event = awaitPointerEvent()
-                while (event.changes.any { it.pressed }) {
-                    event = awaitPointerEvent()
+): Modifier {
+    val enabledState = rememberUpdatedState(enabled)
+    val onLongPressState = rememberUpdatedState(onLongPress)
+    val onTapState = rememberUpdatedState(onTap)
+    val onDragState = rememberUpdatedState(onDrag)
+    return pointerInput(scope, timeoutMs) {
+        awaitEachGesture {
+            val down = awaitFirstDown(requireUnconsumed = false)
+            if (!enabledState.value) {
+                // 展开态：所有横向拖动都手动转发给页码列表。
+                var lastX = down.position.x
+                while (true) {
+                    val event = awaitPointerEvent()
+                    val change = event.changes.firstOrNull { it.id == down.id } ?: break
+                    if (!change.pressed) break
+                    val dx = change.position.x - lastX
+                    lastX = change.position.x
+                    if (dx != 0f) {
+                        // 手指向右拖内容跟随向右：反向滚动。
+                        onDragState.value(dx)
+                        change.consume()
+                    }
                 }
                 return@awaitEachGesture
             }
-            // 阶段二：已展开且手指未松开：手动转发拖动给页码列表。
-            var lastX = slopChange.position.x
-            while (true) {
-                val event = awaitPointerEvent()
-                val change = event.changes.firstOrNull { it.id == down.id } ?: break
-                if (!change.pressed) break
-                val dx = change.position.x - lastX
-                lastX = change.position.x
-                if (dx != 0f) {
-                    // 手指向右拖内容跟随向右：反向滚动。
-                    onDrag(dx)
+            // 胶囊态：按压检测。
+            var longPressed = false
+            val job = scope.launch {
+                delay(timeoutMs)
+                if (!enabledState.value) return@launch
+                longPressed = true
+                onLongPressState.value()
+            }
+            try {
+                // 阶段一：touch slop，区分点击与拖动。
+                val slopChange = awaitTouchSlopOrCancellation(down.id) { change, _ ->
                     change.consume()
                 }
+                if (slopChange == null) {
+                    // 未拖动即松开：纯按压。
+                    job.cancel()
+                    if (!longPressed && enabledState.value) onTapState.value()
+                    return@awaitEachGesture
+                }
+                if (!longPressed) {
+                    // 长按触发前就拖动了：不是长按手势，吃掉剩余事件。
+                    job.cancel()
+                    var event = awaitPointerEvent()
+                    while (event.changes.any { it.pressed }) {
+                        event = awaitPointerEvent()
+                    }
+                    return@awaitEachGesture
+                }
+                // 阶段二：已展开且手指未松开：手动转发拖动给页码列表。
+                // 注意此时 enabled 已变为 false，但本手势块常驻不重启，
+                // 继续在此分支内完成本次拖动。
+                var lastX = slopChange.position.x
+                while (true) {
+                    val event = awaitPointerEvent()
+                    val change = event.changes.firstOrNull { it.id == down.id } ?: break
+                    if (!change.pressed) break
+                    val dx = change.position.x - lastX
+                    lastX = change.position.x
+                    if (dx != 0f) {
+                        onDragState.value(dx)
+                        change.consume()
+                    }
+                }
+            } finally {
+                job.cancel()
             }
-        } finally {
-            job.cancel()
         }
     }
 }
