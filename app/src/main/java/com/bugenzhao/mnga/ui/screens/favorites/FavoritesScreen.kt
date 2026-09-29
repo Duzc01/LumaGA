@@ -47,6 +47,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableStateSetOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -77,7 +78,10 @@ import com.bugenzhao.mnga.ui.nav.Route
 import com.bugenzhao.mnga.ui.screens.topiclist.TopicRow
 import com.bugenzhao.mnga.util.Haptics
 import com.bugenzhao.mnga.util.L
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 /** The default folder forced first, mirroring `sortedFolders`. */
 private fun List<FavoriteTopicFolder>.sortedFolders(): List<FavoriteTopicFolder> =
@@ -417,13 +421,23 @@ private fun FavoriteTopicList(folder: FavoriteTopicFolder, navigator: Navigator)
     val listState = rememberLazyListState()
     // Optimistically hidden rows after swipe-delete (no refresh, no flash).
     val hiddenIds = remember { mutableStateListOf<String>() }
+    // Ids with a delete RPC in flight: guards against confirmValueChange
+    // firing more than once for a single swipe sending duplicate deletes.
+    val deletingIds = remember { mutableStateSetOf<String>() }
     val visibleItems = state.items.filter { it.id !in hiddenIds }
 
     // Folder-specific unfavorite. Optimistic: the caller hides the row
-    // immediately; on RPC failure the caller un-hides it. No isFavored check
-    // and no refresh — the server response cache may be stale.
-    fun deleteFavorite(topicId: String, onFailure: () -> Unit) {
-        scope.launch {
+    // immediately; the caller un-hides it only if all retries fail.
+    // No isFavored check and no refresh — the server response cache may
+    // be stale.
+    //
+    // 连续删除时 NGA 的 nuke.php 写接口可能限流/抖动导致偶发失败：
+    // 删除请求串行化发出，失败时带退避重试（最多 3 次），全部失败才
+    // 通知调用方恢复该行。
+    val deleteFavorMutex = remember { Mutex() }
+    suspend fun requestDeleteFavorite(topicId: String): Boolean {
+        repeat(3) { attempt ->
+            if (attempt > 0) delay(1000L * attempt)
             val result = logicCallAsync(
                 AsyncRequest.newBuilder()
                     .setTopicFavor(
@@ -436,7 +450,15 @@ private fun FavoriteTopicList(folder: FavoriteTopicFolder, navigator: Navigator)
                     .build(),
                 TopicFavorResponse.parser(),
             )
-            result.onFailure { onFailure() }
+            if (result.isSuccess) return true
+        }
+        return false
+    }
+    fun deleteFavorite(topicId: String, onSettled: (Boolean) -> Unit) {
+        scope.launch {
+            deleteFavorMutex.withLock {
+                onSettled(requestDeleteFavorite(topicId))
+            }
         }
     }
     LaunchedEffect(listState, visibleItems.size) {
@@ -480,9 +502,12 @@ private fun FavoriteTopicList(folder: FavoriteTopicFolder, navigator: Navigator)
                     val dismissState = rememberSwipeToDismissBoxState(
                         confirmValueChange = { value ->
                             if (value == SwipeToDismissBoxValue.EndToStart) {
-                                hiddenIds.add(topic.id)
-                                deleteFavorite(topic.id) {
-                                    hiddenIds.remove(topic.id)
+                                if (deletingIds.add(topic.id)) {
+                                    hiddenIds.add(topic.id)
+                                    deleteFavorite(topic.id) { ok ->
+                                        deletingIds.remove(topic.id)
+                                        if (!ok) hiddenIds.remove(topic.id)
+                                    }
                                 }
                                 true
                             } else {
