@@ -162,6 +162,12 @@ private fun PageCapsule(
 ) {
     val screenWidthDp = LocalConfiguration.current.screenWidthDp
     val pressScope = rememberCoroutineScope()
+    val view = LocalView.current
+    // 平台最小甩动速度阈值（px/s）：低于此速度松手则直接停，不启动惯性。
+    val minFlingVelocity = remember(view) {
+        android.view.ViewConfiguration.get(view.context)
+            .scaledMinimumFlingVelocity.toFloat()
+    }
     // Hoisted so the press gesture can drive the list directly: the list is
     // composed on expansion (mid-gesture) and can never pick up the in-flight
     // pointer itself, so drag deltas are forwarded manually.
@@ -211,6 +217,7 @@ private fun PageCapsule(
                 scope = pressScope,
                 timeoutMs = LongPressTimeoutMs,
                 enabled = !expanded,
+                minFlingVelocity = minFlingVelocity,
                 onLongPress = onLongPress,
                 onTap = onTap,
                 onDrag = { dragDeltas.trySend(it) },
@@ -360,6 +367,7 @@ private fun Modifier.capsulePressDrag(
     scope: CoroutineScope,
     timeoutMs: Long,
     enabled: Boolean = true,
+    minFlingVelocity: Float,
     onLongPress: () -> Unit,
     onTap: () -> Unit,
     onDrag: (Float) -> Unit,
@@ -372,8 +380,7 @@ private fun Modifier.capsulePressDrag(
     val onDragState = rememberUpdatedState(onDrag)
     val onFlingState = rememberUpdatedState(onFling)
     val cancelFlingState = rememberUpdatedState(cancelFling)
-    return pointerInput(scope, timeoutMs) {
-        val minFlingVelocity = viewConfiguration.minimumVelocity
+    return pointerInput(scope, timeoutMs, minFlingVelocity) {
         // 展开态拖动：手动把横向拖动转发给页码列表，松手时结算惯性滚动。
         // 手指向右拖内容跟随向右：反向滚动（onDrag 收到 dx，调用方 scrollBy(-dx)）。
         suspend fun AwaitPointerEventScope.forwardDragToList(
