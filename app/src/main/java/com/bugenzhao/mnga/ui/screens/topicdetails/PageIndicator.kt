@@ -35,6 +35,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -47,6 +48,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.bugenzhao.mnga.util.Haptics
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -149,6 +151,7 @@ private fun PageCapsule(
     modifier: Modifier = Modifier,
 ) {
     val screenWidthDp = LocalConfiguration.current.screenWidthDp
+    val pressScope = rememberCoroutineScope()
     val targetWidth =
         if (expanded) pageListWidthDp(totalPages, screenWidthDp).dp else CapsuleWidth
     val targetHeight = if (expanded) ExpandedHeight else CapsuleHeight
@@ -168,6 +171,7 @@ private fun PageCapsule(
             .width(width)
             .height(height)
             .pressWithTimeout(
+                scope = pressScope,
                 timeoutMs = LongPressTimeoutMs,
                 enabled = !expanded,
                 onLongPress = onLongPress,
@@ -290,17 +294,17 @@ private fun PageNumberList(
  * （Compose 默认长按阈值不可配置）。
  */
 private fun Modifier.pressWithTimeout(
+    scope: CoroutineScope,
     timeoutMs: Long,
     enabled: Boolean = true,
     onLongPress: () -> Unit,
     onTap: () -> Unit,
-): Modifier = pointerInput(enabled, timeoutMs) {
+): Modifier = pointerInput(scope, enabled, timeoutMs) {
     if (!enabled) return@pointerInput
-    val gestureScope = this
     awaitEachGesture {
         awaitFirstDown(requireUnconsumed = false)
         var fired = false
-        val job = gestureScope.launch {
+        val job = scope.launch {
             delay(timeoutMs)
             fired = true
             onLongPress()
