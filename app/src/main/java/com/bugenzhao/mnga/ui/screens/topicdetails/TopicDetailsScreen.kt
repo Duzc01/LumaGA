@@ -609,7 +609,8 @@ fun TopicDetailsScreen(
                                     view = view,
                                     topicId = topic.id,
                                     currentFavored = favoredOverride ?: topic.isFavored,
-                                ) { favored -> favoredOverride = favored }
+                                    onResult = { favored -> favoredOverride = favored },
+                                )
                             }
                         } else {
                             null

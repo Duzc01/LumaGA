@@ -233,7 +233,8 @@ internal fun TopicResultsList(
                                     view = view,
                                     topicId = topic.id,
                                     currentFavored = favoredOverrides[topic.id] ?: topic.isFavored,
-                                ) { favored -> favoredOverrides[topic.id] = favored }
+                                    onResult = { favored -> favoredOverrides[topic.id] = favored },
+                                )
                             },
                         ) {
                             TopicRow(

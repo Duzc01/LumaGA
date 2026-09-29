@@ -471,7 +471,8 @@ fun TopicListScreen(
                                 view = view,
                                 topicId = topic.id,
                                 currentFavored = favoredOverrides[topic.id] ?: topic.isFavored,
-                            ) { favored -> favoredOverrides[topic.id] = favored }
+                                onResult = { favored -> favoredOverrides[topic.id] = favored },
+                            )
                         },
                         onNavigateToForum = { id ->
                             navigator.push(Route.TopicList(forumId = id))
