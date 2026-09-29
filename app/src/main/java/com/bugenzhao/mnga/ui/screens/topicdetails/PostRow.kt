@@ -535,6 +535,7 @@ private fun PostRowUserName(
     style: TextStyle,
     modifier: Modifier = Modifier,
 ) {
+    val context = LocalContext.current
     val showAuthorIndicator = App.prefs.postRowShowAuthorIndicator.flow.collectAsState().value
     var showId by remember(post.id) { mutableStateOf(false) }
 
@@ -577,11 +578,11 @@ private fun PostRowUserName(
             )
         }
         if (isAuthor && showAuthorIndicator) {
-            Icon(
-                Icons.Filled.Person,
-                contentDescription = null,
-                modifier = Modifier.size(14.dp),
-                tint = MaterialTheme.colorScheme.primary,
+            Text(
+                L.str(context, "(OP)"),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.primary,
+                maxLines = 1,
             )
         }
     }

@@ -300,11 +300,11 @@ private fun UserViewImpl(
                     )
                 }
                 if (isAuthor && showAuthorIndicator) {
-                    Icon(
-                        Icons.Filled.Person,
-                        contentDescription = null,
-                        modifier = Modifier.size(nameStyle.fontSize.value.dp * 0.9f),
-                        tint = MaterialTheme.colorScheme.primary,
+                    Text(
+                        L.str(context, "(OP)"),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                        maxLines = 1,
                     )
                 }
             }

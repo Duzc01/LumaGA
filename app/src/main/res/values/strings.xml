@@ -270,6 +270,7 @@
     <string name="topic_details_style">Topic Details Style</string>
     <string name="author_info">Author Info</string>
     <string name="show_author_indicator">Show Author Indicator</string>
+    <string name="op_label">(OP)</string>
     <string name="mode">Mode</string>
     <string name="participants">Participants</string>
     <string name="list_style">List Style</string>

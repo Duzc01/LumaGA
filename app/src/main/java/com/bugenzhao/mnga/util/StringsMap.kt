@@ -273,6 +273,7 @@ object StringsMap {
         "Topic Details Style" to "topic_details_style",
         "Author Info" to "author_info",
         "Show Author Indicator" to "show_author_indicator",
+        "(OP)" to "op_label",
         "Mode" to "mode",
         "Participants" to "participants",
         "List Style" to "list_style",
