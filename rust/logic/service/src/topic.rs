@@ -733,20 +733,36 @@ pub async fn get_topic_details(
 }
 
 pub async fn topic_favor(request: TopicFavorRequest) -> ServiceResult<TopicFavorResponse> {
-    // 注意：del 的 tid 参数名必须是 `del`（tid 逗号串，可批量）。
-    // 旧网页版通道的 `tidarray` 已废弃：服务端直接忽略该参数，
-    // 仍返回"操作成功"，但实际什么都没删——表现为取消收藏后
-    // 刷新又回来。见 lnga_harmony/docs/FAVORITE_DESIGN.md §2.7。
-    let (act, id_param, op) = match request.get_operation() {
-        TopicFavorRequest_Operation::ADD => ("add", "tid", FavorOp::Add),
-        TopicFavorRequest_Operation::DELETE => ("del", "del", FavorOp::Remove),
+    // 注意：del 的 tid 参数比较特殊，需要同时发送两种形态做兼容：
+    // - `del=<tid>`：官方语义（tid 逗号串，可批量），见
+    //   lnga_harmony/docs/FAVORITE_DESIGN.md §2.7；
+    // - `tidarray[]=<tid>`：网页版通道 PHP 按数组解析 tidarray
+    //   （`foreach ($_POST['tidarray'] as $tid)`），标量 `tidarray=x`
+    //   会被 foreach 静默跳过——返回"操作成功"但实际没删，
+    //   表现为取消收藏后退出重进又回来。
+    // 服务端只会读取它认识的那一个，另一个被忽略；删除是幂等的。
+    let (act, op, mut params): (&str, FavorOp, Vec<(&str, &str)>) = match request.get_operation() {
+        TopicFavorRequest_Operation::ADD => (
+            "add",
+            FavorOp::Add,
+            vec![("tid", request.get_topic_id())],
+        ),
+        TopicFavorRequest_Operation::DELETE => (
+            "del",
+            FavorOp::Remove,
+            vec![
+                ("del", request.get_topic_id()),
+                ("tidarray[]", request.get_topic_id()),
+            ],
+        ),
     };
     let folder_id = request.get_folder_id();
+    params.push(("folder", folder_id));
 
     let _value = fetch_json_value(
         "nuke.php",
         vec![("__lib", "topic_favor_v2"), ("__act", act)],
-        vec![(id_param, request.get_topic_id()), ("folder", folder_id)],
+        params,
     )
     .await?;
 
