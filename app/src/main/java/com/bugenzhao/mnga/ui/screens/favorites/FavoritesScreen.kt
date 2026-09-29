@@ -64,6 +64,7 @@ import androidx.compose.ui.unit.dp
 import com.bugenzhao.mnga.logicCallAsync
 import com.bugenzhao.mnga.model.PlusFeature
 import com.bugenzhao.mnga.model.PlusModel
+import com.bugenzhao.mnga.model.ToastModel
 import com.bugenzhao.mnga.protos.datamodel.FavoriteTopicFolder
 import com.bugenzhao.mnga.protos.datamodel.Topic
 import com.bugenzhao.mnga.protos.service.AsyncRequest
@@ -435,7 +436,8 @@ private fun FavoriteTopicList(folder: FavoriteTopicFolder, navigator: Navigator)
     // 删除请求串行化发出，失败时带退避重试（最多 3 次），全部失败才
     // 通知调用方恢复该行。
     val deleteFavorMutex = remember { Mutex() }
-    suspend fun requestDeleteFavorite(topicId: String): Boolean {
+    suspend fun requestDeleteFavorite(topicId: String): Pair<Boolean, String?> {
+        var lastError: String? = null
         repeat(3) { attempt ->
             if (attempt > 0) delay(1000L * attempt)
             val result = logicCallAsync(
@@ -450,14 +452,31 @@ private fun FavoriteTopicList(folder: FavoriteTopicFolder, navigator: Navigator)
                     .build(),
                 TopicFavorResponse.parser(),
             )
-            if (result.isSuccess) return true
+            if (result.isSuccess) return true to null
+            lastError = result.exceptionOrNull()?.message
         }
-        return false
+        return false to lastError
     }
     fun deleteFavorite(topicId: String, onSettled: (Boolean) -> Unit) {
         scope.launch {
             deleteFavorMutex.withLock {
-                onSettled(requestDeleteFavorite(topicId))
+                val (ok, error) = requestDeleteFavorite(topicId)
+                // 调试提示：成功/失败都 Toast，失败时带上服务端错误信息。
+                if (ok) {
+                    ToastModel.showAuto(
+                        ToastModel.Message.Success(
+                            L.str(context, "Unfavorited"),
+                        ),
+                    )
+                } else {
+                    ToastModel.showAuto(
+                        ToastModel.Message.Error(
+                            L.str(context, "Unfavorite failed") +
+                                (error?.let { ": $it" } ?: ""),
+                        ),
+                    )
+                }
+                onSettled(ok)
             }
         }
     }

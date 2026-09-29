@@ -274,6 +274,8 @@ object StringsMap {
         "Author Info" to "author_info",
         "Show Author Indicator" to "show_author_indicator",
         "Quick Page Jump" to "quick_page_jump",
+        "Unfavorited" to "unfavorited",
+        "Unfavorite failed" to "unfavorite_failed",
         "(OP)" to "op_label",
         "Personal Center" to "personal_center",
         "Mode" to "mode",

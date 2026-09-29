@@ -271,6 +271,8 @@
     <string name="author_info">作者信息</string>
     <string name="show_author_indicator">显示作者标识</string>
     <string name="quick_page_jump">底部快速翻页</string>
+    <string name="unfavorited">已取消收藏</string>
+    <string name="unfavorite_failed">取消收藏失败</string>
     <string name="op_label">（楼主）</string>
     <string name="personal_center">个人中心</string>
     <string name="mode">模式</string>

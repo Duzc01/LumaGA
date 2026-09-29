@@ -271,6 +271,8 @@
     <string name="author_info">Author Info</string>
     <string name="show_author_indicator">Show Author Indicator</string>
     <string name="quick_page_jump">Quick Page Jump</string>
+    <string name="unfavorited">Unfavorited</string>
+    <string name="unfavorite_failed">Unfavorite failed</string>
     <string name="op_label">(OP)</string>
     <string name="personal_center">Personal Center</string>
     <string name="mode">Mode</string>

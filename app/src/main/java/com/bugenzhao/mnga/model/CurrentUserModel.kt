@@ -212,6 +212,13 @@ class CurrentUserModel(
                 val name = _user.value?.name?.display() ?: "???"
                 ToastModel.showAuto(ToastModel.Message.ClockIn("$name @ ${response.date}"))
             }
+        }.onFailure { e ->
+            // 调试：签到请求失败时也提示，否则"已签到"不亮的原因不可见。
+            ToastModel.showAuto(
+                ToastModel.Message.Error(
+                    "签到失败: ${e.message}",
+                ),
+            )
         }
     }
 }
