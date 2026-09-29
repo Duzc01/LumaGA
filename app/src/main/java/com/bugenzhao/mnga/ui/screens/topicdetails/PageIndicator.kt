@@ -51,6 +51,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.bugenzhao.mnga.util.Haptics
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -158,6 +159,15 @@ private fun PageCapsule(
     // composed on expansion (mid-gesture) and can never pick up the in-flight
     // pointer itself, so drag deltas are forwarded manually.
     val listState = rememberLazyListState()
+    // The pointerInput block is a restricted scope and cannot call
+    // listState.scrollBy directly; drag deltas go through this channel to a
+    // LaunchedEffect that performs the scroll.
+    val dragDeltas = remember { Channel<Float>(Channel.UNLIMITED) }
+    LaunchedEffect(listState, dragDeltas) {
+        for (dx in dragDeltas) {
+            listState.scrollBy(-dx)
+        }
+    }
     val targetWidth =
         if (expanded) pageListWidthDp(totalPages, screenWidthDp).dp else CapsuleWidth
     val targetHeight = if (expanded) ExpandedHeight else CapsuleHeight
@@ -185,6 +195,7 @@ private fun PageCapsule(
                 enabled = !expanded,
                 onLongPress = onLongPress,
                 onTap = onTap,
+                onDrag = { dragDeltas.trySend(it) },
             ),
         shape = CircleShape,
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
@@ -314,6 +325,7 @@ private fun Modifier.capsulePressDrag(
     enabled: Boolean = true,
     onLongPress: () -> Unit,
     onTap: () -> Unit,
+    onDrag: (Float) -> Unit,
 ): Modifier = pointerInput(scope, enabled, timeoutMs) {
     if (!enabled) return@pointerInput
     awaitEachGesture {
@@ -358,7 +370,7 @@ private fun Modifier.capsulePressDrag(
                 lastX = change.position.x
                 if (dx != 0f) {
                     // 手指向右拖内容跟随向右：反向滚动。
-                    listState.scrollBy(-dx)
+                    onDrag(dx)
                     change.consume()
                 }
             }
