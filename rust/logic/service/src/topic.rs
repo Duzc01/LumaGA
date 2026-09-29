@@ -733,16 +733,20 @@ pub async fn get_topic_details(
 }
 
 pub async fn topic_favor(request: TopicFavorRequest) -> ServiceResult<TopicFavorResponse> {
-    let (act, tid_key, op) = match request.get_operation() {
+    // 注意：del 的 tid 参数名必须是 `del`（tid 逗号串，可批量）。
+    // 旧网页版通道的 `tidarray` 已废弃：服务端直接忽略该参数，
+    // 仍返回"操作成功"，但实际什么都没删——表现为取消收藏后
+    // 刷新又回来。见 lnga_harmony/docs/FAVORITE_DESIGN.md §2.7。
+    let (act, id_param, op) = match request.get_operation() {
         TopicFavorRequest_Operation::ADD => ("add", "tid", FavorOp::Add),
-        TopicFavorRequest_Operation::DELETE => ("del", "tidarray", FavorOp::Remove),
+        TopicFavorRequest_Operation::DELETE => ("del", "del", FavorOp::Remove),
     };
     let folder_id = request.get_folder_id();
 
     let _value = fetch_json_value(
         "nuke.php",
         vec![("__lib", "topic_favor_v2"), ("__act", act)],
-        vec![(tid_key, request.get_topic_id()), ("folder", folder_id)],
+        vec![(id_param, request.get_topic_id()), ("folder", folder_id)],
     )
     .await?;
 
