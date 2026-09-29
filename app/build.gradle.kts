@@ -84,6 +84,17 @@ android {
     }
 }
 
+// Name the release APK after the app version, e.g. LumaGA_1.1.16.apk,
+// so CI artifacts and manual Releases uploads carry the version.
+androidComponents {
+    val releaseVersionName = android.defaultConfig.versionName
+    onVariants(selector().withBuildType("release")) { variant ->
+        variant.outputs.forEach { output ->
+            output.outputFileName.set("LumaGA_${releaseVersionName}.apk")
+        }
+    }
+}
+
 kotlin {
     compilerOptions {
         jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
