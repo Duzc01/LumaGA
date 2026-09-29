@@ -10,6 +10,8 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.FlingBehavior
+import androidx.compose.foundation.gestures.ScrollableDefaults
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.awaitTouchSlopOrCancellation
@@ -44,7 +46,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.AwaitPointerEventScope
+import androidx.compose.ui.input.pointer.PointerInputChange
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.util.VelocityTracker
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
@@ -52,9 +57,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.bugenzhao.mnga.util.Haptics
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlin.math.abs
 
 private val CapsuleHeight = 40.dp
 private val CapsuleWidth = 120.dp
@@ -91,7 +98,7 @@ internal fun pageListWidthDp(
  * - 胶囊形态：显示 `当前页 / 总页数`，背景有阅读进度填充。
  * - 长按 300ms：形变为横向页码列表，可左右滑动，点击页码跳转。
  * - 点击胶囊外部或滑动帖子列表：收起回胶囊形态。
- * - 点击胶囊：预留，暂无行为。
+ * - 点击胶囊：打开跳转弹窗（与右上角菜单的 TopicJumpSelector 同一个）。
  */
 @Composable
 fun PageIndicatorOverlay(
@@ -99,6 +106,7 @@ fun PageIndicatorOverlay(
     totalPages: Int,
     isListScrolling: Boolean,
     onJumpToPage: (Int) -> Unit,
+    onTap: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var expanded by remember { mutableStateOf(false) }
@@ -130,9 +138,7 @@ fun PageIndicatorOverlay(
                 Haptics.lightImpact(view)
                 expanded = true
             },
-            onTap = {
-                // 预留：点击胶囊的交互待定。
-            },
+            onTap = onTap,
             onJumpToPage = { page ->
                 expanded = false
                 onJumpToPage(page)
@@ -160,12 +166,18 @@ private fun PageCapsule(
     // composed on expansion (mid-gesture) and can never pick up the in-flight
     // pointer itself, so drag deltas are forwarded manually.
     val listState = rememberLazyListState()
+    val flingBehavior: FlingBehavior = ScrollableDefaults.flingBehavior()
+    // 正在进行的惯性滚动任务：新手势开始或列表收起时取消。
+    val flingJobHolder = remember { object { var job: Job? = null } }
     // 展开时滚动到当前页（列表组合完成后再滚，避免 timer 里直接滚未组合的 state）。
     LaunchedEffect(expanded) {
         if (expanded) {
             listState.scrollToItem(
                 (currentPage - 1).coerceIn(0, (totalPages - 1).coerceAtLeast(0)),
             )
+        } else {
+            flingJobHolder.job?.cancel()
+            flingJobHolder.job = null
         }
     }
     // The pointerInput block is a restricted scope and cannot call
@@ -202,6 +214,22 @@ private fun PageCapsule(
                 onLongPress = onLongPress,
                 onTap = onTap,
                 onDrag = { dragDeltas.trySend(it) },
+                onFling = { velocityX ->
+                    // 手指速度是屏幕坐标系（向右为正），滚动坐标系与拖动转发一致
+                    // 取反：手指右甩对应 scrollBy 为负的方向。
+                    flingJobHolder.job?.cancel()
+                    flingJobHolder.job = pressScope.launch {
+                        listState.scroll {
+                            with(flingBehavior) {
+                                performFling(-velocityX)
+                            }
+                        }
+                    }
+                },
+                cancelFling = {
+                    flingJobHolder.job?.cancel()
+                    flingJobHolder.job = null
+                },
             ),
         shape = CircleShape,
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
@@ -314,13 +342,14 @@ private fun PageNumberList(
 
 /**
  * 胶囊按压手势：按住 [timeoutMs] 触发 [onLongPress] 展开为页码列表；
- * 展开后手指不松开继续滑动，直接驱动页码列表滚动；
+ * 展开后手指不松开继续滑动，直接驱动页码列表滚动，松手时按手指
+ * 速度触发惯性滚动（[onFling]，速度为屏幕坐标系 px/s）；
  * 超时前松开则视为点击触发 [onTap]。
  *
  * 用于自定义长按时长（Compose 默认长按阈值不可配置），以及长按后
  * 无缝衔接滑动：页码列表在展开瞬间才被组合，无法接管进行中的
  * 手势流，故由本手势手动把拖动增量转发给列表（列表自身的触摸滚动
- * 已关闭，避免双重处理）。
+ * 已关闭，避免双重处理）。惯性同样由本手势在松手时手动启动。
  *
  * 注意：[enabled] 不作为 pointerInput 的 key——展开时若重启手势块，
  * 进行中的按压会被取消，导致"长按后必须松手才能滑动"。改为常驻手势，
@@ -334,29 +363,55 @@ private fun Modifier.capsulePressDrag(
     onLongPress: () -> Unit,
     onTap: () -> Unit,
     onDrag: (Float) -> Unit,
+    onFling: (Float) -> Unit,
+    cancelFling: () -> Unit,
 ): Modifier {
     val enabledState = rememberUpdatedState(enabled)
     val onLongPressState = rememberUpdatedState(onLongPress)
     val onTapState = rememberUpdatedState(onTap)
     val onDragState = rememberUpdatedState(onDrag)
+    val onFlingState = rememberUpdatedState(onFling)
+    val cancelFlingState = rememberUpdatedState(cancelFling)
     return pointerInput(scope, timeoutMs) {
+        val minFlingVelocity = viewConfiguration.minimumVelocity
+        // 展开态拖动：手动把横向拖动转发给页码列表，松手时结算惯性滚动。
+        // 手指向右拖内容跟随向右：反向滚动（onDrag 收到 dx，调用方 scrollBy(-dx)）。
+        suspend fun AwaitPointerEventScope.forwardDragToList(
+            down: PointerInputChange,
+            lastX0: Float,
+        ) {
+            val tracker = VelocityTracker()
+            var lastX = lastX0
+            tracker.addPosition(down.uptimeMillis, down.position)
+            while (true) {
+                val event = awaitPointerEvent()
+                val change = event.changes.firstOrNull { it.id == down.id }
+                if (change == null || !change.pressed) {
+                    // 松手结算惯性：速度低于系统阈值则直接停。
+                    if (change != null) {
+                        val velocity = tracker.calculateVelocity().x
+                        if (abs(velocity) >= minFlingVelocity) {
+                            onFlingState.value(velocity)
+                        }
+                    }
+                    return
+                }
+                val dx = change.position.x - lastX
+                lastX = change.position.x
+                tracker.addPosition(change.uptimeMillis, change.position)
+                if (dx != 0f) {
+                    onDragState.value(dx)
+                    change.consume()
+                }
+            }
+        }
         awaitEachGesture {
             val down = awaitFirstDown(requireUnconsumed = false)
+            // 新手势开始：停止可能正在进行的惯性滚动。
+            cancelFlingState.value()
             if (!enabledState.value) {
                 // 展开态：所有横向拖动都手动转发给页码列表。
-                var lastX = down.position.x
-                while (true) {
-                    val event = awaitPointerEvent()
-                    val change = event.changes.firstOrNull { it.id == down.id } ?: break
-                    if (!change.pressed) break
-                    val dx = change.position.x - lastX
-                    lastX = change.position.x
-                    if (dx != 0f) {
-                        // 手指向右拖内容跟随向右：反向滚动。
-                        onDragState.value(dx)
-                        change.consume()
-                    }
-                }
+                forwardDragToList(down, down.position.x)
                 return@awaitEachGesture
             }
             // 胶囊态：按压检测。
@@ -389,19 +444,8 @@ private fun Modifier.capsulePressDrag(
                 }
                 // 阶段二：已展开且手指未松开：手动转发拖动给页码列表。
                 // 注意此时 enabled 已变为 false，但本手势块常驻不重启，
-                // 继续在此分支内完成本次拖动。
-                var lastX = slopChange.position.x
-                while (true) {
-                    val event = awaitPointerEvent()
-                    val change = event.changes.firstOrNull { it.id == down.id } ?: break
-                    if (!change.pressed) break
-                    val dx = change.position.x - lastX
-                    lastX = change.position.x
-                    if (dx != 0f) {
-                        onDragState.value(dx)
-                        change.consume()
-                    }
-                }
+                // 继续在此分支内完成本次拖动，松手结算惯性滚动。
+                forwardDragToList(slopChange, slopChange.position.x)
             } finally {
                 job.cancel()
             }

@@ -1006,6 +1006,8 @@ fun TopicDetailsScreen(
                             dataSource.loadFromPage = page
                         }
                     },
+                    // 点击胶囊：打开与右上角菜单相同的跳转弹窗。
+                    onTap = { showJumpSelector = true },
                 )
             }
         }
