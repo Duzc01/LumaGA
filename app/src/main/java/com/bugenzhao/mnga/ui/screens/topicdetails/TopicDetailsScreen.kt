@@ -338,6 +338,30 @@ fun TopicDetailsScreen(
         )
     }
     val currentRows by rememberUpdatedState(rows)
+
+    // 胶囊页码指示器：当前页取屏幕顶部第一个可见楼层所在页，
+    // 总页数取数据源。items/totalPages 是普通字段，靠 state
+    // 快照触发重算（数据源每次落盘都伴随 state 发射）。
+    val indicatorCurrentPage by remember(dataSource) {
+        derivedStateOf {
+            state.items
+            state.latestResponse
+            val floor = currentRows.drop(listState.firstVisibleItemIndex)
+                .firstOrNull { it is RowSpec.Reply }
+                ?.let { (it as RowSpec.Reply).post.floor }
+            floor?.let { f ->
+                dataSource.pagedItems()
+                    .firstOrNull { (_, its) -> its.any { it.floor == f } }
+                    ?.first
+            } ?: (dataSource.firstLoadedPage ?: 1)
+        }
+    }
+    val indicatorTotalPages by remember(dataSource) {
+        derivedStateOf {
+            state.latestResponse
+            dataSource.totalPages.coerceAtLeast(1)
+        }
+    }
     LaunchedEffect(action, listState) {
         action.scrollToFloor.collect { floor ->
             if (floor != null) {
@@ -964,6 +988,20 @@ fun TopicDetailsScreen(
                         CircularProgressIndicator()
                     }
                 }
+            }
+            // 胶囊页码指示器：长按展开横向页码列表，点击页码跳转。
+            // 单页帖子不展示；单帖视图（onlyPostId）与 mock 主题不展示。
+            if (!mock && onlyPostId == null && indicatorTotalPages >= 2) {
+                PageIndicatorOverlay(
+                    currentPage = indicatorCurrentPage,
+                    totalPages = indicatorTotalPages,
+                    isListScrolling = listState.isScrollInProgress,
+                    onJumpToPage = { page ->
+                        if (page != indicatorCurrentPage) {
+                            swipeToPage(page, fromLeft = page < indicatorCurrentPage)
+                        }
+                    },
+                )
             }
         }
     }
