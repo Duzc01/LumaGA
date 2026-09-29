@@ -296,10 +296,11 @@ private fun Modifier.pressWithTimeout(
     onTap: () -> Unit,
 ): Modifier = pointerInput(enabled, timeoutMs) {
     if (!enabled) return@pointerInput
+    val gestureScope = this
     awaitEachGesture {
         awaitFirstDown(requireUnconsumed = false)
         var fired = false
-        val job = launch {
+        val job = gestureScope.launch {
             delay(timeoutMs)
             fired = true
             onLongPress()
