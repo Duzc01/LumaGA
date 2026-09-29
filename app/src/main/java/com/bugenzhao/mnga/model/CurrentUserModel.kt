@@ -190,13 +190,13 @@ class CurrentUserModel(
         result.onSuccess { response ->
             // 无论是否今日首次，都同步本地"已签到"状态——逻辑层缓存判定
             // 今天是否已签（重复点击也不会重复签到），首次成功才弹提示。
+            // 注意：refreshTodayClockIn() 读取的是 lastClockInTime_{uid}
+            // （秒级时间戳；e7c43c9 改为服务器权威后），之前误写已废弃的
+            // lastClockInDate_{uid} 导致签到成功后"已签到"标识不点亮。
+            // 服务器仍是最终权威：queryClockInStats() 会用 last_time 覆盖。
             com.bugenzhao.mnga.App.sharedPreferences.edit()
-                .putString(
-                    "lastClockInDate_$uid",
-                    java.text.SimpleDateFormat(
-                        "yyyy-MM-dd", java.util.Locale.US,
-                    ).format(java.util.Date()),
-                )
+                .putLong("lastClockInTime_$uid", System.currentTimeMillis() / 1000)
+                .remove("lastClockInDate_$uid")
                 .apply()
             refreshTodayClockIn()
             // 同步签到统计（累计/连续天数、金币拆金/银/铜、N币）。
