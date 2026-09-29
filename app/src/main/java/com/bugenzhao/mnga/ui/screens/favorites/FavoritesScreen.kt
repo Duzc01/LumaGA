@@ -434,8 +434,11 @@ private fun FavoriteTopicList(folder: FavoriteTopicFolder, navigator: Navigator)
     val deletingIds = remember(folder.id) { mutableStateSetOf<String>() }
     val visibleItems = state.items.filter { it.id !in hiddenIds }
 
-    // Folder-specific unfavorite. Optimistic: the caller hides the row
-    // immediately; the caller un-hides it only if all retries fail.
+    // Use the same global unfavorite request as the topic-details menu. The
+    // folder-specific variant can return success without actually removing
+    // the topic, so it reappears the next time the list is fetched.
+    // Optimistic: the caller hides the row immediately; the caller un-hides it
+    // only if all retries fail.
     // No isFavored check and no refresh — the server response cache may
     // be stale.
     //
@@ -450,7 +453,6 @@ private fun FavoriteTopicList(folder: FavoriteTopicFolder, navigator: Navigator)
                 AsyncRequest.newBuilder()
                     .setTopicFavor(
                         TopicFavorRequest.newBuilder()
-                            .setFolderId(folder.id)
                             .setTopicId(topicId)
                             .setOperation(TopicFavorRequest.Operation.DELETE)
                             .build()
