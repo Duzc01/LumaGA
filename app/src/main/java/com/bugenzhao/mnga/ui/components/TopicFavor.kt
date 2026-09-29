@@ -45,6 +45,7 @@ fun toggleTopicFavor(
     topicId: String,
     currentFavored: Boolean,
     onResult: (Boolean) -> Unit,
+    onFailure: () -> Unit = {},
 ) {
     val operation = if (currentFavored) {
         TopicFavorRequest.Operation.DELETE
@@ -66,6 +67,8 @@ fun toggleTopicFavor(
         result.onSuccess { response ->
             onResult(response.isFavored)
             Haptics.play(view, Haptics.NotificationType.SUCCESS)
+        }.onFailure {
+            onFailure()
         }
     }
 }

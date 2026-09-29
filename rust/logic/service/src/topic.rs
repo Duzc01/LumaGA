@@ -285,14 +285,20 @@ fn mutate_favor_response(folder_id: &str, op: FavorOp, r: &mut TopicFavorRespons
             }
         }
         FavorOp::Remove => {
-            r.folder_ids.retain(|id| id != folder_id);
+            if folder_id.is_empty() {
+                // Global unfavorite (no specific folder): clear all.
+                r.folder_ids.clear();
+            } else {
+                r.folder_ids.retain(|id| id != folder_id);
+            }
         }
     }
 
     // Only update `is_favored` if it's actually in the folder.
     // This is for compatibility with old response where we don't support multiple folders.
+    // A global unfavorite always clears the flag.
     let updated = r.folder_ids.len() != len;
-    if updated {
+    if updated || (folder_id.is_empty() && matches!(op, FavorOp::Remove)) {
         r.is_favored = !r.folder_ids.is_empty();
     }
 }

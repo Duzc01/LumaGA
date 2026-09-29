@@ -457,9 +457,13 @@ private fun FavoriteTopicList(folder: FavoriteTopicFolder, navigator: Navigator)
                             toggleTopicFavor(
                                 scope, view, topic.id,
                                 currentFavored = true,
-                            ) { isFavored ->
-                                if (isFavored) hiddenIds.remove(topic.id)
-                            }
+                                onResult = { isFavored ->
+                                    if (isFavored) hiddenIds.remove(topic.id)
+                                },
+                                onFailure = {
+                                    hiddenIds.remove(topic.id)
+                                },
+                            )
                         },
                         modifier = Modifier.animateItem(),
                     ) {
