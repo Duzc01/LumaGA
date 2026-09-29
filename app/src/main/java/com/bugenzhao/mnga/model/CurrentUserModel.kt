@@ -161,7 +161,12 @@ class CurrentUserModel(
             )
             result.onSuccess { response ->
                 // 服务器权威的 last_time（上次签到时间戳）→ "今日已签"判断。
-                if (response.lastTime > 0) {
+                // 统计接口有当日缓存，刚签到后偶尔仍会返回签到前的旧
+                // last_time。只接受单调递增的时间戳，避免旧响应覆盖本地
+                // 刚写入的今日时间，导致“已签到”提示重新消失。
+                val saved = com.bugenzhao.mnga.App.sharedPreferences
+                    .getLong("lastClockInTime_$uid", 0L)
+                if (response.lastTime > saved) {
                     com.bugenzhao.mnga.App.sharedPreferences.edit()
                         .putLong("lastClockInTime_$uid", response.lastTime)
                         .apply()

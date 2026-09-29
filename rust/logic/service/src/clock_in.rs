@@ -93,6 +93,10 @@ pub async fn clock_in(_request: ClockInRequest) -> ServiceResult<ClockInResponse
             Err(e) => return Err(e),
         }
         let _ = CACHE.insert_msg(&clock_in_key(), &response)?;
+        // A stats response may have been cached earlier today, before this
+        // sign-in. Drop it so the merge below observes the newly updated
+        // last_time instead of keeping the UI on yesterday's status.
+        CACHE.remove_key(&clock_in_stats_key())?;
     }
 
     // 合并签到统计（当日缓存，失败不影响签到主流程）。

@@ -187,6 +187,25 @@ class PagingDataSource<Res : Message, Item : Any>(
         }
     }
 
+    /**
+     * Removes one item from the in-memory page snapshot.
+     *
+     * This is used after a successful destructive request so a screen that is
+     * temporarily covered and later recomposed cannot resurrect the stale
+     * row from its entry-scoped [PagingDataSource].
+     */
+    fun removeItem(itemId: String): Boolean {
+        val current = _state.value.items
+        val index = current.indexOfFirst { id(it) == itemId }
+        if (index < 0) return false
+
+        val updated = current.toMutableList().apply { removeAt(index) }
+        itemToIndexAndPage.remove(itemId)
+        _state.value = _state.value.copy(items = updated)
+        reindex()
+        return true
+    }
+
     /** Remove items no longer present after list mutation (upsert keeps stale ids). */
     private fun pruneIndex() {
         val ids = items.map(id).toHashSet()

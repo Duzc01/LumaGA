@@ -65,6 +65,7 @@ import com.bugenzhao.mnga.logicCallAsync
 import com.bugenzhao.mnga.model.PlusFeature
 import com.bugenzhao.mnga.model.PlusModel
 import com.bugenzhao.mnga.model.ToastModel
+import com.bugenzhao.mnga.model.appScope
 import com.bugenzhao.mnga.protos.datamodel.FavoriteTopicFolder
 import com.bugenzhao.mnga.protos.datamodel.Topic
 import com.bugenzhao.mnga.protos.service.AsyncRequest
@@ -87,6 +88,13 @@ import kotlinx.coroutines.sync.withLock
 /** The default folder forced first, mirroring `sortedFolders`. */
 private fun List<FavoriteTopicFolder>.sortedFolders(): List<FavoriteTopicFolder> =
     sortedByDescending { it.isDefault }
+
+/**
+ * All favorite deletes share one app-lifetime queue. NGA's write endpoint is
+ * sensitive to bursts, while a composition-scoped queue is cancelled as soon
+ * as the user leaves the favorites screen and silently drops pending deletes.
+ */
+private val favoriteDeleteMutex = Mutex()
 
 /**
  * Favorite topics grouped by folder, a port of `FavoriteTopicListView`: a
@@ -404,7 +412,6 @@ private fun FolderMenu(
 @Composable
 private fun FavoriteTopicList(folder: FavoriteTopicFolder, navigator: Navigator) {
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
 
     // The per-folder paged list lives in the entry-scoped ViewModel: it
     // survives pop-backs (composition is disposed, ViewModel is not), so
@@ -421,10 +428,10 @@ private fun FavoriteTopicList(folder: FavoriteTopicFolder, navigator: Navigator)
 
     val listState = rememberLazyListState()
     // Optimistically hidden rows after swipe-delete (no refresh, no flash).
-    val hiddenIds = remember { mutableStateListOf<String>() }
+    val hiddenIds = remember(folder.id) { mutableStateListOf<String>() }
     // Ids with a delete RPC in flight: guards against confirmValueChange
     // firing more than once for a single swipe sending duplicate deletes.
-    val deletingIds = remember { mutableStateSetOf<String>() }
+    val deletingIds = remember(folder.id) { mutableStateSetOf<String>() }
     val visibleItems = state.items.filter { it.id !in hiddenIds }
 
     // Folder-specific unfavorite. Optimistic: the caller hides the row
@@ -435,7 +442,6 @@ private fun FavoriteTopicList(folder: FavoriteTopicFolder, navigator: Navigator)
     // 连续删除时 NGA 的 nuke.php 写接口可能限流/抖动导致偶发失败：
     // 删除请求串行化发出，失败时带退避重试（最多 3 次），全部失败才
     // 通知调用方恢复该行。
-    val deleteFavorMutex = remember { Mutex() }
     suspend fun requestDeleteFavorite(topicId: String): Pair<Boolean, String?> {
         var lastError: String? = null
         repeat(3) { attempt ->
@@ -458,8 +464,10 @@ private fun FavoriteTopicList(folder: FavoriteTopicFolder, navigator: Navigator)
         return false to lastError
     }
     fun deleteFavorite(topicId: String, onSettled: (Boolean) -> Unit) {
-        scope.launch {
-            deleteFavorMutex.withLock {
+        // App scope deliberately outlives this composition: leaving the page
+        // must not cancel deletes that are waiting behind the mutex.
+        appScope.launch {
+            favoriteDeleteMutex.withLock {
                 val (ok, error) = requestDeleteFavorite(topicId)
                 // 调试提示：成功/失败都 Toast，失败时带上服务端错误信息。
                 if (ok) {
@@ -475,6 +483,12 @@ private fun FavoriteTopicList(folder: FavoriteTopicFolder, navigator: Navigator)
                                 (error?.let { ": $it" } ?: ""),
                         ),
                     )
+                }
+                if (ok) {
+                    // The entry-scoped data source survives while this route is
+                    // covered. Remove the confirmed item there as well as from
+                    // the optimistic UI, otherwise recomposition brings it back.
+                    dataSource.removeItem(topicId)
                 }
                 onSettled(ok)
             }
@@ -523,9 +537,9 @@ private fun FavoriteTopicList(folder: FavoriteTopicFolder, navigator: Navigator)
                             if (value == SwipeToDismissBoxValue.EndToStart) {
                                 if (deletingIds.add(topic.id)) {
                                     hiddenIds.add(topic.id)
-                                    deleteFavorite(topic.id) { ok ->
+                                    deleteFavorite(topic.id) {
                                         deletingIds.remove(topic.id)
-                                        if (!ok) hiddenIds.remove(topic.id)
+                                        hiddenIds.remove(topic.id)
                                     }
                                 }
                                 true
