@@ -156,9 +156,25 @@ private fun NavigationHost(
         modifier = Modifier.fillMaxSize(),
         // Forward (push): the new page slides in from the right while the old
         // one exits to the left. Backward (pop): mirrored.
+        // Exception: PersonalCenter slides in from the left (drawer-style),
+        // so the page it covers must exit to the right, and vice versa on pop.
+        // The outgoing transition belongs to the *old* destination, hence the
+        // target/initial-state checks here.
         enterTransition = { slideInHorizontally(tween(280)) { it / 3 } + fadeIn(tween(280)) },
-        exitTransition = { slideOutHorizontally(tween(280)) { -it / 4 } + fadeOut(tween(280)) },
-        popEnterTransition = { slideInHorizontally(tween(280)) { -it / 3 } + fadeIn(tween(280)) },
+        exitTransition = {
+            if (targetState.destination.route == RouteCodec.ROUTE_PERSONAL_CENTER) {
+                slideOutHorizontally(tween(280)) { it / 4 } + fadeOut(tween(280))
+            } else {
+                slideOutHorizontally(tween(280)) { -it / 4 } + fadeOut(tween(280))
+            }
+        },
+        popEnterTransition = {
+            if (initialState.destination.route == RouteCodec.ROUTE_PERSONAL_CENTER) {
+                slideInHorizontally(tween(280)) { it / 3 } + fadeIn(tween(280))
+            } else {
+                slideInHorizontally(tween(280)) { -it / 3 } + fadeIn(tween(280))
+            }
+        },
         popExitTransition = { slideOutHorizontally(tween(280)) { it / 4 } + fadeOut(tween(280)) },
     ) {
         composable(RouteCodec.ROUTE_FORUM_LIST) {

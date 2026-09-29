@@ -45,7 +45,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -414,23 +413,22 @@ private fun FavoriteTopicList(folder: FavoriteTopicFolder, navigator: Navigator)
         if (dataSource.notLoaded) dataSource.initialLoad()
     }
 
-    // Rows hidden after a successful swipe-delete.
-    val hiddenIds = remember(folder.id) { mutableStateListOf<String>() }
-    val visibleItems = state.items.filter { it.id !in hiddenIds }
-
     val listState = rememberLazyListState()
-    LaunchedEffect(listState, visibleItems.size) {
+    LaunchedEffect(listState, state.items.size) {
         snapshotFlow {
             val info = listState.layoutInfo
             val last = info.visibleItemsInfo.lastOrNull()?.index ?: 0
-            last >= visibleItems.size - 3
+            last >= state.items.size - 3
         }.collect { nearEnd ->
-            if (nearEnd && visibleItems.isNotEmpty()) {
-                dataSource.loadMoreIfNeeded(visibleItems.size - 1)
+            if (nearEnd && state.items.isNotEmpty()) {
+                dataSource.loadMoreIfNeeded(state.items.size - 1)
             }
         }
     }
 
+    // Same interaction as the history page: confirm the dismiss, fire the
+    // delete RPC, and refresh the folder list from the server on success so
+    // the server is the source of truth for whether the row is gone.
     fun deleteFavorite(topic: Topic, boxState: SwipeToDismissBoxState) {
         scope.launch {
             val result = logicCallAsync(
@@ -445,14 +443,9 @@ private fun FavoriteTopicList(folder: FavoriteTopicFolder, navigator: Navigator)
                     .build(),
                 TopicFavorResponse.parser(),
             )
-            result.onSuccess { response ->
+            result.onSuccess {
                 Haptics.play(view, Haptics.NotificationType.SUCCESS)
-                if (!response.isFavored) {
-                    hiddenIds.add(topic.id)
-                } else {
-                    // Still favored in another folder: snap the row back.
-                    boxState.snapTo(SwipeToDismissBoxValue.Settled)
-                }
+                dataSource.refresh()
             }.onFailure {
                 boxState.snapTo(SwipeToDismissBoxValue.Settled)
             }
@@ -468,11 +461,11 @@ private fun FavoriteTopicList(folder: FavoriteTopicFolder, navigator: Navigator)
             dataSource.isInitialLoading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
             }
-            visibleItems.isEmpty() && state.latestError != null ->
+            state.items.isEmpty() && state.latestError != null ->
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     ErrorPlaceholder(state.latestError!!) { dataSource.refresh() }
                 }
-            visibleItems.isEmpty() ->
+            state.items.isEmpty() ->
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     ListPlaceholder(L.str(context, "No Favorites"))
                 }
@@ -482,15 +475,20 @@ private fun FavoriteTopicList(folder: FavoriteTopicFolder, navigator: Navigator)
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                itemsIndexed(visibleItems, key = { _, topic -> topic.id }) { _, topic ->
-                    val boxState = rememberSwipeToDismissBoxState()
-                    LaunchedEffect(boxState.currentValue) {
-                        if (boxState.currentValue == SwipeToDismissBoxValue.EndToStart) {
-                            deleteFavorite(topic, boxState)
-                        }
-                    }
+                itemsIndexed(state.items, key = { _, topic -> topic.id }) { _, topic ->
+                    val boxState = rememberSwipeToDismissBoxState(
+                        confirmValueChange = { value ->
+                            if (value == SwipeToDismissBoxValue.EndToStart) {
+                                deleteFavorite(topic, boxState)
+                                true
+                            } else {
+                                false
+                            }
+                        },
+                    )
                     SwipeToDismissBox(
                         state = boxState,
+                        modifier = Modifier.animateItem(),
                         backgroundContent = {
                             Surface(
                                 color = MaterialTheme.colorScheme.errorContainer,

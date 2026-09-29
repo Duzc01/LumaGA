@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.Close
@@ -46,6 +47,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -249,6 +251,7 @@ fun HistoryScreen(navigator: Navigator) {
                             )
                             SwipeToDismissBox(
                                 state = dismissState,
+                                modifier = Modifier.animateItem(),
                                 backgroundContent = {
                                     val alignment = when (dismissState.dismissDirection) {
                                         SwipeToDismissBoxValue.StartToEnd -> Alignment.CenterStart
@@ -257,6 +260,7 @@ fun HistoryScreen(navigator: Navigator) {
                                     Box(
                                         modifier = Modifier
                                             .fillMaxSize()
+                                            .clip(RoundedCornerShape(12.dp))
                                             .background(MaterialTheme.colorScheme.errorContainer)
                                             .padding(horizontal = 20.dp),
                                         contentAlignment = alignment,

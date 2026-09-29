@@ -12,7 +12,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.foundation.gestures.waitForUpOrCancellation
+import androidx.compose.foundation.gestures.awaitTouchSlopOrCancellation
+import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -24,6 +25,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
@@ -152,6 +154,10 @@ private fun PageCapsule(
 ) {
     val screenWidthDp = LocalConfiguration.current.screenWidthDp
     val pressScope = rememberCoroutineScope()
+    // Hoisted so the press gesture can drive the list directly: the list is
+    // composed on expansion (mid-gesture) and can never pick up the in-flight
+    // pointer itself, so drag deltas are forwarded manually.
+    val listState = rememberLazyListState()
     val targetWidth =
         if (expanded) pageListWidthDp(totalPages, screenWidthDp).dp else CapsuleWidth
     val targetHeight = if (expanded) ExpandedHeight else CapsuleHeight
@@ -170,8 +176,11 @@ private fun PageCapsule(
         modifier = modifier
             .width(width)
             .height(height)
-            .pressWithTimeout(
+            .capsulePressDrag(
                 scope = pressScope,
+                listState = listState,
+                currentPage = currentPage,
+                totalPages = totalPages,
                 timeoutMs = LongPressTimeoutMs,
                 enabled = !expanded,
                 onLongPress = onLongPress,
@@ -205,6 +214,7 @@ private fun PageCapsule(
                     PageNumberList(
                         currentPage = currentPage,
                         totalPages = totalPages,
+                        listState = listState,
                         onJumpToPage = onJumpToPage,
                     )
                 } else {
@@ -241,24 +251,21 @@ private fun PageCapsule(
     }
 }
 
-/** 横向页码列表：可左右滑动，点击页码跳转。 */
+/** 横向页码列表：可左右滑动，点击页码跳转。触摸滚动由胶囊手势手动驱动。 */
 @Composable
 private fun PageNumberList(
     currentPage: Int,
     totalPages: Int,
+    listState: LazyListState,
     onJumpToPage: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val listState = rememberLazyListState()
-    // 展开时滚动到当前页。
-    LaunchedEffect(Unit) {
-        listState.scrollToItem((currentPage - 1).coerceIn(0, (totalPages - 1).coerceAtLeast(0)))
-    }
     LazyRow(
         state = listState,
         modifier = modifier.fillMaxSize(),
         verticalAlignment = Alignment.CenterVertically,
         contentPadding = PaddingValues(horizontal = 8.dp),
+        userScrollEnabled = false,
     ) {
         items(totalPages, key = { it }) { index ->
             val page = index + 1
@@ -289,12 +296,20 @@ private fun PageNumberList(
 }
 
 /**
- * 按压超时手势：按住 [timeoutMs] 毫秒触发 [onLongPress]，
- * 之前松开则视为点击触发 [onTap]。用于自定义长按时长
- * （Compose 默认长按阈值不可配置）。
+ * 胶囊按压手势：按住 [timeoutMs] 触发 [onLongPress] 展开为页码列表；
+ * 展开后手指不松开继续滑动，直接驱动页码列表滚动；
+ * 超时前松开则视为点击触发 [onTap]。
+ *
+ * 用于自定义长按时长（Compose 默认长按阈值不可配置），以及长按后
+ * 无缝衔接滑动：页码列表在展开瞬间才被组合，无法接管进行中的
+ * 手势流，故由本手势手动把拖动增量转发给 [listState]
+ *（列表自身的触摸滚动已关闭，避免双重处理）。
  */
-private fun Modifier.pressWithTimeout(
+private fun Modifier.capsulePressDrag(
     scope: CoroutineScope,
+    listState: LazyListState,
+    currentPage: Int,
+    totalPages: Int,
     timeoutMs: Long,
     enabled: Boolean = true,
     onLongPress: () -> Unit,
@@ -302,16 +317,51 @@ private fun Modifier.pressWithTimeout(
 ): Modifier = pointerInput(scope, enabled, timeoutMs) {
     if (!enabled) return@pointerInput
     awaitEachGesture {
-        awaitFirstDown(requireUnconsumed = false)
-        var fired = false
+        val down = awaitFirstDown(requireUnconsumed = false)
+        var longPressed = false
         val job = scope.launch {
             delay(timeoutMs)
-            fired = true
+            longPressed = true
+            // 先定位到当前页再展开，避免展开动画与滚动竞态。
+            listState.scrollToItem(
+                (currentPage - 1).coerceIn(0, (totalPages - 1).coerceAtLeast(0)),
+            )
             onLongPress()
         }
         try {
-            val up = waitForUpOrCancellation()
-            if (up != null && !fired) onTap()
+            // 阶段一：touch slop，区分点击与拖动。
+            val slopChange = awaitTouchSlopOrCancellation(down.id) { change, _ ->
+                change.consume()
+            }
+            if (slopChange == null) {
+                // 未拖动即松开：纯按压（取消态触发 onTap 也无妨，onTap 目前是预留空实现）。
+                job.cancel()
+                if (!longPressed) onTap()
+                return@awaitEachGesture
+            }
+            if (!longPressed) {
+                // 长按触发前就拖动了：不是长按手势，吃掉剩余事件。
+                job.cancel()
+                var event = awaitPointerEvent()
+                while (event.changes.any { !it.changedToUp() }) {
+                    event = awaitPointerEvent()
+                }
+                return@awaitEachGesture
+            }
+            // 阶段二：已展开且手指未松开：手动转发拖动给页码列表。
+            var lastX = slopChange.position.x
+            while (true) {
+                val event = awaitPointerEvent()
+                val change = event.changes.firstOrNull { it.id == down.id } ?: break
+                if (change.changedToUp()) break
+                val dx = change.position.x - lastX
+                lastX = change.position.x
+                if (dx != 0f) {
+                    // 手指向右拖内容跟随向右：反向滚动。
+                    listState.scrollBy(-dx)
+                    change.consume()
+                }
+            }
         } finally {
             job.cancel()
         }

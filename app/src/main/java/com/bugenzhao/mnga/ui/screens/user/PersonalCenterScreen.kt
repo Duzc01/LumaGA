@@ -4,6 +4,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -70,7 +71,7 @@ fun PersonalCenterScreen(navigator: Navigator) {
                 title = {
                     Text(
                         L.str(context, "Personal Center"),
-                        style = MaterialTheme.typography.titleMedium,
+                        style = MaterialTheme.typography.titleLarge,
                         maxLines = 1,
                     )
                 },
@@ -109,6 +110,7 @@ private fun PersonalCenterContent(
 
     LazyColumn(
         modifier.padding(horizontal = 16.dp),
+        contentPadding = PaddingValues(top = 12.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         // Current user card.
