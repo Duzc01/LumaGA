@@ -65,6 +65,7 @@ jobs:
         run: |
           cargo test -p service --lib test_extract_error_shapes
           cargo test -p service --lib test_sanitize_control_chars_in_json_strings
+          cargo test -p service --lib test_delete_topic_history
 
       # The runner ships several NDKs; pin the newest one for the steps below.
       - name: Select NDK

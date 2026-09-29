@@ -86,7 +86,6 @@ fun HistoryScreen(navigator: Navigator) {
     val historyVM: HistoryViewModel = viewModel()
     val dataSource = historyVM.dataSource
     val state by dataSource.state.collectAsState()
-    val tombstones by historyVM.deletedAt.collectAsState()
     LaunchedEffect(dataSource) {
         if (dataSource.notLoaded) dataSource.initialLoad()
     }
@@ -111,15 +110,12 @@ fun HistoryScreen(navigator: Navigator) {
                 CacheResponse.parser(),
             )
             result.onSuccess {
-                historyVM.clearDeleted()
                 dataSource.refresh()
             }
         }
     }
 
-    // Tombstoned entries are hidden client-side; a topic viewed again carries
-    // a newer snapshot timestamp than its tombstone and reappears.
-    val visibleItems = state.items.filter { !isTombstoned(it, tombstones) }
+    val visibleItems = state.items
 
     // Snapshot display topic: dates replaced by the visit timestamp (ms -> s).
     val displayTopics = visibleItems.mapNotNull { snapshot ->
