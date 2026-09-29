@@ -55,6 +55,9 @@ jobs:
           keyPassword=$KEY_PASS
           EOF
 
+      - name: Run local unit tests
+        run: ./gradlew testDebugUnitTest --stacktrace
+
       - name: Build
         run: ./gradlew assembleRelease --stacktrace
 

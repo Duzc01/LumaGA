@@ -4,7 +4,10 @@ use chrono::Utc;
 use protos::{
     DataModel::{Topic, TopicSnapshot},
     Message,
-    Service::{TopicHistoryRequest, TopicHistoryResponse, UpdateTopicProgressRequest},
+    Service::{
+        DeleteTopicHistoryRequest, DeleteTopicHistoryResponse, TopicHistoryRequest,
+        TopicHistoryResponse, UpdateTopicProgressRequest,
+    },
 };
 use std::cmp::Reverse;
 
@@ -64,6 +67,17 @@ pub async fn get_topic_history(
 
     Ok(TopicHistoryResponse {
         topics: snapshots.into(),
+        ..Default::default()
+    })
+}
+
+pub async fn delete_topic_history(
+    request: DeleteTopicHistoryRequest,
+) -> ServiceResult<DeleteTopicHistoryResponse> {
+    let key = topic_snapshot_key(request.get_topic_id());
+    let deleted = CACHE.remove_key(&key).unwrap_or(false);
+    Ok(DeleteTopicHistoryResponse {
+        deleted,
         ..Default::default()
     })
 }

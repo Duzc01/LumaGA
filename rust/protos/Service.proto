@@ -129,6 +129,8 @@ message AsyncRequest {
     FavoriteForumModifyRequest favorite_forum_modify = 29;
     // Query clock-in stats only (no sign-in side effect).
     ClockInStatsRequest clock_in_stats = 30;
+    // Delete the history snapshot of a single topic.
+    DeleteTopicHistoryRequest delete_topic_history = 31;
   }
 }
 
@@ -217,6 +219,11 @@ message PostVoteResponse {
 
 message TopicHistoryRequest { uint64 limit = 1; }
 message TopicHistoryResponse { repeated TopicSnapshot topics = 1; }
+
+message DeleteTopicHistoryRequest {
+  string topic_id = 1; // Delete the history snapshot of this topic, if any.
+}
+message DeleteTopicHistoryResponse { bool deleted = 1; } // Whether an entry existed.
 
 message HotTopicListRequest {
   enum DateRange {

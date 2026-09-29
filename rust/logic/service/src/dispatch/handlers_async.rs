@@ -8,6 +8,7 @@ use crate::{
         set_subforum_filter,
     },
     history::get_topic_history,
+    history::delete_topic_history,
     msg::{get_short_msg_details, get_short_msg_list, post_short_msg},
     noti::fetch_notis,
     post::{
@@ -40,6 +41,7 @@ handle!(forum_list, get_forum_list);
 handle!(remote_user, get_remote_user);
 handle!(post_vote, post_vote);
 handle!(topic_history, get_topic_history);
+handle!(delete_topic_history, delete_topic_history);
 handle!(hot_topic_list, get_hot_topic_list);
 handle!(forum_search, search_forum);
 handle!(favorite_forum_list, get_favorite_forum_list);

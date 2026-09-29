@@ -3,6 +3,12 @@ name: Rust
 # Separate from the APK workflow: the Android builds compile OpenSSL from
 # source once per ABI, so this takes far longer than ./gradlew assembleDebug
 # and only needs to run when the Rust sources change.
+#
+# On pushes to main, the freshly built liblogic.so files and the regenerated
+# Kotlin protobuf gencode are committed back to the branch automatically, so
+# the APK workflow always builds against the .so / gencode matching rust/.
+# The commit-back only touches logic/**, which is outside this workflow's
+# paths filter, so it never re-triggers itself.
 on:
   push:
     branches: [main]
@@ -11,6 +17,9 @@ on:
     branches: [main]
     paths: ["rust/**", ".github/workflows/rust.yml"]
   workflow_dispatch:
+
+permissions:
+  contents: write # needed for the commit-back on push builds
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -27,11 +36,14 @@ jobs:
       - uses: actions/checkout@v4
 
       # The Rust protobuf bindings are generated at build time and protoc-rust
-      # shells out to protoc.
+      # shells out to protoc. Pinned to 35.1 (not 35.x latest) so the Kotlin
+      # gencode regenerated below matches the checked-in files, which came
+      # from protoc 35.1 targeting the protobuf 4.35.1 runtime pinned in
+      # gradle/libs.versions.toml.
       - name: Set up protoc
         uses: arduino/setup-protoc@v3
         with:
-          version: "35.x"
+          version: "35.1"
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
       # rust-toolchain.toml pins the channel and the three Android targets, so
@@ -84,12 +96,36 @@ jobs:
             echo "$abi ok:$found"
           done
 
-      # For inspection only. The .so files committed under logic/src/main/jniLibs
-      # stay the source of truth for the APK; builds are not reproducible
-      # byte-for-byte, so they are not compared against these.
+      # For inspection only; the committed .so files below stay the source of
+      # truth for the APK. Builds are not reproducible byte-for-byte, so they
+      # are not compared against these.
       - name: Upload libraries
         uses: actions/upload-artifact@v4
         with:
           name: jniLibs
           path: logic/src/main/jniLibs/*/liblogic.so
           if-no-files-found: error
+
+      # Regenerate the Kotlin protobuf gencode from rust/protos, same inputs
+      # as rust/gen-kotlin-protos.sh but --java_out only: the Kotlin DSL
+      # (*Kt.kt) is unused by the app (Java builders only), and
+      # protoc-gen-kotlin is distributed neither via Maven nor in the protoc
+      # release zips, so it is unavailable here.
+      - name: Regenerate Kotlin protobuf gencode
+        if: github.event_name == 'push'
+        run: protoc --java_out="../logic/src/main/java" -I protos protos/*.proto
+
+      # Commit the rebuilt .so files and the regenerated gencode back to main
+      # so the APK workflow picks them up. Push builds only: PRs never push.
+      - name: Commit rebuilt libraries and gencode
+        if: github.event_name == 'push'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add ../logic/src/main/jniLibs ../logic/src/main/java/com/bugenzhao/mnga/protos
+          if git diff --cached --quiet; then
+            echo "nothing to commit"
+          else
+            git commit -m "chore: rebuild liblogic.so and protobuf gencode from ${GITHUB_SHA::8}"
+            git push
+          fi

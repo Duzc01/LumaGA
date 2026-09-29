@@ -111,8 +111,8 @@ dependencies {
     implementation(libs.kotlinx.coroutines.android)
     debugImplementation(libs.androidx.compose.ui.tooling)
 
-    // Instrumented tests (run on an emulator in CI, see
-    // .github/workflows/emulator-test.yml).
+    // Instrumented tests (currently not run in CI; the emulator workflow was
+    // removed because software-rendered emulators couldn't finish in time).
     androidTestImplementation("androidx.test.ext:junit:1.2.1")
     androidTestImplementation("androidx.test:core:1.6.1")
     androidTestImplementation("androidx.test:runner:1.6.1")

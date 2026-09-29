@@ -29,6 +29,7 @@ mod dispatch_async {
             remote_user(r) => r!(handle_remote_user(r)),
             post_vote(r) => r!(handle_post_vote(r)),
             topic_history(r) => r!(handle_topic_history(r)),
+            delete_topic_history(r) => r!(handle_delete_topic_history(r)),
             hot_topic_list(r) => r!(handle_hot_topic_list(r)),
             forum_search(r) => r!(handle_forum_search(r)),
             favorite_forum_list(r) => r!(handle_favorite_forum_list(r)),
