@@ -87,10 +87,15 @@ android {
 // Name the release APK after the app version, e.g. LumaGA_1.1.16.apk,
 // so CI artifacts and manual Releases uploads carry the version.
 androidComponents {
-    val releaseVersionName = android.defaultConfig.versionName
     onVariants(selector().withBuildType("release")) { variant ->
         variant.outputs.forEach { output ->
-            output.outputFileName.set("LumaGA_${releaseVersionName}.apk")
+            // outputFileName lives on the impl class, not the VariantOutput
+            // interface; fail loudly if a future AGP bump moves it, instead
+            // of silently shipping app-release.apk again.
+            val impl = output as? com.android.build.api.variant.impl.VariantOutputImpl
+                ?: error("APK naming: output is not VariantOutputImpl — AGP surface changed?")
+            val versionName = output.versionName.orNull ?: android.defaultConfig.versionName
+            impl.outputFileName = "LumaGA_${versionName}.apk"
         }
     }
 }
