@@ -476,16 +476,12 @@ private fun FavoriteTopicList(folder: FavoriteTopicFolder, navigator: Navigator)
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 itemsIndexed(state.items, key = { _, topic -> topic.id }) { _, topic ->
-                    val boxState = rememberSwipeToDismissBoxState(
-                        confirmValueChange = { value ->
-                            if (value == SwipeToDismissBoxValue.EndToStart) {
-                                deleteFavorite(topic, boxState)
-                                true
-                            } else {
-                                false
-                            }
-                        },
-                    )
+                    val boxState = rememberSwipeToDismissBoxState()
+                    LaunchedEffect(boxState.currentValue) {
+                        if (boxState.currentValue == SwipeToDismissBoxValue.EndToStart) {
+                            deleteFavorite(topic, boxState)
+                        }
+                    }
                     SwipeToDismissBox(
                         state = boxState,
                         modifier = Modifier.animateItem(),

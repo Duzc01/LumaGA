@@ -343,7 +343,7 @@ private fun Modifier.capsulePressDrag(
                 // 长按触发前就拖动了：不是长按手势，吃掉剩余事件。
                 job.cancel()
                 var event = awaitPointerEvent()
-                while (event.changes.any { !it.changedToUp() }) {
+                while (event.changes.any { it.pressed }) {
                     event = awaitPointerEvent()
                 }
                 return@awaitEachGesture
@@ -353,7 +353,7 @@ private fun Modifier.capsulePressDrag(
             while (true) {
                 val event = awaitPointerEvent()
                 val change = event.changes.firstOrNull { it.id == down.id } ?: break
-                if (change.changedToUp()) break
+                if (!change.pressed) break
                 val dx = change.position.x - lastX
                 lastX = change.position.x
                 if (dx != 0f) {
