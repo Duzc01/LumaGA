@@ -159,6 +159,14 @@ private fun PageCapsule(
     // composed on expansion (mid-gesture) and can never pick up the in-flight
     // pointer itself, so drag deltas are forwarded manually.
     val listState = rememberLazyListState()
+    // 展开时滚动到当前页（列表组合完成后再滚，避免 timer 里直接滚未组合的 state）。
+    LaunchedEffect(expanded) {
+        if (expanded) {
+            listState.scrollToItem(
+                (currentPage - 1).coerceIn(0, (totalPages - 1).coerceAtLeast(0)),
+            )
+        }
+    }
     // The pointerInput block is a restricted scope and cannot call
     // listState.scrollBy directly; drag deltas go through this channel to a
     // LaunchedEffect that performs the scroll.
@@ -188,9 +196,6 @@ private fun PageCapsule(
             .height(height)
             .capsulePressDrag(
                 scope = pressScope,
-                listState = listState,
-                currentPage = currentPage,
-                totalPages = totalPages,
                 timeoutMs = LongPressTimeoutMs,
                 enabled = !expanded,
                 onLongPress = onLongPress,
@@ -318,9 +323,6 @@ private fun PageNumberList(
  */
 private fun Modifier.capsulePressDrag(
     scope: CoroutineScope,
-    listState: LazyListState,
-    currentPage: Int,
-    totalPages: Int,
     timeoutMs: Long,
     enabled: Boolean = true,
     onLongPress: () -> Unit,
@@ -334,10 +336,6 @@ private fun Modifier.capsulePressDrag(
         val job = scope.launch {
             delay(timeoutMs)
             longPressed = true
-            // 先定位到当前页再展开，避免展开动画与滚动竞态。
-            listState.scrollToItem(
-                (currentPage - 1).coerceIn(0, (totalPages - 1).coerceAtLeast(0)),
-            )
             onLongPress()
         }
         try {

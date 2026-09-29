@@ -41,7 +41,7 @@ class HistoryViewModel : ViewModel() {
         id = { it.topicSnapshot.id },
     )
 
-    fun deleteTopic(id: String) {
+    fun deleteTopic(id: String, onFailure: () -> Unit = {}) {
         viewModelScope.launch {
             val result = logicCallAsync(
                 AsyncRequest.newBuilder()
@@ -51,7 +51,10 @@ class HistoryViewModel : ViewModel() {
                     .build(),
                 DeleteTopicHistoryResponse.parser(),
             )
-            result.onSuccess { dataSource.refresh() }
+            // Optimistic UI: the row is already hidden by the caller; no
+            // refresh here so there's no pull-to-refresh flash. On failure
+            // the caller un-hides the row.
+            result.onFailure { onFailure() }
         }
     }
 }

@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.Add
@@ -33,25 +32,21 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
-import androidx.compose.material3.SwipeToDismissBox
-import androidx.compose.material3.SwipeToDismissBoxState
-import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
-import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.bugenzhao.mnga.logicCallAsync
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -63,13 +58,12 @@ import com.bugenzhao.mnga.model.PlusFeature
 import com.bugenzhao.mnga.model.PlusModel
 import com.bugenzhao.mnga.protos.datamodel.FavoriteTopicFolder
 import com.bugenzhao.mnga.protos.datamodel.Topic
-import com.bugenzhao.mnga.protos.service.AsyncRequest
 import com.bugenzhao.mnga.protos.service.FavoriteFolderModifyRequest
-import com.bugenzhao.mnga.protos.service.TopicFavorRequest
-import com.bugenzhao.mnga.protos.service.TopicFavorResponse
 import com.bugenzhao.mnga.ui.components.AdaptiveFooter
 import com.bugenzhao.mnga.ui.components.ErrorPlaceholder
 import com.bugenzhao.mnga.ui.components.ListPlaceholder
+import com.bugenzhao.mnga.ui.components.SwipeToFavorBox
+import com.bugenzhao.mnga.ui.components.toggleTopicFavor
 import com.bugenzhao.mnga.ui.nav.Navigator
 import com.bugenzhao.mnga.ui.nav.Route
 import com.bugenzhao.mnga.ui.screens.topiclist.TopicRow
@@ -414,40 +408,18 @@ private fun FavoriteTopicList(folder: FavoriteTopicFolder, navigator: Navigator)
     }
 
     val listState = rememberLazyListState()
-    LaunchedEffect(listState, state.items.size) {
+    // Optimistically hidden rows after swipe-unfavorite (no full refresh, so
+    // no pull-to-refresh flash; the row below slides up via animateItem).
+    val hiddenIds = remember { mutableStateListOf<String>() }
+    val visibleItems = state.items.filter { it.id !in hiddenIds }
+    LaunchedEffect(listState, visibleItems.size) {
         snapshotFlow {
             val info = listState.layoutInfo
             val last = info.visibleItemsInfo.lastOrNull()?.index ?: 0
-            last >= state.items.size - 3
+            last >= visibleItems.size - 3
         }.collect { nearEnd ->
-            if (nearEnd && state.items.isNotEmpty()) {
-                dataSource.loadMoreIfNeeded(state.items.size - 1)
-            }
-        }
-    }
-
-    // Same interaction as the history page: confirm the dismiss, fire the
-    // delete RPC, and refresh the folder list from the server on success so
-    // the server is the source of truth for whether the row is gone.
-    fun deleteFavorite(topic: Topic, boxState: SwipeToDismissBoxState) {
-        scope.launch {
-            val result = logicCallAsync(
-                AsyncRequest.newBuilder()
-                    .setTopicFavor(
-                        TopicFavorRequest.newBuilder()
-                            .setFolderId(folder.id)
-                            .setTopicId(topic.id)
-                            .setOperation(TopicFavorRequest.Operation.DELETE)
-                            .build()
-                    )
-                    .build(),
-                TopicFavorResponse.parser(),
-            )
-            result.onSuccess {
-                Haptics.play(view, Haptics.NotificationType.SUCCESS)
-                dataSource.refresh()
-            }.onFailure {
-                boxState.snapTo(SwipeToDismissBoxValue.Settled)
+            if (nearEnd && visibleItems.isNotEmpty()) {
+                dataSource.loadMoreIfNeeded(visibleItems.size - 1)
             }
         }
     }
@@ -461,11 +433,11 @@ private fun FavoriteTopicList(folder: FavoriteTopicFolder, navigator: Navigator)
             dataSource.isInitialLoading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
             }
-            state.items.isEmpty() && state.latestError != null ->
+            visibleItems.isEmpty() && state.latestError != null ->
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     ErrorPlaceholder(state.latestError!!) { dataSource.refresh() }
                 }
-            state.items.isEmpty() ->
+            visibleItems.isEmpty() ->
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     ListPlaceholder(L.str(context, "No Favorites"))
                 }
@@ -475,51 +447,37 @@ private fun FavoriteTopicList(folder: FavoriteTopicFolder, navigator: Navigator)
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                itemsIndexed(state.items, key = { _, topic -> topic.id }) { _, topic ->
-                    val boxState = rememberSwipeToDismissBoxState()
-                    LaunchedEffect(boxState.currentValue) {
-                        if (boxState.currentValue == SwipeToDismissBoxValue.EndToStart) {
-                            deleteFavorite(topic, boxState)
-                        }
-                    }
-                    SwipeToDismissBox(
-                        state = boxState,
-                        modifier = Modifier.animateItem(),
-                        backgroundContent = {
-                            Surface(
-                                color = MaterialTheme.colorScheme.errorContainer,
-                                shape = RoundedCornerShape(12.dp),
-                                modifier = Modifier.fillMaxSize(),
-                            ) {
-                                Row(
-                                    Modifier.fillMaxSize().padding(horizontal = 20.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.End,
-                                ) {
-                                    Icon(
-                                        Icons.Outlined.Delete,
-                                        contentDescription = L.str(context, "Delete"),
-                                        tint = MaterialTheme.colorScheme.onErrorContainer,
-                                    )
-                                }
+                itemsIndexed(visibleItems, key = { _, topic -> topic.id }) { _, topic ->
+                    // Same interaction as the topic list: swipe right to
+                    // unfavorite (the row is already favored here). The box
+                    // snaps back; the row is hidden optimistically below.
+                    SwipeToFavorBox(
+                        onFavor = {
+                            hiddenIds.add(topic.id)
+                            toggleTopicFavor(
+                                scope, view, topic.id,
+                                currentFavored = true,
+                            ) { isFavored ->
+                                if (isFavored) hiddenIds.remove(topic.id)
                             }
                         },
-                        enableDismissFromStartToEnd = false,
-                        enableDismissFromEndToStart = true,
+                        modifier = Modifier.animateItem(),
                     ) {
-                        TopicRow(
-                            topic = topic,
-                            dimmedSubject = false,
-                            showIndicators = false,
-                            onClick = {
-                                navigator.push(
-                                    Route.TopicDetails(
-                                        topicId = topic.id,
-                                        fav = topic.fav.takeIf { it.isNotEmpty() },
+                        Box {
+                            TopicRow(
+                                topic = topic,
+                                dimmedSubject = false,
+                                showIndicators = false,
+                                onClick = {
+                                    navigator.push(
+                                        Route.TopicDetails(
+                                            topicId = topic.id,
+                                            fav = topic.fav.takeIf { it.isNotEmpty() },
+                                        )
                                     )
-                                )
-                            },
-                        )
+                                },
+                            )
+                        }
                     }
                 }
                 item(key = "footer") {

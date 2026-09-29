@@ -39,6 +39,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -119,10 +120,15 @@ fun HistoryScreen(navigator: Navigator) {
 
     val visibleItems = state.items
 
+    // Optimistically hidden rows after swipe-delete (no full refresh, so no
+    // pull-to-refresh flash; the row below slides up via animateItem).
+    val hiddenIds = remember { mutableStateListOf<String>() }
+
     // Snapshot display topic: dates replaced by the visit timestamp (ms -> s).
     val displayTopics = visibleItems.mapNotNull { snapshot ->
         val topic = snapshot.topicSnapshot
         if (topic.id.isEmpty()) return@mapNotNull null
+        if (topic.id in hiddenIds) return@mapNotNull null
         val visitDate = snapshot.timestamp / 1000
         topic.toBuilder()
             .setPostDate(visitDate)
@@ -242,7 +248,12 @@ fun HistoryScreen(navigator: Navigator) {
                                     if (value == SwipeToDismissBoxValue.StartToEnd ||
                                         value == SwipeToDismissBoxValue.EndToStart
                                     ) {
-                                        historyVM.deleteTopic(topic.id)
+                                        // Optimistic: hide immediately for a smooth
+                                        // slide-up; un-hide if the RPC fails.
+                                        hiddenIds.add(topic.id)
+                                        historyVM.deleteTopic(topic.id) {
+                                            hiddenIds.remove(topic.id)
+                                        }
                                         true
                                     } else {
                                         false
