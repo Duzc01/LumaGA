@@ -274,6 +274,7 @@ object StringsMap {
         "Author Info" to "author_info",
         "Show Author Indicator" to "show_author_indicator",
         "(OP)" to "op_label",
+        "Personal Center" to "personal_center",
         "Mode" to "mode",
         "Participants" to "participants",
         "List Style" to "list_style",

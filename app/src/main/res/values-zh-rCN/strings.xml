@@ -271,6 +271,7 @@
     <string name="author_info">作者信息</string>
     <string name="show_author_indicator">显示作者标识</string>
     <string name="op_label">（楼主）</string>
+    <string name="personal_center">个人中心</string>
     <string name="mode">模式</string>
     <string name="participants">参与者</string>
     <string name="list_style">列表样式</string>

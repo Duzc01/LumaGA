@@ -17,7 +17,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -232,6 +231,17 @@ private fun NavigationHost(
         composable(RouteCodec.ROUTE_CLOCK_IN) {
             RouteDispatcher(navigator, Route.ClockIn, editor)
         }
+        // Personal center: slides in from the left (drawer-style page),
+        // mirroring the exit when popped.
+        composable(
+            RouteCodec.ROUTE_PERSONAL_CENTER,
+            enterTransition = { slideInHorizontally(tween(280)) { -it } + fadeIn(tween(280)) },
+            exitTransition = { slideOutHorizontally(tween(280)) { -it } + fadeOut(tween(280)) },
+            popEnterTransition = { slideInHorizontally(tween(280)) { -it } + fadeIn(tween(280)) },
+            popExitTransition = { slideOutHorizontally(tween(280)) { -it } + fadeOut(tween(280)) },
+        ) {
+            RouteDispatcher(navigator, Route.PersonalCenter, editor)
+        }
     }
 }
 
@@ -248,7 +258,7 @@ fun RouteDispatcher(
 ) {
     when (route) {
         is Route.ForumList ->
-            ForumListScreen(navigator, onShowUserMenu = { com.bugenzhao.mnga.ui.root.showUserMenuBus.value = true })
+            ForumListScreen(navigator, onShowUserMenu = { navigator.push(Route.PersonalCenter) })
         is Route.TopicList ->
             TopicListScreen(
                 navigator,
@@ -279,6 +289,8 @@ fun RouteDispatcher(
         is Route.BlockedUsers -> BlockedUsersScreen(navigator)
         is Route.About -> AboutScreen(navigator)
         is Route.ClockIn -> com.bugenzhao.mnga.ui.screens.user.ClockInScreen(navigator)
+        is Route.PersonalCenter ->
+            com.bugenzhao.mnga.ui.screens.user.PersonalCenterScreen(navigator)
         is Route.Settings ->
             com.bugenzhao.mnga.ui.screens.prefs.PreferencesSheet(
                 onDismiss = { navigator.pop() },
@@ -292,9 +304,6 @@ fun RouteDispatcher(
         else -> RoutePlaceholderScreen(navigator, route)
     }
 }
-
-/** Simple event bus for the user-menu trigger (forum list toolbar). */
-val showUserMenuBus = mutableStateOf(false)
 
 @Composable
 private fun RoutePlaceholderScreen(navigator: Navigator, route: Route) {
@@ -341,14 +350,6 @@ private fun GlobalSheets(
                 editor.shortMessage.editorDismissed()
             }
         }
-    }
-
-    if (showUserMenuBus.value) {
-        com.bugenzhao.mnga.ui.screens.user.UserMenuSheet(
-            navigator = navigator,
-            onDismiss = { showUserMenuBus.value = false },
-            onShowLogin = { App.authStorage.setIsSigning(true) },
-        )
     }
 
     val isSigning by App.authStorage.isSigning.collectAsState()
