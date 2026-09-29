@@ -130,6 +130,7 @@ fun PreferencesSheet(onDismiss: () -> Unit, navigator: Navigator? = null) {
     val webApiStrategyRaw by prefs.topicDetailsWebApiStrategyRaw.flow.collectAsState()
     val resumeFromRaw by prefs.resumeTopicFromRaw.flow.collectAsState()
     val autoOpenInBrowserWhenBanned by prefs.autoOpenInBrowserWhenBanned.flow.collectAsState()
+    val showQuickPageJump by prefs.topicDetailsShowQuickPageJump.flow.collectAsState()
 
     val dateTimeStrategyRaw by prefs.postRowDateTimeStrategyRaw.flow.collectAsState()
     val showSignature by prefs.showSignature.flow.collectAsState()
@@ -326,6 +327,11 @@ fun PreferencesSheet(onDismiss: () -> Unit, navigator: Navigator? = null) {
                         title = L.str(context, "Auto Open in Browser when Banned"),
                         checked = autoOpenInBrowserWhenBanned,
                         onChange = { prefs.autoOpenInBrowserWhenBanned.value = it },
+                    )
+                    SwitchRow(
+                        title = L.str(context, "Quick Page Jump"),
+                        checked = showQuickPageJump,
+                        onChange = { prefs.topicDetailsShowQuickPageJump.value = it },
                     )
                 }
             }

@@ -991,8 +991,10 @@ fun TopicDetailsScreen(
                 }
             }
             // 胶囊页码指示器：长按展开横向页码列表，点击页码跳转。
-            // 单页帖子不展示；单帖视图（onlyPostId）与 mock 主题不展示。
-            if (!mock && onlyPostId == null && indicatorTotalPages >= 2) {
+            // 单页帖子不展示；单帖视图（onlyPostId）与 mock 主题不展示；
+            // 可在设置-主题详情中关闭（底部快速翻页）。
+            val showQuickPageJump by App.prefs.topicDetailsShowQuickPageJump.flow.collectAsState()
+            if (!mock && onlyPostId == null && indicatorTotalPages >= 2 && showQuickPageJump) {
                 PageIndicatorOverlay(
                     currentPage = indicatorCurrentPage,
                     totalPages = indicatorTotalPages,
