@@ -820,5 +820,32 @@ public interface AsyncRequestOrBuilder extends
    */
   com.bugenzhao.mnga.protos.service.ClockInStatsRequestOrBuilder getClockInStatsOrBuilder();
 
+  /**
+   * <pre>
+   * Delete the history snapshot of a single topic.
+   * </pre>
+   *
+   * <code>.DeleteTopicHistoryRequest delete_topic_history = 31;</code>
+   * @return Whether the deleteTopicHistory field is set.
+   */
+  boolean hasDeleteTopicHistory();
+  /**
+   * <pre>
+   * Delete the history snapshot of a single topic.
+   * </pre>
+   *
+   * <code>.DeleteTopicHistoryRequest delete_topic_history = 31;</code>
+   * @return The deleteTopicHistory.
+   */
+  com.bugenzhao.mnga.protos.service.DeleteTopicHistoryRequest getDeleteTopicHistory();
+  /**
+   * <pre>
+   * Delete the history snapshot of a single topic.
+   * </pre>
+   *
+   * <code>.DeleteTopicHistoryRequest delete_topic_history = 31;</code>
+   */
+  com.bugenzhao.mnga.protos.service.DeleteTopicHistoryRequestOrBuilder getDeleteTopicHistoryOrBuilder();
+
   com.bugenzhao.mnga.protos.service.AsyncRequest.ValueCase getValueCase();
 }

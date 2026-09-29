@@ -89,6 +89,7 @@ private static final long serialVersionUID = 0L;
     FAVORITE_FORUM_LIST(28),
     FAVORITE_FORUM_MODIFY(29),
     CLOCK_IN_STATS(30),
+    DELETE_TOPIC_HISTORY(31),
     VALUE_NOT_SET(0);
     private final int value;
     private ValueCase(int value) {
@@ -136,6 +137,7 @@ private static final long serialVersionUID = 0L;
         case 28: return FAVORITE_FORUM_LIST;
         case 29: return FAVORITE_FORUM_MODIFY;
         case 30: return CLOCK_IN_STATS;
+        case 31: return DELETE_TOPIC_HISTORY;
         case 0: return VALUE_NOT_SET;
         default: return null;
       }
@@ -1441,6 +1443,49 @@ private static final long serialVersionUID = 0L;
     return com.bugenzhao.mnga.protos.service.ClockInStatsRequest.getDefaultInstance();
   }
 
+  public static final int DELETE_TOPIC_HISTORY_FIELD_NUMBER = 31;
+  /**
+   * <pre>
+   * Delete the history snapshot of a single topic.
+   * </pre>
+   *
+   * <code>.DeleteTopicHistoryRequest delete_topic_history = 31;</code>
+   * @return Whether the deleteTopicHistory field is set.
+   */
+  @java.lang.Override
+  public boolean hasDeleteTopicHistory() {
+    return valueCase_ == 31;
+  }
+  /**
+   * <pre>
+   * Delete the history snapshot of a single topic.
+   * </pre>
+   *
+   * <code>.DeleteTopicHistoryRequest delete_topic_history = 31;</code>
+   * @return The deleteTopicHistory.
+   */
+  @java.lang.Override
+  public com.bugenzhao.mnga.protos.service.DeleteTopicHistoryRequest getDeleteTopicHistory() {
+    if (valueCase_ == 31) {
+       return (com.bugenzhao.mnga.protos.service.DeleteTopicHistoryRequest) value_;
+    }
+    return com.bugenzhao.mnga.protos.service.DeleteTopicHistoryRequest.getDefaultInstance();
+  }
+  /**
+   * <pre>
+   * Delete the history snapshot of a single topic.
+   * </pre>
+   *
+   * <code>.DeleteTopicHistoryRequest delete_topic_history = 31;</code>
+   */
+  @java.lang.Override
+  public com.bugenzhao.mnga.protos.service.DeleteTopicHistoryRequestOrBuilder getDeleteTopicHistoryOrBuilder() {
+    if (valueCase_ == 31) {
+       return (com.bugenzhao.mnga.protos.service.DeleteTopicHistoryRequest) value_;
+    }
+    return com.bugenzhao.mnga.protos.service.DeleteTopicHistoryRequest.getDefaultInstance();
+  }
+
   private byte memoizedIsInitialized = -1;
   @java.lang.Override
   public final boolean isInitialized() {
@@ -1544,6 +1589,9 @@ private static final long serialVersionUID = 0L;
     }
     if (valueCase_ == 30) {
       output.writeMessage(30, (com.bugenzhao.mnga.protos.service.ClockInStatsRequest) value_);
+    }
+    if (valueCase_ == 31) {
+      output.writeMessage(31, (com.bugenzhao.mnga.protos.service.DeleteTopicHistoryRequest) value_);
     }
     getUnknownFields().writeTo(output);
   }
@@ -1668,6 +1716,10 @@ private static final long serialVersionUID = 0L;
     if (valueCase_ == 30) {
       size += com.google.protobuf.CodedOutputStream
         .computeMessageSize(30, (com.bugenzhao.mnga.protos.service.ClockInStatsRequest) value_);
+    }
+    if (valueCase_ == 31) {
+      size += com.google.protobuf.CodedOutputStream
+        .computeMessageSize(31, (com.bugenzhao.mnga.protos.service.DeleteTopicHistoryRequest) value_);
     }
     return size;
   }
@@ -1815,6 +1867,10 @@ private static final long serialVersionUID = 0L;
         if (!getClockInStats()
             .equals(other.getClockInStats())) return false;
         break;
+      case 31:
+        if (!getDeleteTopicHistory()
+            .equals(other.getDeleteTopicHistory())) return false;
+        break;
       case 0:
       default:
     }
@@ -1949,6 +2005,10 @@ private static final long serialVersionUID = 0L;
       case 30:
         hash = (37 * hash) + CLOCK_IN_STATS_FIELD_NUMBER;
         hash = (53 * hash) + getClockInStats().hashCode();
+        break;
+      case 31:
+        hash = (37 * hash) + DELETE_TOPIC_HISTORY_FIELD_NUMBER;
+        hash = (53 * hash) + getDeleteTopicHistory().hashCode();
         break;
       case 0:
       default:
@@ -2179,6 +2239,9 @@ private static final long serialVersionUID = 0L;
       if (clockInStatsBuilder_ != null) {
         clockInStatsBuilder_.clear();
       }
+      if (deleteTopicHistoryBuilder_ != null) {
+        deleteTopicHistoryBuilder_.clear();
+      }
       valueCase_ = 0;
       value_ = null;
       return this;
@@ -2340,6 +2403,10 @@ private static final long serialVersionUID = 0L;
           clockInStatsBuilder_ != null) {
         result.value_ = clockInStatsBuilder_.build();
       }
+      if (valueCase_ == 31 &&
+          deleteTopicHistoryBuilder_ != null) {
+        result.value_ = deleteTopicHistoryBuilder_.build();
+      }
     }
 
     @java.lang.Override
@@ -2473,6 +2540,10 @@ private static final long serialVersionUID = 0L;
         }
         case CLOCK_IN_STATS: {
           mergeClockInStats(other.getClockInStats());
+          break;
+        }
+        case DELETE_TOPIC_HISTORY: {
+          mergeDeleteTopicHistory(other.getDeleteTopicHistory());
           break;
         }
         case VALUE_NOT_SET: {
@@ -2715,6 +2786,13 @@ private static final long serialVersionUID = 0L;
               valueCase_ = 30;
               break;
             } // case 242
+            case 250: {
+              input.readMessage(
+                  internalGetDeleteTopicHistoryFieldBuilder().getBuilder(),
+                  extensionRegistry);
+              valueCase_ = 31;
+              break;
+            } // case 250
             default: {
               if (!super.parseUnknownField(input, extensionRegistry, tag)) {
                 done = true; // was an endgroup tag
@@ -8085,6 +8163,184 @@ private static final long serialVersionUID = 0L;
       valueCase_ = 30;
       onChanged();
       return clockInStatsBuilder_;
+    }
+
+    private com.google.protobuf.SingleFieldBuilder<
+        com.bugenzhao.mnga.protos.service.DeleteTopicHistoryRequest, com.bugenzhao.mnga.protos.service.DeleteTopicHistoryRequest.Builder, com.bugenzhao.mnga.protos.service.DeleteTopicHistoryRequestOrBuilder> deleteTopicHistoryBuilder_;
+    /**
+     * <pre>
+     * Delete the history snapshot of a single topic.
+     * </pre>
+     *
+     * <code>.DeleteTopicHistoryRequest delete_topic_history = 31;</code>
+     * @return Whether the deleteTopicHistory field is set.
+     */
+    @java.lang.Override
+    public boolean hasDeleteTopicHistory() {
+      return valueCase_ == 31;
+    }
+    /**
+     * <pre>
+     * Delete the history snapshot of a single topic.
+     * </pre>
+     *
+     * <code>.DeleteTopicHistoryRequest delete_topic_history = 31;</code>
+     * @return The deleteTopicHistory.
+     */
+    @java.lang.Override
+    public com.bugenzhao.mnga.protos.service.DeleteTopicHistoryRequest getDeleteTopicHistory() {
+      if (deleteTopicHistoryBuilder_ == null) {
+        if (valueCase_ == 31) {
+          return (com.bugenzhao.mnga.protos.service.DeleteTopicHistoryRequest) value_;
+        }
+        return com.bugenzhao.mnga.protos.service.DeleteTopicHistoryRequest.getDefaultInstance();
+      } else {
+        if (valueCase_ == 31) {
+          return deleteTopicHistoryBuilder_.getMessage();
+        }
+        return com.bugenzhao.mnga.protos.service.DeleteTopicHistoryRequest.getDefaultInstance();
+      }
+    }
+    /**
+     * <pre>
+     * Delete the history snapshot of a single topic.
+     * </pre>
+     *
+     * <code>.DeleteTopicHistoryRequest delete_topic_history = 31;</code>
+     */
+    public Builder setDeleteTopicHistory(com.bugenzhao.mnga.protos.service.DeleteTopicHistoryRequest value) {
+      if (deleteTopicHistoryBuilder_ == null) {
+        if (value == null) {
+          throw new NullPointerException();
+        }
+        value_ = value;
+        onChanged();
+      } else {
+        deleteTopicHistoryBuilder_.setMessage(value);
+      }
+      valueCase_ = 31;
+      return this;
+    }
+    /**
+     * <pre>
+     * Delete the history snapshot of a single topic.
+     * </pre>
+     *
+     * <code>.DeleteTopicHistoryRequest delete_topic_history = 31;</code>
+     */
+    public Builder setDeleteTopicHistory(
+        com.bugenzhao.mnga.protos.service.DeleteTopicHistoryRequest.Builder builderForValue) {
+      if (deleteTopicHistoryBuilder_ == null) {
+        value_ = builderForValue.build();
+        onChanged();
+      } else {
+        deleteTopicHistoryBuilder_.setMessage(builderForValue.build());
+      }
+      valueCase_ = 31;
+      return this;
+    }
+    /**
+     * <pre>
+     * Delete the history snapshot of a single topic.
+     * </pre>
+     *
+     * <code>.DeleteTopicHistoryRequest delete_topic_history = 31;</code>
+     */
+    public Builder mergeDeleteTopicHistory(com.bugenzhao.mnga.protos.service.DeleteTopicHistoryRequest value) {
+      if (deleteTopicHistoryBuilder_ == null) {
+        if (valueCase_ == 31 &&
+            value_ != com.bugenzhao.mnga.protos.service.DeleteTopicHistoryRequest.getDefaultInstance()) {
+          value_ = com.bugenzhao.mnga.protos.service.DeleteTopicHistoryRequest.newBuilder((com.bugenzhao.mnga.protos.service.DeleteTopicHistoryRequest) value_)
+              .mergeFrom(value).buildPartial();
+        } else {
+          value_ = value;
+        }
+        onChanged();
+      } else {
+        if (valueCase_ == 31) {
+          deleteTopicHistoryBuilder_.mergeFrom(value);
+        } else {
+          deleteTopicHistoryBuilder_.setMessage(value);
+        }
+      }
+      valueCase_ = 31;
+      return this;
+    }
+    /**
+     * <pre>
+     * Delete the history snapshot of a single topic.
+     * </pre>
+     *
+     * <code>.DeleteTopicHistoryRequest delete_topic_history = 31;</code>
+     */
+    public Builder clearDeleteTopicHistory() {
+      if (deleteTopicHistoryBuilder_ == null) {
+        if (valueCase_ == 31) {
+          valueCase_ = 0;
+          value_ = null;
+          onChanged();
+        }
+      } else {
+        if (valueCase_ == 31) {
+          valueCase_ = 0;
+          value_ = null;
+        }
+        deleteTopicHistoryBuilder_.clear();
+      }
+      return this;
+    }
+    /**
+     * <pre>
+     * Delete the history snapshot of a single topic.
+     * </pre>
+     *
+     * <code>.DeleteTopicHistoryRequest delete_topic_history = 31;</code>
+     */
+    public com.bugenzhao.mnga.protos.service.DeleteTopicHistoryRequest.Builder getDeleteTopicHistoryBuilder() {
+      return internalGetDeleteTopicHistoryFieldBuilder().getBuilder();
+    }
+    /**
+     * <pre>
+     * Delete the history snapshot of a single topic.
+     * </pre>
+     *
+     * <code>.DeleteTopicHistoryRequest delete_topic_history = 31;</code>
+     */
+    @java.lang.Override
+    public com.bugenzhao.mnga.protos.service.DeleteTopicHistoryRequestOrBuilder getDeleteTopicHistoryOrBuilder() {
+      if ((valueCase_ == 31) && (deleteTopicHistoryBuilder_ != null)) {
+        return deleteTopicHistoryBuilder_.getMessageOrBuilder();
+      } else {
+        if (valueCase_ == 31) {
+          return (com.bugenzhao.mnga.protos.service.DeleteTopicHistoryRequest) value_;
+        }
+        return com.bugenzhao.mnga.protos.service.DeleteTopicHistoryRequest.getDefaultInstance();
+      }
+    }
+    /**
+     * <pre>
+     * Delete the history snapshot of a single topic.
+     * </pre>
+     *
+     * <code>.DeleteTopicHistoryRequest delete_topic_history = 31;</code>
+     */
+    private com.google.protobuf.SingleFieldBuilder<
+        com.bugenzhao.mnga.protos.service.DeleteTopicHistoryRequest, com.bugenzhao.mnga.protos.service.DeleteTopicHistoryRequest.Builder, com.bugenzhao.mnga.protos.service.DeleteTopicHistoryRequestOrBuilder> 
+        internalGetDeleteTopicHistoryFieldBuilder() {
+      if (deleteTopicHistoryBuilder_ == null) {
+        if (!(valueCase_ == 31)) {
+          value_ = com.bugenzhao.mnga.protos.service.DeleteTopicHistoryRequest.getDefaultInstance();
+        }
+        deleteTopicHistoryBuilder_ = new com.google.protobuf.SingleFieldBuilder<
+            com.bugenzhao.mnga.protos.service.DeleteTopicHistoryRequest, com.bugenzhao.mnga.protos.service.DeleteTopicHistoryRequest.Builder, com.bugenzhao.mnga.protos.service.DeleteTopicHistoryRequestOrBuilder>(
+                (com.bugenzhao.mnga.protos.service.DeleteTopicHistoryRequest) value_,
+                getParentForChildren(),
+                isClean());
+        value_ = null;
+      }
+      valueCase_ = 31;
+      onChanged();
+      return deleteTopicHistoryBuilder_;
     }
 
     // @@protoc_insertion_point(builder_scope:AsyncRequest)
