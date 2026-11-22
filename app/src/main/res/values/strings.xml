@@ -339,6 +339,7 @@
     <string name="add_to_new_folder">Add to New Folder</string>
     <string name="resume_reading_progress">Resume Reading Progress</string>
     <string name="refresh_button">Refresh Button</string>
+    <string name="swipe_to_favorite">Swipe to Favorite</string>
     <string name="blocked_topics_style">Blocked Topics Style</string>
     <string name="redact_subject">Redact Subject</string>
     <string name="hide_topic">Hide Topic</string>

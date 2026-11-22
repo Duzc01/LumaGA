@@ -188,6 +188,7 @@ internal fun TopicResultsList(
     val view = LocalView.current
     val scope = rememberCoroutineScope()
     val state by dataSource.state.collectAsState()
+    val swipeToFavor by App.prefs.topicListSwipeToFavor.flow.collectAsState()
 
     // Local favorite-topic overrides (kept after the swipe action).
     val favoredOverrides = remember { mutableStateMapOf<String, Boolean>() }
@@ -236,6 +237,7 @@ internal fun TopicResultsList(
                                     onResult = { favored -> favoredOverrides[topic.id] = favored },
                                 )
                             },
+                            enabled = swipeToFavor,
                         ) {
                             TopicRow(
                                 topic = topic,

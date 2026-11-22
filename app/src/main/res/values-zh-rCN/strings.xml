@@ -339,6 +339,7 @@
     <string name="add_to_new_folder">添加到新收藏夹</string>
     <string name="resume_reading_progress">恢复阅读进度</string>
     <string name="refresh_button">刷新按钮</string>
+    <string name="swipe_to_favorite">滑动收藏</string>
     <string name="blocked_topics_style">屏蔽话题样式</string>
     <string name="redact_subject">遮盖标题</string>
     <string name="hide_topic">隐藏话题</string>

@@ -236,6 +236,7 @@ fun TopicListScreen(
     var contextMenuTopic by remember { mutableStateOf<Topic?>(null) }
 
     val showRefreshButton by App.prefs.topicListShowRefreshButton.flow.collectAsState()
+    val swipeToFavor by App.prefs.topicListSwipeToFavor.flow.collectAsState()
 
     val navID = NavigationIdentifier.ForumID(forum.id)
 
@@ -454,6 +455,7 @@ fun TopicListScreen(
                         // own; the forum being browsed is the answer for them.
                         fallbackForumName = forum.name.takeIf { !mock },
                         favoredOverride = favoredOverrides[topic.id],
+                        swipeToFavor = swipeToFavor,
                         contextMenuTopic = contextMenuTopic,
                         onContextMenu = { contextMenuTopic = it },
                         onDismissMenu = { contextMenuTopic = null },
@@ -503,6 +505,7 @@ private fun TopicListItem(
     useTopicPostDate: Boolean,
     fallbackForumName: String?,
     favoredOverride: Boolean?,
+    swipeToFavor: Boolean,
     contextMenuTopic: Topic?,
     onContextMenu: (Topic?) -> Unit,
     onDismissMenu: () -> Unit,
@@ -513,7 +516,7 @@ private fun TopicListItem(
     val context = LocalContext.current
     var shareMenuExpanded by remember { mutableStateOf(false) }
 
-    SwipeToFavorBox(onFavor = onToggleFavor) {
+    SwipeToFavorBox(onFavor = onToggleFavor, enabled = swipeToFavor) {
         Box {
             if (topic.hasShortcutForum()) {
                 ForumShortcutRow(

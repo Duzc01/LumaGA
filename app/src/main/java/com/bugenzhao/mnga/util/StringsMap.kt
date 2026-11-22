@@ -342,6 +342,7 @@ object StringsMap {
         "Add to New Folder" to "add_to_new_folder",
         "Resume Reading Progress" to "resume_reading_progress",
         "Refresh Button" to "refresh_button",
+        "Swipe to Favorite" to "swipe_to_favorite",
         "Blocked Topics Style" to "blocked_topics_style",
         "Redact Subject" to "redact_subject",
         "Hide Topic" to "hide_topic",

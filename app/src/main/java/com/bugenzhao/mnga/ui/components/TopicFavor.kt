@@ -2,6 +2,7 @@ package com.bugenzhao.mnga.ui.components
 
 import android.view.View
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -74,16 +75,23 @@ fun toggleTopicFavor(
 }
 
 /**
- * The swipe-to-favorite row wrapper: a swipe from the start edge triggers
- * [onFavor] and the row snaps back — favoriting keeps the row.
+ * The swipe-to-favorite row wrapper: when [enabled], a swipe from the start
+ * edge triggers [onFavor] and the row snaps back — favoriting keeps the row.
+ * When disabled, renders [content] directly without a swipe gesture detector
+ * so normal scrolling/gestures cannot accidentally favorite topics.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SwipeToFavorBox(
     onFavor: () -> Unit,
     modifier: Modifier = Modifier,
+    enabled: Boolean = true,
     content: @Composable RowScope.() -> Unit,
 ) {
+    if (!enabled) {
+        Row(modifier = modifier, content = content)
+        return
+    }
     val context = LocalContext.current
     val boxState = rememberSwipeToDismissBoxState(
         confirmValueChange = { value ->

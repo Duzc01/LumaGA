@@ -148,6 +148,7 @@ class PreferencesStorage(private val prefs: SharedPreferences) {
     val useInAppSafari = boolPref("useInAppSafari", true)
     val topicListHideBlocked = boolPref("topicListHideBlocked", false)
     val topicListShowRefreshButton = boolPref("topicListShowRefreshButton", true)
+    val topicListSwipeToFavor = boolPref("topicListSwipeToFavor", true)
     val topicListShowForumShortcut = boolPref("topicListShowForumShortcut", true)
     val topicListSubjectMulticolor = boolPref("topicListSubjectMulticolor", true)
     val topicListRowStyle = boolPref("topicListRowStyle", false)

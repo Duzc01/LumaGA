@@ -126,6 +126,7 @@ fun PreferencesSheet(onDismiss: () -> Unit, navigator: Navigator? = null) {
     val showForumShortcut by prefs.topicListShowForumShortcut.flow.collectAsState()
     val subjectMulticolor by prefs.topicListSubjectMulticolor.flow.collectAsState()
     val showRefreshButton by prefs.topicListShowRefreshButton.flow.collectAsState()
+    val swipeToFavor by prefs.topicListSwipeToFavor.flow.collectAsState()
 
     val webApiStrategyRaw by prefs.topicDetailsWebApiStrategyRaw.flow.collectAsState()
     val resumeFromRaw by prefs.resumeTopicFromRaw.flow.collectAsState()
@@ -302,6 +303,11 @@ fun PreferencesSheet(onDismiss: () -> Unit, navigator: Navigator? = null) {
                         title = L.str(context, "Refresh Button"),
                         checked = showRefreshButton,
                         onChange = { prefs.topicListShowRefreshButton.value = it },
+                    )
+                    SwitchRow(
+                        title = L.str(context, "Swipe to Favorite"),
+                        checked = swipeToFavor,
+                        onChange = { prefs.topicListSwipeToFavor.value = it },
                     )
                 }
             }
