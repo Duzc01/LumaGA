@@ -36,6 +36,25 @@ pub fn parse_content(text: &str) -> PostContent {
     }
 }
 
+/// Cached posts from the previous parser contain space-packed layout attributes.
+pub fn repair_cached_layout(content: &mut PostContent) {
+    fn has_legacy_style(spans: &[Span]) -> bool {
+        spans.iter().filter(|span| span.has_tagged()).any(|span| {
+            let tag = span.get_tagged();
+            (matches!(tag.tag.as_str(), "style" | "fixsize")
+                && tag.complex_attributes.iter().any(|attr| attr.contains(' ')))
+                || has_legacy_style(&tag.spans)
+        })
+    }
+
+    if has_legacy_style(&content.spans)
+        && let Ok(spans) = do_parse_content(&content.raw)
+    {
+        content.spans = spans.into();
+        content.error.clear();
+    }
+}
+
 pub fn parse_subject(text: &str) -> Subject {
     let text = unescape(text);
     let (mut tags, mut content) = do_parse_subject(&text)

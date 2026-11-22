@@ -28,12 +28,12 @@ internal data class NgaStyle(
     val widthPercent: Boolean = false,
 ) {
     /** Approximate Compose font size for NGA's `[style font N]` scale. */
-    fun resolvedFontSize(): TextUnit = when (fontLevel) {
+    fun resolvedFontSize(inRatingCard: Boolean = false): TextUnit = when (fontLevel) {
         null, 0 -> TextUnit.Unspecified
         1 -> 12.sp
         2 -> 14.sp
-        3 -> 19.sp
-        4 -> 24.sp
+        3 -> if (inRatingCard) 32.sp else 19.sp
+        4 -> if (inRatingCard) 44.sp else 24.sp
         else -> 26.sp
     }
 
@@ -41,40 +41,17 @@ internal data class NgaStyle(
         get() = (fontLevel ?: 0) >= 3
 }
 
-private val strayCommentCloseRegex = Regex("""\[/comment(?:\s+[^\]]*)?\]""", RegexOption.IGNORE_CASE)
-
-/**
- * Strips stray `[/comment ...]` markers that Rust's `close_tag()` rule leaves
- * inside plain text spans because `close_tag()` only accepts `[/token]` without
- * spaces (e.g. `[comment oth_title_cn]《捞尸人》[/comment oth_title_cn]`).
- */
-internal fun stripStrayCommentCloseTags(text: String): String {
-    if (!text.contains("[/comment", ignoreCase = true)) return text
-    val cleaned = strayCommentCloseRegex.replace(text, "")
-    // NGA entry templates often pad empty alias fields with em-spaces (`\u2003`)
-    // right after `[/comment oth_title_alias]`; collapse whitespace-only residue.
-    return if (cleaned.all { it.isWhitespace() || it == '\u2003' || it == '\u3000' }) "" else cleaned
-}
-
-/**
- * Returns true if [tagged] (`[comment ...]`) contains a stray `[/comment ...]`
- * in its plain children, meaning Rust's PEG parser did not match the spaced
- * closing tag and instead consumed the parent's `[/style]` to close `[comment]`.
- */
-internal fun hasStolenCommentClose(tagged: Span.Tagged): Boolean {
-    if (tagged.tag != "comment") return false
-    return tagged.spansList.any { it.hasPlain() && it.plain.text.contains("[/comment", ignoreCase = true) }
-}
-
-/** Recursively checks whether a `[style]` subtree references NGA's `$votedata_*` JS variables. */
-internal fun containsVoteDataPlaceholder(tagged: Span.Tagged): Boolean {
-    if (tagged.tag == "style") {
-        val parsed = parseNgaStyle(tagged.complexAttributesList)
-        if (parsed.innerHtmlVar?.startsWith("\$votedata_", ignoreCase = true) == true) {
-            return true
+internal fun findNgaScorePlaceholder(tagged: Span.Tagged): Span.Tagged? {
+    if (tagged.tag == "style" &&
+        tagged.complexAttributesList.windowed(2).any { (key, value) ->
+            key.equals("innerHTML", ignoreCase = true) && value == "\$votedata_voteavgvalue"
         }
+    ) {
+        return tagged
     }
-    return tagged.spansList.any { it.hasTagged() && containsVoteDataPlaceholder(it.tagged) }
+    return tagged.spansList.firstNotNullOfOrNull { span ->
+        if (span.hasTagged()) findNgaScorePlaceholder(span.tagged) else null
+    }
 }
 
 /** Parses a named NGA color or `#rgb` / `#rrggbb` / `#aarrggbb` hex color. */

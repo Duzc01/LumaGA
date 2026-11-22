@@ -16,6 +16,8 @@ use protos::{DataModel::*, Service::*, ToValue};
 use reqwest::multipart;
 use sxd_xpath::nodeset::Node;
 
+mod rating;
+
 fn vote_response_key(id: &PostId) -> String {
     format!("/vote_response/topic/{}/post/{}", id.tid, id.pid)
 }
@@ -25,7 +27,10 @@ pub fn extract_post(node: Node, at_page: u32, context: &str) -> Option<Post> {
     let map = extract_kv(node);
 
     let raw_content = get!(map, "content")?;
-    let content = text::parse_content(&raw_content);
+    let mut content = text::parse_content(&raw_content);
+    if let Some(vote) = get!(map, "vote") {
+        rating::fill_placeholders(&mut content, &vote);
+    }
 
     let post_id = PostId {
         pid: get!(map, "pid")?,

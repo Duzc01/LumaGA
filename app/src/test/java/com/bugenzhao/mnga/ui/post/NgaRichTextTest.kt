@@ -39,6 +39,7 @@ class NgaRichTextTest {
         val heading = parseNgaStyle(listOf("font", "3", "#444", "line-height", "1", "width", "100%"))
         assertEquals(3, heading.fontLevel)
         assertEquals(19.sp, heading.resolvedFontSize())
+        assertEquals(32.sp, heading.resolvedFontSize(inRatingCard = true))
         assertTrue(heading.isHeadingFont)
         assertEquals(Color(0xFF444444), heading.color)
         assertTrue(isLowContrastNeutral(heading.color!!))
@@ -47,6 +48,7 @@ class NgaRichTextTest {
 
         val vote = parseNgaStyle(listOf("font", "4", "line-height", "1.3", "innerHTML", "\$votedata_voteavgvalue"))
         assertEquals(4, vote.fontLevel)
+        assertEquals(44.sp, vote.resolvedFontSize(inRatingCard = true))
         assertEquals("\$votedata_voteavgvalue", vote.innerHtmlVar)
     }
 
@@ -76,33 +78,18 @@ class NgaRichTextTest {
     }
 
     @Test
-    fun stripStrayCommentClosingTags() {
-        assertEquals("《捞尸人》", stripStrayCommentCloseTags("《捞尸人》[/comment oth_title_cn]"))
-        assertEquals("小说", stripStrayCommentCloseTags("小说[/comment oth_type_name]"))
-        assertEquals("", stripStrayCommentCloseTags("[/comment oth_title_alias]\u2003"))
-        assertEquals("普通正文", stripStrayCommentCloseTags("普通正文"))
-    }
-
-    @Test
-    fun detectStolenCommentCloseAndVotePlaceholder() {
-        val comment = Span.Tagged.newBuilder()
-            .setTag("comment")
-            .addComplexAttributes("oth_title_cn")
-            .addSpans(Span.newBuilder().setPlain(Span.Plain.newBuilder().setText("《捞尸人》[/comment oth_title_cn]")))
+    fun findsActualScoreSpanInsideBadge() {
+        val score = Span.Tagged.newBuilder()
+            .setTag("style")
+            .addAllComplexAttributes(listOf("font", "4", "innerHTML", "\$votedata_voteavgvalue"))
+            .addSpans(Span.newBuilder().setPlain(Span.Plain.newBuilder().setText("8.8")))
             .build()
-        assertTrue(hasStolenCommentClose(comment))
-
         val voteBadge = Span.Tagged.newBuilder()
             .setTag("style")
             .addAllComplexAttributes(listOf("background", "#b22222"))
-            .addSpans(
-                Span.newBuilder().setTagged(
-                    Span.Tagged.newBuilder()
-                        .setTag("style")
-                        .addAllComplexAttributes(listOf("innerHTML", "\$votedata_voteavgvalue")),
-                ),
-            )
+            .addSpans(Span.newBuilder().setTagged(score))
             .build()
-        assertTrue(containsVoteDataPlaceholder(voteBadge))
+        assertEquals(score, findNgaScorePlaceholder(voteBadge))
+        assertNull(findNgaScorePlaceholder(voteBadge.toBuilder().clearSpans().build()))
     }
 }

@@ -592,6 +592,15 @@ pub async fn get_topic_details(
             .flatten()
             .ok_or_else(|| ServiceError::MngaInternal("No local cache found".to_owned()))
             .map(|mut r| {
+                fn repair_layout(post: &mut Post) {
+                    if post.has_content() {
+                        text::repair_cached_layout(post.mut_content());
+                    }
+                    for child in post.hot_replies.iter_mut().chain(post.comments.iter_mut()) {
+                        repair_layout(child);
+                    }
+                }
+                r.replies.iter_mut().for_each(repair_layout);
                 r.is_local_cache = true;
                 r
             })

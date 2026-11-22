@@ -16,6 +16,7 @@ use sxd_document::{Package, parser};
 const POST_PROC_MARKER: &str = "commonui.postArg.proc(";
 const USER_INFO_MARKER: &str = "commonui.userInfo.setAll(";
 const ALERT_MARKER: &str = "commonui.loadAlertInfo(";
+const VOTE_MARKER: &str = "commonui.vote(";
 const PAGE_MARKER: &str = "var __PAGE";
 const MIN_POST_ARGS: usize = 23;
 // NGA wraps error pages inside these HTML comments; keep the markers explicit so
@@ -72,6 +73,7 @@ struct PostEntry {
     follow: i32,
     post_type: String,
     alter_info: String,
+    vote: Option<String>,
     comments: Vec<PostEntry>,
     hot_replies: Vec<PostEntry>,
     attachments: Vec<AttachmentEntry>,
@@ -158,13 +160,20 @@ pub fn build_topic_package(raw_html: &str, req_page: u32) -> ServiceResult<Packa
         .ok_or_else(|| ServiceError::MngaInternal("Missing topic defaults metadata".to_owned()))?;
     let pid_floor_map = build_pid_floor_map(&post_args);
     let alerts = parse_alerts(raw_html);
+    let votes = parse_votes(&document);
     let ParsedUsers {
         entries: users,
         names,
     } = parse_user_info(raw_html)?;
     let root_post_args = post_args.get("0").cloned();
-    let (mut posts, comment_pids) =
-        extract_posts(&document, &vars, &post_args, &alerts, &pid_floor_map)?;
+    let (mut posts, comment_pids) = extract_posts(
+        &document,
+        &vars,
+        &post_args,
+        &alerts,
+        &votes,
+        &pid_floor_map,
+    )?;
     posts.retain(|post| !comment_pids.contains(&post.pid));
     let page_meta = parse_page_meta(raw_html);
     let rows_per_page = if topic_defaults.rows_per_page != 0 {
@@ -404,6 +413,22 @@ fn parse_alerts(source: &str) -> HashMap<u32, String> {
     map
 }
 
+fn parse_votes(document: &Html) -> HashMap<String, String> {
+    let script = Selector::parse("script").unwrap();
+    document
+        .select(&script)
+        .flat_map(|node| capture_calls(&node.inner_html(), VOTE_MARKER))
+        .filter_map(|raw| {
+            let args = split_arguments(&raw);
+            let target = args.first()?.strip_prefix("$(")?.strip_suffix(')')?;
+            let target = normalize_literal(target);
+            let pid = target.strip_prefix("votec")?;
+            pid.parse::<u32>().ok()?;
+            Some((pid.to_owned(), normalize_literal(args.get(2)?)))
+        })
+        .collect()
+}
+
 /// Extracts pagination hints from the `__PAGE` JS struct.
 fn parse_page_meta(source: &str) -> PageMeta {
     if let Some(pos) = source.find(PAGE_MARKER) {
@@ -511,6 +536,7 @@ fn extract_posts(
     vars: &CurrentVars,
     post_args: &HashMap<String, PostArgs>,
     alerts: &HashMap<u32, String>,
+    votes: &HashMap<String, String>,
     pid_floor_map: &HashMap<String, u32>,
 ) -> ServiceResult<(Vec<PostEntry>, HashSet<String>)> {
     let row_selector = Selector::parse("tr.postrow").unwrap();
@@ -556,6 +582,7 @@ fn extract_posts(
             follow: args.follow,
             post_type: args.post_type.clone(),
             alter_info,
+            vote: votes.get(&args.pid).cloned(),
             comments: Vec::new(),
             hot_replies: Vec::new(),
             attachments: Vec::new(),
@@ -670,6 +697,7 @@ fn extract_inline_posts(
             follow: args.follow,
             post_type: args.post_type.clone(),
             alter_info: String::new(),
+            vote: None,
             comments: Vec::new(),
             hot_replies: Vec::new(),
             attachments: Vec::new(),
@@ -984,6 +1012,9 @@ fn write_post(writer: &mut Writer<Vec<u8>>, post: &PostEntry) -> Result<(), Serv
         .write_event(Event::Start(BytesStart::new("item")))
         .map_err(map_xml_err)?;
     write_text_element(writer, "content", &post.content)?;
+    if let Some(vote) = &post.vote {
+        write_text_element(writer, "vote", vote)?;
+    }
     write_text_element(writer, "alterinfo", &post.alter_info)?;
     write_text_element(writer, "tid", &post.tid)?;
     write_text_element(writer, "score", &post.score.to_string())?;
@@ -1286,4 +1317,44 @@ fn extract_forum_name(document: &Html) -> String {
                 .map(|el| el.text().collect::<String>().trim().to_string())
         })
         .unwrap_or_default()
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use crate::{post::extract_post, utils::extract_node};
+
+    #[test]
+    fn carries_nga_web_rating_data_into_the_post() {
+        let html = r#"
+            <script>
+                __CURRENT_FID = 524;
+                __CURRENT_TID = 23501042;
+                __CURRENT_PAGE = 1;
+                commonui.postArg.setDefault(524, 0, 23501042, 123, 0, 0, 0, 0, 0, 0, 0, 1, 1601174743, 20);
+                commonui.postArg.proc(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 123, 1601174743, '0,1,10', 200, 0, 0, '', 0, 0, 0);
+            </script>
+            <table><tr class="postrow"><td>
+                <a name="l0"></a>
+                <h3 id="postsubject0">《问镜》</h3>
+                <p id="postcontent0">[style font 4 innerHTML &#36;votedata_voteavgvalue][/style]<br/>[style innerHTML &#36;votedata_usernum][/style]人评分</p>
+                <script>commonui.vote($('votec0') ,23501042,'52957~评分~type~2~_52957~75,667,75')</script>
+                <script>commonui.vote($('votec884364440') ,23501042,'52957~10~type~3')</script>
+            </td></tr></table>
+        "#;
+        let package = build_topic_package(html, 1).unwrap();
+        let post = extract_node(&package, "/root/__R/item", |node| extract_post(node, 1, ""))
+            .unwrap()
+            .unwrap()
+            .unwrap();
+        let content = post.get_content();
+        assert_eq!(
+            content.spans[0].get_tagged().spans[0].get_plain().text,
+            "8.8"
+        );
+        assert_eq!(
+            content.spans[2].get_tagged().spans[0].get_plain().text,
+            "75"
+        );
+    }
 }

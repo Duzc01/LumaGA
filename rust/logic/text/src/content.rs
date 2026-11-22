@@ -11,6 +11,30 @@ macro_rules! span_of {
     }};
 }
 
+struct OpenTag<'a> {
+    name: &'a str,
+    parent: Option<&'a OpenTag<'a>>,
+}
+
+fn tag_matches(open: &str, close: &str) -> bool {
+    open.eq_ignore_ascii_case(close)
+        || (close.eq_ignore_ascii_case("td")
+            && open
+                .get(..2)
+                .is_some_and(|prefix| prefix.eq_ignore_ascii_case("td"))
+            && open[2..].bytes().all(|b| b.is_ascii_digit()))
+}
+
+fn has_open_tag(close: &str, mut parent: Option<&OpenTag<'_>>) -> bool {
+    while let Some(tag) = parent {
+        if tag_matches(tag.name, close) {
+            return true;
+        }
+        parent = tag.parent;
+    }
+    false
+}
+
 peg::parser! {
     grammar content_parser() for str {
         rule any_char() = [_]
@@ -39,33 +63,54 @@ peg::parser! {
             = $( (!(left_bracket() / right_bracket() / comma()) any_char())* )
         rule attributes() -> Vec<&'input str>
             = equal() ts:(attribute() ** comma()) { ts }
+        rule complex_attr() -> &'input str
+            = $((!(left_bracket() / right_bracket() / comma() / ws()) any_char())+)
+        rule complex_attr_separator() = (ws() / comma())+
         rule complex_attrs() -> Vec<&'input str> // "[td rowspan=2 colspan=3]"
-            = " " ts:( attribute() ** " " ) { ts }
+            = ws()+ ts:(complex_attr() ** complex_attr_separator()) _() { ts }
 
         rule start_tag() -> (&'input str, Vec<&'input str>, Vec<&'input str>)
             = left_bracket() t:token() a:attributes()? c:complex_attrs()? right_bracket() {
                 (t, a.unwrap_or_default(), c.unwrap_or_default())
             }
         rule close_tag() -> &'input str
-            = left_close_bracket() t:token() right_bracket() { t }
+            = left_close_bracket() t:token() c:complex_attrs()? right_bracket() {?
+                if c.is_none() || t.eq_ignore_ascii_case("comment") { Ok(t) }
+                else { Err("closing tag") }
+            }
+
+        rule close_for(open: &str)
+            = ct:close_tag() {?
+                if tag_matches(open, ct) { Ok(()) } else { Err("matching closing tag") }
+            }
+
+        rule unmatched_close(parent: Option<&OpenTag<'_>>) -> Span
+            = name:&close_tag() text:$(close_tag()) {?
+                // Leave an ancestor's closing tag for that ancestor. In particular,
+                // a fixsize container can end implicitly at [/randomblock].
+                if has_open_tag(name, parent) { return Err("closing tag for open tag"); }
+                Ok(span_of!(plain(Span_Plain {
+                    text: text.to_owned(),
+                    ..Default::default()
+                })))
+            }
 
         rule plain_text() -> &'input str
             = $( (!(start_tag() / close_tag() / br_tag() / left_sticker_bracket() / divider_tag()) any_char())+ )
 
-        rule tagged() -> Span
-            = st:start_tag() s:(span()*) ct:close_tag()? {?
+        rule tagged(parent: Option<&OpenTag<'_>>) -> Span
+            = st:start_tag() s:(span(Some(&OpenTag { name: st.0, parent }))*) close_for(st.0)? {
                 let (start_tag, attributes, complex_attributes) = st;
-                // if !start_tag.contains(ct) { return Err("matched close tag"); } // todo: add a flag for this check
                 let attributes = attributes.into_iter().map(|s| s.to_owned()).collect();
                 let complex_attributes = complex_attributes.into_iter().map(|s| s.to_owned()).collect();
 
-                Ok(span_of!(tagged(Span_Tagged {
+                span_of!(tagged(Span_Tagged {
                     tag: start_tag.to_ascii_lowercase(),
                     attributes,
                     complex_attributes,
                     spans: s.into(),
                     ..Default::default()
-                })))
+                }))
             }
 
         rule sticker() -> Span
@@ -83,8 +128,8 @@ peg::parser! {
                 }))
             }
 
-        rule divider() -> Span
-            = divider_tag() s:(non_divider_span()*) divider_tag() {
+        rule divider(parent: Option<&OpenTag<'_>>) -> Span
+            = divider_tag() s:(non_divider_span(parent)*) divider_tag() {
                 span_of!(tagged(Span_Tagged {
                     tag: "_divider".to_owned(),
                     spans: s.into(),
@@ -115,15 +160,15 @@ peg::parser! {
                 }))
             }
 
-        rule rich() -> Span
-            = br() / tagged() / sticker() / at_user()
-        rule non_divider_span() -> Span
-            = rich() / plain()  // todo: any better way?
-        rule span() -> Span
-            = rich() / divider() / plain()
+        rule rich(parent: Option<&OpenTag<'_>>) -> Span
+            = br() / tagged(parent) / sticker() / at_user()
+        rule non_divider_span(parent: Option<&OpenTag<'_>>) -> Span
+            = rich(parent) / plain() / unmatched_close(parent)
+        rule span(parent: Option<&OpenTag<'_>>) -> Span
+            = rich(parent) / divider(parent) / plain() / unmatched_close(parent)
 
         pub rule content() -> Vec<Span>
-            = (span())*
+            = span(None)*
     }
 }
 
@@ -135,6 +180,49 @@ pub fn do_parse_content(text: &str) -> ParseResult<Vec<Span>> {
 #[cfg(test)]
 mod test {
     use super::*;
+
+    #[test]
+    fn test_nga_book_rating_card_layout() {
+        // Structure of the opening post in Nga topic 23501042.
+        let raw = concat!(
+            "[randomblock]<br/>[fixsize height 10 width 30 90]<br/>",
+            "[style float left margin 1 0 1 1 width 9 height 7 background #b22222 align center border-radius 0.3 font 0 #fff]",
+            "[style font 4 line-height 1.3 innerHTML &#36;votedata_voteavgvalue][/style]<br/>",
+            "[style font 1 line-height 1.2][style innerHTML &#36;votedata_usernum][/style]人评分[/style][/style]<br/>",
+            "[style float left margin 1 0 1 1 color #444][style align justify-all]",
+            "[style font 3 #444 line-height 1 width 100%][comment oth_title_cn]《问镜》[/comment oth_title_cn][/style]<br/>",
+            "[style width 100% line-height 2.5][comment oth_title_alias][/comment oth_title_alias]&amp;#8195;[/style][/style]<br/>",
+            "[style line-height 1.5][comment oth_type_name]减肥专家[/comment oth_type_name][/style][/style]<br/>",
+            "[/randomblock]<br/>正文另起一段。",
+        );
+        let mut parsed = crate::parse_content(raw);
+        assert!(parsed.error.is_empty(), "{}", parsed.error);
+        let layout = parsed.spans[0].get_tagged();
+        assert_eq!(layout.tag, "randomblock");
+        let card = layout.spans[1].get_tagged();
+        assert_eq!(card.tag, "fixsize");
+        assert_eq!(
+            card.complex_attributes.as_slice(),
+            ["height", "10", "width", "30", "90"]
+        );
+        let badge = card.spans[1].get_tagged();
+        assert_eq!(badge.complex_attributes.as_slice()[..2], ["float", "left"]);
+        let details = card.spans[3].get_tagged();
+        let title = details.spans[0].get_tagged().spans[0].get_tagged();
+        assert_eq!(
+            title.spans[0].get_tagged().spans[0].get_plain().text,
+            "《问镜》"
+        );
+        let author = details.spans[2].get_tagged().spans[0].get_tagged();
+        assert_eq!(author.spans[0].get_plain().text, "减肥专家");
+        assert_eq!(parsed.spans[2].get_plain().text, "正文另起一段。");
+
+        let corrected = parsed.clone();
+        let card = parsed.spans[0].mut_tagged().spans[1].mut_tagged();
+        card.complex_attributes = vec!["height 10 width 30 90".to_owned()].into();
+        crate::repair_cached_layout(&mut parsed);
+        assert_eq!(parsed, corrected);
+    }
 
     #[test]
     fn test_quote() {
