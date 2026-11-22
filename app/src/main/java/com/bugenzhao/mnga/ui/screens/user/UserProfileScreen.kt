@@ -58,7 +58,9 @@ import com.bugenzhao.mnga.App
 import com.bugenzhao.mnga.model.PlusFeature
 import com.bugenzhao.mnga.model.ViewingImageModel
 import com.bugenzhao.mnga.model.appScope
+import com.bugenzhao.mnga.protos.datamodel.ForumId
 import com.bugenzhao.mnga.protos.datamodel.PostContent
+import com.bugenzhao.mnga.protos.datamodel.PostId
 import com.bugenzhao.mnga.protos.datamodel.Topic
 import com.bugenzhao.mnga.protos.datamodel.TopicWithLightPost
 import com.bugenzhao.mnga.protos.datamodel.User
@@ -67,6 +69,10 @@ import com.bugenzhao.mnga.storage.BlockWordsStorage
 import com.bugenzhao.mnga.ui.components.DateTimeText
 import com.bugenzhao.mnga.ui.nav.Navigator
 import com.bugenzhao.mnga.ui.nav.Route
+import com.bugenzhao.mnga.ui.post.ContentActions
+import com.bugenzhao.mnga.ui.post.ContentEnv
+import com.bugenzhao.mnga.ui.post.PostContent
+import com.bugenzhao.mnga.ui.post.PostFontSize
 import com.bugenzhao.mnga.ui.screens.topiclist.TopicRow
 import com.bugenzhao.mnga.util.L
 import com.bugenzhao.mnga.util.URLs
@@ -109,6 +115,32 @@ fun UserProfileScreen(
 
     val resolvedUser = currentUser
     val viewingImage = remember { ViewingImageModel() }
+    val signatureActions = remember(navigator, viewingImage) {
+        object : ContentActions {
+            override fun navigateToPost(id: PostId) {
+                navigator.push(Route.TopicDetails(topicId = id.tid, postId = id.pid))
+            }
+            override fun navigateToTopic(tid: String) {
+                navigator.push(Route.TopicDetails(topicId = tid))
+            }
+            override fun navigateToForum(id: ForumId) {
+                navigator.push(Route.TopicList(forumId = id))
+            }
+            override fun navigateToUser(uid: String) {
+                navigator.push(Route.UserProfile(userId = uid))
+            }
+            override fun navigateToUserName(name: String) {
+                navigator.push(Route.UserProfile(userName = name))
+            }
+            override fun openURL(url: String) {
+                runCatching { android.net.Uri.parse(url.trim()) }.getOrNull()
+                    ?.let { App.openURL.open(it, prefs = App.prefs) }
+            }
+            override fun viewImages(urls: List<String>, current: String) {
+                viewingImage.show(urls, current)
+            }
+        }
+    }
 
     val signaturePostModel = remember { SignaturePostModel(appScope) }
     val sentSignature by signaturePostModel.sent.collectAsState()
@@ -250,6 +282,15 @@ fun UserProfileScreen(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 item(key = "header") {
+                    val resolvedSignatureRenderer: @Composable (PostContent) -> Unit =
+                        signatureContent ?: { sig ->
+                            PostContent(
+                                content = sig,
+                                env = ContentEnv(actions = signatureActions),
+                                fontSize = PostFontSize.SMALL,
+                                defaultColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
                     // 顶部间距与卡片左右间距一致（16dp），原标题位不再占额外空间。
                     UserProfileHeader(
                             user = resolvedUser,
@@ -264,7 +305,7 @@ fun UserProfileScreen(
                             },
                             onBlockUser = { App.blockWords.toggleUser(resolvedUser.name) },
                             onShare = { shareUser(context, resolvedUser) },
-                            signatureContent = signatureContent,
+                            signatureContent = resolvedSignatureRenderer,
                         )
                 }
 

@@ -303,6 +303,7 @@ fun TopicDetailsScreen(
         }
         topic = topic.toBuilder().apply {
             if (id.isEmpty()) setId(newTopic.id)
+            if (newTopic.fid.isNotEmpty()) setFid(newTopic.fid)
             if (newTopic.hasParentForum()) setParentForum(newTopic.parentForum)
             setAuthorId(newTopic.authorId)
             setSubject(newTopic.subject)
@@ -367,8 +368,13 @@ fun TopicDetailsScreen(
             if (floor != null) {
                 // currentRows 始终是最新 rows（effect 不随 rows 重启，
                 // 避免闭包过期导致加载前页后滚动目标找不到）。
-                val index = currentRows.indexOfFirst { it.floor == floor }
-                if (index >= 0) listState.animateScrollToItem(index)
+                // floor <= 0 指向主题首楼（RowSpec.Header，位于 index 0）。
+                val index = if (floor <= 0) 0 else currentRows.indexOfFirst { it.floor == floor }
+                if (index == 0) {
+                    listState.scrollToItem(0, 0)
+                } else if (index > 0) {
+                    listState.animateScrollToItem(index)
+                }
                 action.scrollToFloor.value = null
             }
         }
@@ -386,12 +392,19 @@ fun TopicDetailsScreen(
     // After a refresh (incl. page jumps), scroll to the pending target.
     LaunchedEffect(state.lastRefreshTime) {
         if (state.lastRefreshTime == null) return@LaunchedEffect
-        delay(500)
         val floor = floorToJump
         val pid = postIdToJump
-        when {
-            floor != null -> action.scrollToFloor.value = floor
-            pid != null -> action.scrollToPid.value = pid.pid
+        if (floor == null && pid == null) return@LaunchedEffect
+        if (floor != null && floor <= 0) {
+            // 回到首页 / 跳至首楼：等列表重组一帧后立即滚到最顶部（index=0, offset=0）。
+            androidx.compose.runtime.withFrameNanos {}
+            listState.scrollToItem(0, 0)
+        } else {
+            delay(500)
+            when {
+                floor != null -> action.scrollToFloor.value = floor
+                pid != null -> action.scrollToPid.value = pid.pid
+            }
         }
         floorToJump = null
         postIdToJump = null
@@ -631,17 +644,31 @@ fun TopicDetailsScreen(
                         onJump = if (!mock && onlyPostId == null) {
                             { if (PlusModel.checkPlus(PlusFeature.JUMP)) showJumpSelector = true }
                         } else null,
-                        onLoadFirstPage = run {
+                        onLoadFirstPage = if (!mock && onlyPostId == null) {
                             val firstLoaded = dataSource.firstLoadedPage
-                            if (firstLoaded != null && firstLoaded >= 2) {
+                            val needsReloadFirstPage = firstLoaded != null && firstLoaded >= 2
+                            if (needsReloadFirstPage || indicatorCurrentPage >= 2) {
                                 {
-                                    dataSource.loadFromPage = 1
-                                    floorToJump = 0
+                                    if (needsReloadFirstPage) {
+                                        floorToJump = 0
+                                        dataSource.refresh(fromPage = 1, silentOnError = false)
+                                    } else {
+                                        scope.launch { listState.scrollToItem(0, 0) }
+                                    }
                                 }
                             } else null
-                        },
-                        onReply = if (onlyPostId == null && !mock && first != null) {
-                            { onPostAction?.invoke(PostRowAction.REPLY, first) }
+                        } else null,
+                        onReply = if (onlyPostId == null && !mock && onPostAction != null) {
+                            val target = first ?: topic.id.takeIf { it.isNotEmpty() }?.let { tid ->
+                                val fid = items.firstOrNull()?.fid?.takeIf { it.isNotEmpty() }
+                                    ?: topic.fid.takeIf { it.isNotEmpty() }
+                                    ?: ""
+                                Post.newBuilder()
+                                    .setId(PostId.newBuilder().setTid(tid).setPid("0").build())
+                                    .setFid(fid)
+                                    .build()
+                            }
+                            target?.let { post -> { onPostAction.invoke(PostRowAction.REPLY, post) } }
                         } else null,
                         onGotoTopic = if (onlyPostId != null && topic.id.isNotEmpty()) {
                             {

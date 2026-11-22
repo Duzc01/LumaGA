@@ -187,6 +187,7 @@
     <string name="last">Last</string>
     <string name="loading_previous_page">Loading Previous Page</string>
     <string name="load_page_d">Load Page %1$d</string>
+    <string name="load_first_page">Load First Page</string>
     <string name="accounts">Accounts</string>
     <string name="add_account">Add Account</string>
     <string name="multiple_accounts">Multiple Accounts</string>
