@@ -915,29 +915,11 @@ fun TopicDetailsScreen(
                     contentPadding = PaddingValues(vertical = 8.dp),
                 ) {
                     // 自动加载上一页时，顶部居中显示加载提示。
+                    // 独立为无外部捕获的 Composable，避免 Kotlin/Compose 多层嵌套
+                    // lambda 捕获外层 context 在异常路径下为空导致 L.str NPE。
                     if (isLoadingPrev) {
                         item(key = "loading-prev") {
-                            Box(
-                                Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 14.dp),
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                ) {
-                                    CircularProgressIndicator(
-                                        modifier = Modifier.size(16.dp),
-                                        strokeWidth = 2.dp,
-                                    )
-                                    Text(
-                                        L.str(context, "Loading Previous Page"),
-                                        style = MaterialTheme.typography.labelMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
-                                }
-                            }
+                            LoadingPreviousPageRow()
                         }
                     }
                     itemsIndexed(rows, key = { _, row -> row.key }) { index, row ->
@@ -1084,6 +1066,33 @@ class CurrentViewingFloor {
     fun disappear(floor: Int) {
         floors.remove(floor)
         highestSeen = maxOf(highestSeen ?: 0, floor)
+    }
+}
+
+/** Top-of-list indicator shown while auto-loading the previous page. */
+@Composable
+private fun LoadingPreviousPageRow() {
+    val context = LocalContext.current
+    Box(
+        Modifier
+            .fillMaxWidth()
+            .padding(vertical = 14.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(16.dp),
+                strokeWidth = 2.dp,
+            )
+            Text(
+                L.str(context, "Loading Previous Page"),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
     }
 }
 

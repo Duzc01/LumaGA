@@ -8,10 +8,8 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -28,7 +26,6 @@ import androidx.compose.material.icons.outlined.Link
 import androidx.compose.material.icons.outlined.Movie
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.VerticalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -46,9 +43,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onPlaced
+import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextLayoutResult
@@ -832,7 +833,10 @@ internal class ContentCombiner(
 
     private fun visitSized(tagged: Span.Tagged) {
         val scale = tagged.attributesList.firstOrNull()
-            ?.trim('%')?.toDoubleOrNull() ?: 100.0
+            ?.trim('%')?.toDoubleOrNull()
+            ?.takeIf { it.isFinite() && it > 0.0 }
+            ?.coerceIn(10.0, 500.0)
+            ?: 100.0
         val factor = (scale / 100.0).toFloat()
         val combiner = ContentCombiner(host, parent = this, fontModifier = { f ->
             if (f == null) f else {
@@ -970,7 +974,7 @@ internal class ContentCombiner(
         combiner.visit(tagged.spansList)
         val cell = combiner.build()
         appendOther(
-            ContentNode.View(weight = (colSpan ?: 1).toFloat()) {
+            ContentNode.View(weight = (colSpan ?: 1).coerceAtLeast(1).toFloat()) {
                 Box(Modifier.padding(horizontal = 8.dp)) { RenderNode(cell) }
             }
         )
@@ -1228,26 +1232,60 @@ internal fun RenderNode(node: ContentNode?, clicksEnabled: Boolean = true) {
                             RenderNode(row, clicksEnabled)
                         }
                     }
-                TableContext.ROW ->
+                TableContext.ROW -> {
+                    val dividerColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f)
+                    val dividerOffsets = remember(node.items.size) {
+                        FloatArray(maxOf(node.items.size - 1, 0))
+                    }
+                    // 不用 Modifier.height(IntrinsicSize.Max)：超长表格行（如含大量长图）
+                    // 高度超过 Compose Constraints 上限时，IntrinsicHeightNode 调用
+                    // Constraints.fixedHeight() 会直接崩溃。改为绘制阶段按列边界画竖线。
                     Row(
                         Modifier
                             .fillMaxWidth()
-                            .height(IntrinsicSize.Max),
+                            .drawWithContent {
+                                drawContent()
+                                val stroke = 1.dp.toPx()
+                                for (x in dividerOffsets) {
+                                    if (x > 0f) {
+                                        val cx = x + stroke / 2f
+                                        drawLine(
+                                            color = dividerColor,
+                                            start = Offset(cx, 0f),
+                                            end = Offset(cx, size.height),
+                                            strokeWidth = stroke,
+                                        )
+                                    }
+                                }
+                            },
                     ) {
                         node.items.forEachIndexed { index, item ->
-                            if (index > 0) {
-                                VerticalDivider(
-                                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f),
-                                    modifier = Modifier.fillMaxHeight(),
-                                )
-                            }
-                            if (item is ContentNode.View && item.weight != null) {
-                                Box(Modifier.weight(item.weight!!)) { item.content() }
+                            val w = (item as? ContentNode.View)?.weight
+                            val base =
+                                if (item is ContentNode.View && w != null && w.isFinite() && w > 0f) {
+                                    Modifier.weight(w)
+                                } else {
+                                    Modifier
+                                }
+                            val cellModifier = if (index > 0) {
+                                base
+                                    .onPlaced { coords ->
+                                        dividerOffsets[index - 1] = coords.positionInParent().x
+                                    }
+                                    .padding(start = 1.dp)
                             } else {
-                                RenderNode(item, clicksEnabled)
+                                base
+                            }
+                            Box(cellModifier) {
+                                if (item is ContentNode.View) {
+                                    item.content()
+                                } else {
+                                    RenderNode(item, clicksEnabled)
+                                }
                             }
                         }
                     }
+                }
             }
         }
     }

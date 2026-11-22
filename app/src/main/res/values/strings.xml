@@ -6,7 +6,7 @@
     <string name="replies">Replies</string>
     <string name="post_reply">Post/Reply</string>
     <string name="subforums">Subforums</string>
-    <string name="subforums_d">Subforums (%lld)</string>
+    <string name="subforums_d">Subforums (%1$d)</string>
     <string name="refresh">Refresh</string>
     <string name="copy_raw_content">Copy Raw Content</string>
     <string name="reply">Reply</string>
@@ -26,7 +26,7 @@
     <string name="privacy">Privacy</string>
     <string name="sign_out">Sign Out</string>
     <string name="me">Me</string>
-    <string name="u_posts">%u Posts</string>
+    <string name="u_posts">%1$d Posts</string>
     <string name="sign_in_to_nga">Sign in to NGA</string>
     <string name="from_nga">From NGA</string>
     <string name="cancel">Cancel</string>
@@ -57,8 +57,8 @@
     <string name="edit_signature">Edit Signature</string>
     <string name="share">Share</string>
     <string name="notifications">Notifications</string>
-    <string name="notifications_d">Notifications (%lld)</string>
-    <string name="d_unread">%lld Unread</string>
+    <string name="notifications_d">Notifications (%1$d)</string>
+    <string name="d_unread">%1$d Unread</string>
     <string name="all_read">All Read</string>
     <string name="read">Read</string>
     <string name="unread">Unread</string>
@@ -149,7 +149,7 @@
     <string name="short_messages">Short Messages</string>
     <string name="no_short_messages">No Short Messages</string>
     <string name="short_message">Short Message</string>
-    <string name="d_new_unread_notifications">%lld new unread notifications</string>
+    <string name="d_new_unread_notifications">%1$d new unread notifications</string>
     <string name="replies_chain">Replies Chain</string>
     <string name="goto_topic">Goto Topic</string>
     <string name="copy_title">Copy Title</string>
@@ -175,7 +175,7 @@
     <string name="search_topics">Search Topics</string>
     <string name="topic_s">Topic %1$s</string>
     <string name="floor">Floor</string>
-    <string name="floor_d">Floor %lld</string>
+    <string name="floor_d">Floor %1$d</string>
     <string name="floor_bracketed">[Floor %1$d]</string>
     <string name="fame_colon">Fame:</string>
     <string name="posts_colon">Posts:</string>
@@ -186,7 +186,7 @@
     <string name="first">First</string>
     <string name="last">Last</string>
     <string name="loading_previous_page">Loading Previous Page</string>
-    <string name="load_page_d">Load Page %lld</string>
+    <string name="load_page_d">Load Page %1$d</string>
     <string name="accounts">Accounts</string>
     <string name="add_account">Add Account</string>
     <string name="multiple_accounts">Multiple Accounts</string>
@@ -245,11 +245,11 @@
     <string name="topic_cache">Topic Cache</string>
     <string name="are_you_sure_to_clear_the_cache">Are you sure to clear the cache?</string>
     <string name="this_will_take_a_while">This will take a while.</string>
-    <string name="llu_items">%llu items</string>
+    <string name="llu_items">%1$d items</string>
     <string name="clear">Clear</string>
     <string name="view_attachment">View Attachment</string>
     <string name="attachments">Attachments</string>
-    <string name="attachments_d">Attachments (%lld)</string>
+    <string name="attachments_d">Attachments (%1$d)</string>
     <string name="lumaga_development">LumaGA Development</string>
     <string name="post_appearance">Post Appearance</string>
     <string name="dummy_user">Dummy User</string>

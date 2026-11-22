@@ -125,8 +125,10 @@ fun ContentImageView(
         val intrinsic = painter.intrinsicSize
         val isReady = painterState is AsyncImagePainter.State.Success
         val aspect =
-            if (intrinsic.width > 0f && intrinsic.height > 0f) {
-                intrinsic.width / intrinsic.height
+            if (intrinsic.width.isFinite() && intrinsic.height.isFinite() &&
+                intrinsic.width > 0f && intrinsic.height > 0f
+            ) {
+                (intrinsic.width / intrinsic.height).takeIf { it.isFinite() && it > 0f } ?: 1f
             } else {
                 1f
             }

@@ -26,7 +26,7 @@
     <string name="privacy">隐私协议</string>
     <string name="sign_out">退出登录</string>
     <string name="me">我</string>
-    <string name="u_posts">%u 个帖子</string>
+    <string name="u_posts">%1$d 个帖子</string>
     <string name="sign_in_to_nga">登录到 NGA</string>
     <string name="from_nga">来自 NGA</string>
     <string name="cancel">取消</string>
@@ -245,7 +245,7 @@
     <string name="topic_cache">话题缓存</string>
     <string name="are_you_sure_to_clear_the_cache">您确定要清除缓存吗？</string>
     <string name="this_will_take_a_while">这将花费一段时间。</string>
-    <string name="llu_items">%llu 项</string>
+    <string name="llu_items">%1$d 项</string>
     <string name="clear">清除</string>
     <string name="view_attachment">查看附件</string>
     <string name="attachments">附件</string>

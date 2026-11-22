@@ -7,7 +7,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,7 +14,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -66,12 +64,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextStyle
@@ -365,38 +362,29 @@ fun PostRow(
         }
     }
 
-    // Quote / vote quick actions were folded into the footer (up/down vote and
-    // quote buttons), so the swipe-reveal row is kept only as a plain wrapper.
-    SwipeActionsRow(
-        enabled = false,
-        leading = false,
-        actions = emptyList(),
-        modifier = modifier,
-    ) {
-        Box {
-            Column(
-                Modifier.combinedClickable(
-                    onClick = {},
-                    onLongClick = { menuOpen = true },
-                ),
-            ) {
-                content()
-            }
-            PostRowContextMenu(
-                expanded = menuOpen,
-                onDismiss = { menuOpen = false },
-                post = post,
-                action = action,
-                user = user,
-                onShowAttachments = { showAttachments = true },
-                enableAuthorOnly = enableAuthorOnly,
-                locateFloor = locateFloor,
-                mock = mock,
-                dummy = dummy,
-                onPostAction = onPostAction,
-                onNavigateAuthorOnly = onNavigateAuthorOnly,
-            )
+    Box(modifier) {
+        Column(
+            Modifier.combinedClickable(
+                onClick = {},
+                onLongClick = { menuOpen = true },
+            ),
+        ) {
+            content()
         }
+        PostRowContextMenu(
+            expanded = menuOpen,
+            onDismiss = { menuOpen = false },
+            post = post,
+            action = action,
+            user = user,
+            onShowAttachments = { showAttachments = true },
+            enableAuthorOnly = enableAuthorOnly,
+            locateFloor = locateFloor,
+            mock = mock,
+            dummy = dummy,
+            onPostAction = onPostAction,
+            onNavigateAuthorOnly = onNavigateAuthorOnly,
+        )
     }
 
     if (showAttachments && post.attachmentsList.isNotEmpty()) {
@@ -821,11 +809,24 @@ private fun BlockedContent(
     val blocked = App.blockWords.blocked(blockContent)
     var revealed by remember(post.id) { mutableStateOf(false) }
 
+    val overlayColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f)
+
     Box(
-        Modifier.combinedClickable(
-            onClick = { if (blocked && !revealed) revealed = true },
-            onLongClick = {},
-        ),
+        Modifier
+            .combinedClickable(
+                onClick = { if (blocked && !revealed) revealed = true },
+                onLongClick = {},
+            )
+            // Draw the dimming overlay instead of using Box(Modifier.matchParentSize()):
+            // BoxMeasurePolicy passes finite Constraints(width, height) to matchParentSize
+            // children, which crashes when a very tall post exceeds Compose's Constraints
+            // height limit (262,142 px).
+            .drawWithContent {
+                drawContent()
+                if (blocked && !revealed) {
+                    drawRect(overlayColor)
+                }
+            },
     ) {
         // 正文最小高度：两行正文（16sp × 行高 1.5），避免单行内容显得局促。
         PostContent(
@@ -833,14 +834,6 @@ private fun BlockedContent(
             env = ContentEnv(actions = contentActions),
             modifier = Modifier.heightIn(min = 48.dp),
         )
-        if (blocked && !revealed) {
-            // Dimming overlay hides the blocked content until revealed.
-            Box(
-                Modifier
-                    .matchParentSize()
-                    .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.85f)),
-            )
-        }
     }
 }
 
@@ -1005,93 +998,6 @@ private fun PostRowContextMenu(
                 onDismiss()
             },
         )
-    }
-}
-
-// endregion
-
-// region Swipe actions
-
-private data class SwipeAction(
-    val label: String,
-    val icon: ImageVector,
-    val tint: Color,
-    val onClick: () -> Unit,
-)
-
-/**
- * Swipe-to-reveal action row (vote/quote), replacing SwiftUI `swipeActions`.
- * Kept as a plain wrapper now that the vote/quote actions live in the footer;
- * the content shifts horizontally while the actions sit behind it; releasing
- * snaps back after firing the tapped action.
- */
-@Composable
-private fun SwipeActionsRow(
-    enabled: Boolean,
-    leading: Boolean,
-    actions: List<SwipeAction>,
-    modifier: Modifier = Modifier,
-    content: @Composable () -> Unit,
-) {
-    var offsetX by remember { mutableStateOf(0f) }
-    val maxOffset = 96f * actions.size
-    val density = LocalDensity.current
-    val context = LocalContext.current
-
-    Box(modifier) {
-        // Actions revealed behind the content.
-        Row(
-            Modifier
-                .matchParentSize()
-                .padding(horizontal = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = if (leading) Arrangement.Start else Arrangement.End,
-        ) {
-            actions.forEach { act ->
-                IconButton(onClick = {
-                    act.onClick()
-                    offsetX = 0f
-                }) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(
-                            act.icon,
-                            contentDescription = act.label,
-                            tint = if (act.tint == Color.Unspecified) {
-                                MaterialTheme.colorScheme.primary
-                            } else {
-                                act.tint
-                            },
-                        )
-                        Text(
-                            L.str(context, act.label),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.primary,
-                        )
-                    }
-                }
-            }
-        }
-
-        Box(
-            Modifier
-                .offset(x = with(density) { offsetX.toDp() })
-                .pointerInput(enabled, actions.size) {
-                    if (!enabled) return@pointerInput
-                    detectHorizontalDragGestures(
-                        onDragEnd = { offsetX = 0f },
-                        onDragCancel = { offsetX = 0f },
-                    ) { _, dragAmount ->
-                        val target = if (leading) {
-                            (offsetX + dragAmount).coerceIn(0f, maxOffset)
-                        } else {
-                            (offsetX + dragAmount).coerceIn(-maxOffset, 0f)
-                        }
-                        offsetX = target
-                    }
-                },
-        ) {
-            content()
-        }
     }
 }
 

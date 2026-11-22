@@ -3,6 +3,8 @@ package com.bugenzhao.mnga
 import android.app.Application
 import android.content.Context
 import android.content.SharedPreferences
+import androidx.compose.foundation.ComposeFoundationFlags
+import androidx.compose.foundation.ExperimentalFoundationApi
 import coil.Coil
 import coil.ImageLoader
 import coil.decode.GifDecoder
@@ -26,6 +28,7 @@ import kotlinx.coroutines.launch
 
 /** Application-scoped singletons, mirroring the SwiftUI environment objects. */
 object App {
+    var appContext: Context? = null
     lateinit var prefs: PreferencesStorage
     lateinit var authStorage: AuthStorage
     lateinit var blockWords: BlockWordsStorage
@@ -46,8 +49,15 @@ object App {
 
 class LumaGAApplication : Application() {
 
+    @OptIn(ExperimentalFoundationApi::class)
     override fun onCreate() {
+        // Work around Compose Runtime 1.11.x PausableComposition reuse crash
+        // (GapComposer.endReuseFromRoot: "Cannot disable reuse from root if it was
+        // caused by other groups") during LazyLayout prefetch. The upstream fix
+        // landed in Compose 1.12.0 (which requires compileSdk 37 / AGP 9.1).
+        ComposeFoundationFlags.isPausableCompositionInPrefetchEnabled = false
         super.onCreate()
+        App.appContext = applicationContext
 
         // 腾讯 Bugly 崩溃监控（AppID 配置在 gradle.properties 的 buglyAppId）。
         // 覆盖 Java/Kotlin 崩溃与 Rust liblogic.so 的 native 崩溃。
