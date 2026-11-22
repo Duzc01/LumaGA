@@ -113,17 +113,10 @@ fun TopicListScreen(
 
     val mock = forumId.hasFid() && forumId.fid.startsWith("mnga_")
 
-    // -- Order state, following the default-order preference (SS5).
-    var order by remember(forumId) { mutableStateOf<TopicListOrder?>(null) }
+    // -- Order state, backed directly by the persisted preference so a choice
+    // made in the forum menu survives navigation, forum switches, and restarts.
     val defaultOrderRaw by App.prefs.defaultTopicListOrderRaw.flow.collectAsState()
-    LaunchedEffect(forumId) {
-        if (order == null) order = TopicListOrder.fromRaw(defaultOrderRaw)
-    }
-    LaunchedEffect(defaultOrderRaw) {
-        val latest = TopicListOrder.fromRaw(defaultOrderRaw)
-        if (latest != order) order = latest
-    }
-    val orderOrDefault = order ?: TopicListOrder.fromRaw(defaultOrderRaw)
+    val orderOrDefault = TopicListOrder.fromRaw(defaultOrderRaw)
 
     // -- Data sources: held by the entry-scoped ViewModel so the loaded data
     // survives being covered by a pushed screen (composition is disposed,
@@ -344,7 +337,11 @@ fun TopicListScreen(
                                 debugName = forumId.idDisplay() +
                                     " " + (responseForum?.name ?: ""),
                                 orderOrDefault = orderOrDefault,
-                                onOrderChange = { order = it },
+                                onOrderChange = {
+                                    App.prefs.defaultTopicListOrderRaw.value = it.raw
+                                    orderMenuExpanded = false
+                                    moreMenuExpanded = false
+                                },
                                 onHotTopics = {
                                     navigator.push(
                                         Route.TopicList(forumId = forumId, mode = TopicListMode.HOT)
