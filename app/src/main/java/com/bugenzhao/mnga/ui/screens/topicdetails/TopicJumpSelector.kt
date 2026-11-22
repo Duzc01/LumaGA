@@ -36,11 +36,22 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.bugenzhao.mnga.util.Constants
 import com.bugenzhao.mnga.util.L
+import kotlin.math.roundToInt
+
+private const val MAX_JUMP_SLIDER_STEPS = 100
+
+/** 每个离散步都会生成并绘制刻度。长帖使用连续滑块，精确跳转仍可输入数字。 */
+internal fun jumpSliderSteps(min: Int, max: Int): Int {
+    val steps = max - min - 1
+    return if (steps in 1..MAX_JUMP_SLIDER_STEPS) steps else 0
+}
+
+internal fun pageForFloor(floor: Int): Int = floor / Constants.postPerPage + 1
 
 /**
  * Jump-to-floor/page selector, ported from
  * `Shared/Views/TopicJumpSelectorView.swift`. The selected floor is the only
- * source of truth; the page is derived (`(floor + 20) / 20`) and setting a page
+ * source of truth; the page is derived (`floor / 20 + 1`) and setting a page
  * maps back to `(page - 1) * 20`.
  */
 enum class TopicJumpSelectorMode(val label: String) {
@@ -59,19 +70,19 @@ fun TopicJumpSelector(
     onJump: (floor: Int, page: Int) -> Unit,
 ) {
     val context = LocalContext.current
-    val maxPage = (maxFloor + Constants.postPerPage) / Constants.postPerPage
+    val maxPage = pageForFloor(maxFloor.coerceAtLeast(0))
 
     // The only source of truth, clamped to the valid floor range.
     var selectedFloor by remember {
         mutableIntStateOf(initialFloor.coerceIn(0, maxOf(maxFloor, 0)))
     }
     var floorText by remember { mutableStateOf(selectedFloor.toString()) }
-    var pageText by remember { mutableStateOf(selectedPage(selectedFloor).toString()) }
+    var pageText by remember { mutableStateOf(pageForFloor(selectedFloor).toString()) }
 
     // Keep the text fields in sync when the other control drives the change.
     LaunchedEffect(selectedFloor) {
         floorText = selectedFloor.toString()
-        pageText = selectedPage(selectedFloor).toString()
+        pageText = pageForFloor(selectedFloor).toString()
     }
 
     ModalBottomSheet(onDismissRequest = onDismiss) {
@@ -115,9 +126,9 @@ fun TopicJumpSelector(
                         RangeCaption("0", maxFloor.toString())
                         Slider(
                             value = selectedFloor.toFloat(),
-                            onValueChange = { selectedFloor = it.toInt() },
+                            onValueChange = { selectedFloor = it.roundToInt().coerceIn(0, maxFloor) },
                             valueRange = 0f..maxFloor.toFloat(),
-                            steps = maxOf(maxFloor - 1, 0),
+                            steps = jumpSliderSteps(0, maxFloor),
                         )
                     }
                 }
@@ -131,7 +142,7 @@ fun TopicJumpSelector(
                             onValueChange = { text ->
                                 pageText = text
                                 text.toIntOrNull()?.let { page ->
-                                    val clamped = page.coerceIn(1, maxOf(maxPage, 1))
+                                    val clamped = page.coerceIn(1, maxPage)
                                     selectedFloor = (clamped - 1) * Constants.postPerPage
                                 }
                             },
@@ -140,12 +151,13 @@ fun TopicJumpSelector(
                     if (maxPage > 1) {
                         RangeCaption("1", maxPage.toString())
                         Slider(
-                            value = selectedPage(selectedFloor).toFloat(),
+                            value = pageForFloor(selectedFloor).toFloat(),
                             onValueChange = {
-                                selectedFloor = (it.toInt() - 1) * Constants.postPerPage
+                                val page = it.roundToInt().coerceIn(1, maxPage)
+                                selectedFloor = (page - 1) * Constants.postPerPage
                             },
                             valueRange = 1f..maxPage.toFloat(),
-                            steps = maxOf(maxPage - 2, 0),
+                            steps = jumpSliderSteps(1, maxPage),
                         )
                     }
                 }
@@ -157,7 +169,7 @@ fun TopicJumpSelector(
             ) {
                 TextButton(
                     onClick = {
-                        onJump(selectedFloor, selectedPage(selectedFloor))
+                        onJump(selectedFloor, pageForFloor(selectedFloor))
                         onDismiss()
                     },
                 ) {
@@ -171,8 +183,6 @@ fun TopicJumpSelector(
         }
     }
 }
-
-private fun selectedPage(floor: Int): Int = (floor + Constants.postPerPage) / Constants.postPerPage
 
 @Composable
 private fun RangeCaption(start: String, end: String) {
