@@ -92,7 +92,7 @@ fun ImageViewerDialog(model: ViewingImageModel) {
     val showing by model.showing.collectAsState()
     if (!showing) return
     val urls by model.urls.collectAsState()
-    val current by model.currentIndex.collectAsState()
+    val requestedPage by model.currentIndex.collectAsState()
     if (urls.isEmpty()) return
 
     val context = LocalContext.current
@@ -105,12 +105,12 @@ fun ImageViewerDialog(model: ViewingImageModel) {
     var shareIntent by remember { mutableStateOf<Intent?>(null) }
     var preparingShare by remember { mutableStateOf(true) }
 
-    val pagerState = rememberPagerState(initialPage = current, pageCount = { urls.size })
+    val pagerState = rememberPagerState(initialPage = requestedPage, pageCount = { urls.size })
 
-    // The model is the source of truth; keep the pager in sync.
-    LaunchedEffect(current) {
-        if (pagerState.settledPage != current && current in urls.indices) {
-            pagerState.animateScrollToPage(current)
+    // Respond to a page requested by the viewer model.
+    LaunchedEffect(requestedPage) {
+        if (pagerState.settledPage != requestedPage && requestedPage in urls.indices) {
+            pagerState.animateScrollToPage(requestedPage)
         }
     }
     LaunchedEffect(pagerState) {
@@ -162,7 +162,7 @@ fun ImageViewerDialog(model: ViewingImageModel) {
                 )
             }
 
-            // Top bar: page indicator trailing, share + close.
+            // Top bar: page indicator and close button.
             Row(
                 Modifier
                     .align(Alignment.TopCenter)
@@ -173,7 +173,7 @@ fun ImageViewerDialog(model: ViewingImageModel) {
                 if (urls.size > 1) {
                     Row(verticalAlignment = Alignment.Bottom) {
                         Text(
-                            "${current + 1}",
+                            "${pagerState.settledPage + 1}",
                             color = Color.White,
                             fontSize = 17.sp,
                             fontWeight = FontWeight.Medium,
