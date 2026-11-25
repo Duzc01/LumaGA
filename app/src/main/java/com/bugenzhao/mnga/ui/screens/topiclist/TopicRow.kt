@@ -40,6 +40,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
@@ -59,6 +60,7 @@ import com.bugenzhao.mnga.ui.components.DateTimeText
 import com.bugenzhao.mnga.ui.components.RepliesBadge
 import com.bugenzhao.mnga.ui.components.avatarPalette
 import com.bugenzhao.mnga.ui.components.topicMetaColor
+import com.bugenzhao.mnga.ui.theme.FontScale
 import com.bugenzhao.mnga.util.L
 import com.bugenzhao.mnga.util.URLs
 
@@ -118,8 +120,15 @@ fun TopicSubjectView(
     /** False where the caller shows the forum and tags itself, as [TopicRow]
      * does on its metadata line. */
     tagBar: Boolean = true,
+    fontScale: Float? = null,
 ) {
     val context = LocalContext.current
+    val prefScalePercent by App.prefs.topicListFontScalePercent.flow.collectAsState()
+    val resolvedScale = fontScale ?: FontScale.scaleFactor(prefScalePercent)
+    val metaStyle = MaterialTheme.typography.labelMedium.copy(
+        fontSize = FontScale.topicMetaFontSize(resolvedScale),
+        lineHeight = FontScale.topicMetaLineHeight(resolvedScale),
+    )
     val tags = topicTags(topic)
     val content = topicSubjectContent(topic)
     val showTagBar = tagBar && (
@@ -143,7 +152,7 @@ fun TopicSubjectView(
                 if (topic.hasParentForum()) {
                     Text(
                         topic.parentForum.name,
-                        style = MaterialTheme.typography.labelMedium,
+                        style = metaStyle,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary,
                         maxLines = 1,
@@ -152,7 +161,7 @@ fun TopicSubjectView(
                 tags.forEach { tag ->
                     Text(
                         tag,
-                        style = MaterialTheme.typography.labelMedium,
+                        style = metaStyle,
                         color = MaterialTheme.colorScheme.primary,
                         maxLines = 1,
                     )
@@ -163,7 +172,10 @@ fun TopicSubjectView(
         if (content.isEmpty()) {
             Text(
                 L.str(context, "Untitled"),
-                style = MaterialTheme.typography.bodyLarge,
+                style = MaterialTheme.typography.bodyLarge.copy(
+                    fontSize = FontScale.topicTitleFontSize(resolvedScale),
+                    lineHeight = FontScale.topicTitleLineHeight(resolvedScale),
+                ),
                 fontWeight = FontWeight.Medium,
                 fontStyle = FontStyle.Italic,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -176,6 +188,7 @@ fun TopicSubjectView(
                 modifiers = topic.subject.fontModifiersList,
                 dimmed = dimmed,
                 maxLines = maxLines,
+                fontScale = resolvedScale,
             )
         }
     }
@@ -187,6 +200,7 @@ private fun SubjectContentText(
     modifiers: List<Subject.FontModifier>,
     dimmed: Boolean,
     maxLines: Int,
+    fontScale: Float,
 ) {
     val multicolor = App.prefs.topicListSubjectMulticolor.value
     var color: Color? = null
@@ -215,8 +229,8 @@ private fun SubjectContentText(
         style = MaterialTheme.typography.bodyLarge.copy(
             // One step below `bodyLarge`'s 17sp: a bold two-line headline at
             // the body size reads too heavy above the 12sp metadata lines.
-            fontSize = 16.sp,
-            lineHeight = 21.sp,
+            fontSize = FontScale.topicTitleFontSize(fontScale),
+            lineHeight = FontScale.topicTitleLineHeight(fontScale),
             fontWeight = fontWeight ?: FontWeight.Bold,
             fontStyle = if (italic) FontStyle.Italic else null,
             textDecoration = if (underline) TextDecoration.Underline else null,
@@ -262,6 +276,7 @@ fun TopicRow(
     /** Forum shown on the metadata line for topics that name no parent forum
      * of their own — the forum currently being browsed, where there is one. */
     fallbackForumName: String? = null,
+    fontScale: Float? = null,
     onClick: (() -> Unit)? = null,
     onLongClick: (() -> Unit)? = null,
 ) {
@@ -282,12 +297,18 @@ fun TopicRow(
     // avatar, author and time share one line, replies sit as a tall number
     // on the right — the classic forum-list vernacular.
     val avatarless by App.prefs.topicListRowStyle.flow.collectAsState()
+    val prefScalePercent by App.prefs.topicListFontScalePercent.flow.collectAsState()
+    val resolvedScale = fontScale ?: FontScale.scaleFactor(prefScalePercent)
+    val metaStyle = MaterialTheme.typography.labelMedium.copy(
+        fontSize = FontScale.topicMetaFontSize(resolvedScale),
+        lineHeight = FontScale.topicMetaLineHeight(resolvedScale),
+    )
 
     Surface(
         modifier = modifier
             .fillMaxWidth()
             .combinedClickable(
-                enabled = true,
+                enabled = onClick != null || onLongClick != null,
                 onClick = { onClick?.invoke() },
                 onLongClick = { onLongClick?.invoke() },
             ),
@@ -309,6 +330,7 @@ fun TopicRow(
                         dimmed = shouldDim,
                         // The forum and tags live on the metadata line below.
                         tagBar = false,
+                        fontScale = resolvedScale,
                     )
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -322,7 +344,7 @@ fun TopicRow(
                         if (display.isNotEmpty()) {
                             Text(
                                 display,
-                                style = MaterialTheme.typography.labelMedium,
+                                style = metaStyle,
                                 fontWeight = FontWeight.SemiBold,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 maxLines = 1,
@@ -336,7 +358,7 @@ fun TopicRow(
                         if (tags.isNotEmpty()) {
                             Text(
                                 tags.joinToString(" ") { "#$it" },
-                                style = MaterialTheme.typography.labelMedium,
+                                style = metaStyle,
                                 color = topicMetaColor(),
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
@@ -344,13 +366,13 @@ fun TopicRow(
                         }
                     }
                     Spacer(Modifier.width(8.dp))
-                    DateTimeText(timestampSeconds = date, color = topicMetaColor())
+                    DateTimeText(timestampSeconds = date, color = topicMetaColor(), style = metaStyle)
                     Spacer(Modifier.width(8.dp))
                     // The standard badge: hot-color ramp as the count climbs.
                     // Counter the badge's internal -1dp digit offset so the
                     // number sits on the same vertical center as the texts.
                     Box(Modifier.offset(y = 1.dp)) {
-                        RepliesBadge(replies = num, delta = delta)
+                        RepliesBadge(replies = num, delta = delta, textStyle = metaStyle)
                     }
                 }
             }
@@ -369,6 +391,7 @@ fun TopicRow(
                         dimmed = shouldDim,
                         // The forum and tags live on the metadata line below.
                         tagBar = false,
+                        fontScale = resolvedScale,
                     )
                 }
 
@@ -379,6 +402,7 @@ fun TopicRow(
                     delta = delta,
                     showFavored = showIndicators && favored,
                     fallbackForumName = fallbackForumName,
+                    metaStyle = metaStyle,
                 )
             }
         }
@@ -398,6 +422,7 @@ private fun TopicMetaBlock(
     delta: Int?,
     showFavored: Boolean,
     fallbackForumName: String?,
+    metaStyle: TextStyle,
 ) {
     val name = topicAuthorName(topic)
     val display = name.display()
@@ -421,7 +446,7 @@ private fun TopicMetaBlock(
                 } else {
                     Text(
                         display,
-                        style = MaterialTheme.typography.labelMedium,
+                        style = metaStyle,
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
@@ -430,7 +455,7 @@ private fun TopicMetaBlock(
                     )
                 }
                 Spacer(Modifier.width(8.dp))
-                DateTimeText(timestampSeconds = date, color = meta)
+                DateTimeText(timestampSeconds = date, color = meta, style = metaStyle)
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 TopicOriginLine(
@@ -438,10 +463,11 @@ private fun TopicMetaBlock(
                     showFavored = showFavored,
                     color = meta,
                     fallbackForumName = fallbackForumName,
+                    metaStyle = metaStyle,
                     modifier = Modifier.weight(1f),
                 )
                 Spacer(Modifier.width(8.dp))
-                RepliesBadge(replies = replies, delta = delta)
+                RepliesBadge(replies = replies, delta = delta, textStyle = metaStyle)
             }
         }
     }
@@ -461,6 +487,7 @@ private fun TopicOriginLine(
     showFavored: Boolean,
     color: Color,
     fallbackForumName: String?,
+    metaStyle: TextStyle,
     modifier: Modifier = Modifier,
 ) {
     val tags = topicTags(topic)
@@ -487,6 +514,7 @@ private fun TopicOriginLine(
                 name = forumName,
                 chipColor = forumChipColor(forumName),
                 textColor = color,
+                textStyle = metaStyle,
                 modifier = Modifier.weight(1f, fill = false),
             )
         } else if (tags.isEmpty()) {
@@ -496,13 +524,14 @@ private fun TopicOriginLine(
                 // for the app rather than for some forum.
                 chipColor = MaterialTheme.colorScheme.primary,
                 textColor = color,
+                textStyle = metaStyle,
                 modifier = Modifier.weight(1f, fill = false),
             )
         }
         if (tags.isNotEmpty()) {
             Text(
                 tags.joinToString(" ") { "#$it" },
-                style = MaterialTheme.typography.labelMedium,
+                style = metaStyle,
                 color = color,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -518,6 +547,7 @@ private fun ForumChip(
     name: String,
     chipColor: Color,
     textColor: Color,
+    textStyle: TextStyle,
     modifier: Modifier = Modifier,
 ) {
     Row(
@@ -528,7 +558,7 @@ private fun ForumChip(
         Box(Modifier.size(8.dp).background(chipColor, RoundedCornerShape(2.dp)))
         Text(
             name,
-            style = MaterialTheme.typography.labelMedium,
+            style = textStyle,
             color = textColor,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,

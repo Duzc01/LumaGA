@@ -37,10 +37,16 @@ import com.bugenzhao.mnga.util.L
  * (`expr → d6(4)+d6(2) → 6`).
  */
 @Composable
-fun DiceView(result: DiceRoller.Result, unresolved: Boolean = false, modifier: Modifier = Modifier) {
+fun DiceView(
+    result: DiceRoller.Result,
+    unresolved: Boolean = false,
+    fontScale: Float = 1f,
+    modifier: Modifier = Modifier,
+) {
     val context = LocalContext.current
     var showingExpanded by remember(result.originalExpression) { mutableStateOf(false) }
-    val fontSize = 15.sp
+    val fontSize = (15f * fontScale).sp
+    val lineHeight = (15f * fontScale * 1.35f).sp
 
     val total = when {
         unresolved -> "???"
@@ -78,6 +84,7 @@ fun DiceView(result: DiceRoller.Result, unresolved: Boolean = false, modifier: M
                 annotated,
                 fontFamily = FontFamily.Monospace,
                 fontSize = fontSize,
+                lineHeight = lineHeight,
                 style = MaterialTheme.typography.bodyMedium,
             )
         }
@@ -86,7 +93,11 @@ fun DiceView(result: DiceRoller.Result, unresolved: Boolean = false, modifier: M
 
 /** Dice block with no deterministic context available (`???` totals). */
 @Composable
-fun UnresolvedDiceView(expression: String, modifier: Modifier = Modifier) {
+fun UnresolvedDiceView(
+    expression: String,
+    fontScale: Float = 1f,
+    modifier: Modifier = Modifier,
+) {
     DiceView(
         result = DiceRoller.Result(
             originalExpression = expression,
@@ -94,6 +105,7 @@ fun UnresolvedDiceView(expression: String, modifier: Modifier = Modifier) {
             total = null,
         ),
         unresolved = true,
+        fontScale = fontScale,
         modifier = modifier,
     )
 }

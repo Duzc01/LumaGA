@@ -39,6 +39,7 @@ object RouteCodec {
     const val ROUTE_BLOCKED_USERS = "blocked-users"
     const val ROUTE_ABOUT = "about"
     const val ROUTE_SETTINGS = "settings"
+    const val ROUTE_FONT_SIZE_SETTINGS = "font-size-settings"
     const val ROUTE_NOTIFICATIONS = "notifications"
     const val ROUTE_CLOCK_IN = "clock-in"
     const val ROUTE_PERSONAL_CENTER = "personal-center"
@@ -91,6 +92,7 @@ object RouteCodec {
         Route.BlockedUsers -> ROUTE_BLOCKED_USERS
         Route.About -> ROUTE_ABOUT
         Route.Settings -> ROUTE_SETTINGS
+        Route.FontSizeSettings -> ROUTE_FONT_SIZE_SETTINGS
         Route.Notifications -> ROUTE_NOTIFICATIONS
         Route.ClockIn -> ROUTE_CLOCK_IN
         Route.PersonalCenter -> ROUTE_PERSONAL_CENTER
@@ -119,6 +121,7 @@ object RouteCodec {
             ROUTE_BLOCKED_USERS -> Route.BlockedUsers
             ROUTE_ABOUT -> Route.About
             ROUTE_SETTINGS -> Route.Settings
+            ROUTE_FONT_SIZE_SETTINGS -> Route.FontSizeSettings
             ROUTE_NOTIFICATIONS -> Route.Notifications
             ROUTE_CLOCK_IN -> Route.ClockIn
             ROUTE_PERSONAL_CENTER -> Route.PersonalCenter

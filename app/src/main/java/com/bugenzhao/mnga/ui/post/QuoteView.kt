@@ -27,10 +27,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.bugenzhao.mnga.App
 import com.bugenzhao.mnga.model.anonymousDisplayName
 import com.bugenzhao.mnga.model.display
 import com.bugenzhao.mnga.ui.components.AvatarImage
+import com.bugenzhao.mnga.ui.theme.FontScale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -74,6 +76,7 @@ fun QuoteUserView(
     nameHint: String?,
     onNavigateToPost: (() -> Unit)? = null,
     onNavigateToUser: (String) -> Unit = {},
+    fontScale: Float = 1f,
     modifier: Modifier = Modifier,
 ) {
     // The name hint comes from the raw quote header text, which for anonymous
@@ -105,9 +108,13 @@ fun QuoteUserView(
             horizontalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             AvatarImage(url = avatarURL, name = name.orEmpty(), size = 20.dp)
+            val nameScale = FontScale.gentleScale(fontScale)
             Text(
                 name ?: "??????",
-                style = MaterialTheme.typography.labelLarge,
+                style = MaterialTheme.typography.labelLarge.copy(
+                    fontSize = (15f * nameScale).sp,
+                    lineHeight = (15f * nameScale * 1.33f).sp,
+                ),
                 fontWeight = FontWeight.Medium,
             )
         }

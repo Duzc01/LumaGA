@@ -30,6 +30,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -160,6 +161,7 @@ fun Avatar(url: String?, name: String? = null, size: Int = 40, onClick: (() -> U
 fun DateTimeText(
     timestampSeconds: Long,
     color: Color = MaterialTheme.colorScheme.onSurfaceVariant,
+    style: TextStyle = MaterialTheme.typography.labelMedium,
 ) {
     val context = LocalContext.current
     val strategy = com.bugenzhao.mnga.App.prefs.postRowDateTimeStrategy
@@ -173,7 +175,7 @@ fun DateTimeText(
     }
     Text(
         text,
-        style = MaterialTheme.typography.labelMedium,
+        style = style,
         color = color,
     )
 }
@@ -223,7 +225,11 @@ fun hotAccentColor(): Color =
  * color when known.
  */
 @Composable
-fun RepliesBadge(replies: Int, delta: Int? = null) {
+fun RepliesBadge(
+    replies: Int,
+    delta: Int? = null,
+    textStyle: TextStyle = MaterialTheme.typography.labelMedium,
+) {
     val dark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     val hot = replies >= HotRepliesThreshold
     val color = when {
@@ -231,6 +237,13 @@ fun RepliesBadge(replies: Int, delta: Int? = null) {
         replies >= HotDeepRepliesThreshold -> if (dark) HotDeepDark else HotDeepLight
         hot -> hotAccentColor()
         else -> topicMetaColor()
+    }
+    val deltaStyle = if (textStyle.fontSize.isSp) {
+        MaterialTheme.typography.labelSmall.copy(
+            fontSize = (textStyle.fontSize.value * (11f / 12f)).sp,
+        )
+    } else {
+        MaterialTheme.typography.labelSmall
     }
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -244,7 +257,7 @@ fun RepliesBadge(replies: Int, delta: Int? = null) {
         )
         Text(
             replies.toString(),
-            style = MaterialTheme.typography.labelMedium.copy(
+            style = textStyle.copy(
                 fontWeight = when {
                     replies >= HotHottestRepliesThreshold -> FontWeight.ExtraBold
                     hot -> FontWeight.Bold
@@ -259,7 +272,7 @@ fun RepliesBadge(replies: Int, delta: Int? = null) {
         if (delta != null) {
             Text(
                 "+$delta",
-                style = MaterialTheme.typography.labelSmall,
+                style = deltaStyle,
                 color = MaterialTheme.colorScheme.primary,
                 // 与主数字一致：小号字形的视觉中心偏低约 1dp。
                 modifier = Modifier.offset(y = (-1).dp),

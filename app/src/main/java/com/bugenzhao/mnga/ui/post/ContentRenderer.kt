@@ -82,6 +82,7 @@ import com.bugenzhao.mnga.protos.datamodel.Post
 import com.bugenzhao.mnga.protos.datamodel.PostContent
 import com.bugenzhao.mnga.protos.datamodel.PostId
 import com.bugenzhao.mnga.protos.datamodel.Span
+import com.bugenzhao.mnga.ui.theme.FontScale
 import com.bugenzhao.mnga.util.DiceRoller
 import com.bugenzhao.mnga.util.L
 import com.bugenzhao.mnga.util.Stickers
@@ -157,10 +158,8 @@ val ContentPalette: Map<String, Color> = linkedMapOf(
     "white" to Color(0xFFFFFFFF),
 )
 
-/** iOS font anchors used by the combiner (callout 16 / subheadline 15 / body 17 / footnote 13 / headline 17). */
-private val CALLOUT = 16.sp
-private val SUBHEADLINE = 15.sp
-private val FOOTNOTE = 13.sp
+/** Active post content font scale inside a [PostContent] render tree. */
+private val LocalPostFontScale = compositionLocalOf { 1f }
 
 /** Inline sticker edge, used for both the line box (sp) and the image (dp). */
 private const val STICKER_SIZE = 58
@@ -235,7 +234,14 @@ internal class RenderHost(
     val secondary: Color,
     val appVersion: String,
     val diceCounter: MutableIntState,
+    val fontScale: Float = 1f,
 ) {
+    fun scaledSp(baseSp: Float): TextUnit = (baseSp * fontScale).sp
+
+    val subheadlineSize: TextUnit get() = scaledSp(15f)
+    val footnoteSize: TextUnit get() = scaledSp(13f)
+    val headlineSize: TextUnit get() = scaledSp(17f)
+
     fun toastInvalidURL(urlString: String) {
         ToastModel.showAuto(ToastModel.Message.Error(L.str(context, "Invalid URL") + ": " + urlString))
     }
@@ -512,14 +518,19 @@ internal class ContentCombiner(
         itemCombiner.visit(spans)
         val content = itemCombiner.build() ?: return null
         val bulletSpec = currentSpec()
+        val bulletLineHeight = FontScale.paragraphLineHeight(
+            pieceFontSizes = listOf(bulletSpec.fontSize),
+            hasSticker = false,
+            fallbackBaseFontSize = host.scaledSp(FontScale.POST_NORMAL_BASE_SP),
+        )
         return ContentNode.View(weight = 1f) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
                     "•",
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = MaterialTheme.typography.bodyMedium.copy(lineHeight = bulletLineHeight),
                     fontSize = bulletSpec.fontSize,
                     color = bulletSpec.color ?: Color.Unspecified,
-                    modifier = Modifier.width(12.dp),
+                    modifier = Modifier.widthIn(min = (12f * host.fontScale).coerceAtLeast(12f).dp),
                 )
                 Box(Modifier.weight(1f)) { RenderNode(content) }
             }
@@ -586,7 +597,7 @@ internal class ContentCombiner(
     private fun visitDivider(tagged: Span.Tagged) {
         val combiner = ContentCombiner(
             host, parent = this,
-            fontModifier = { StyleSpec(fontSize = 17.sp, color = host.accent, bold = true) },
+            fontModifier = { StyleSpec(fontSize = host.headlineSize, color = host.accent, bold = true) },
         )
         if (tagged.spansCount > 0) {
             combiner.appendOther(ContentNode.View {
@@ -668,7 +679,14 @@ internal class ContentCombiner(
     private fun visitQuote(tagged: Span.Tagged) {
         val combiner = ContentCombiner(
             host, parent = this,
-            fontModifier = { f -> (f ?: StyleSpec()).copy(fontSize = if (f?.fontSize == CALLOUT) SUBHEADLINE else CALLOUT) },
+            fontModifier = { f ->
+                (f ?: StyleSpec()).copy(
+                    fontSize = FontScale.postQuotedFontSize(
+                        current = f?.fontSize ?: TextUnit.Unspecified,
+                        scale = host.fontScale,
+                    ),
+                )
+            },
             colorModifier = { _ -> host.onSurface.copy(alpha = 0.9f) },
         )
         combiner.markInQuote()
@@ -693,6 +711,7 @@ internal class ContentCombiner(
                             nameHint = meta.username,
                             onNavigateToPost = tapAction,
                             onNavigateToUser = { host.actions.navigateToUser(it) },
+                            fontScale = host.fontScale,
                         )
                     }
                 )
@@ -718,7 +737,10 @@ internal class ContentCombiner(
             val meta = if (metaSpans.isNotEmpty()) buildQuoteMeta(metaSpans) else null
             if (meta != null) {
                 if (inInlineReplyQuote) return // skip nested reply quotes
-                val quotedFontSize = if (font?.fontSize == CALLOUT) SUBHEADLINE else CALLOUT
+                val quotedFontSize = FontScale.postQuotedFontSize(
+                    current = font?.fontSize ?: TextUnit.Unspecified,
+                    scale = host.fontScale,
+                )
                 val quotedFontSpec = (font ?: StyleSpec()).copy(fontSize = quotedFontSize)
                 appendOther(ContentNode.View {
                     InlineQuotedPost(
@@ -789,7 +811,7 @@ internal class ContentCombiner(
     ) {
         val combiner = ContentCombiner(
             host, parent = this,
-            fontModifier = { StyleSpec(fontSize = FOOTNOTE) },
+            fontModifier = { StyleSpec(fontSize = host.footnoteSize) },
             colorModifier = { _ -> host.accent },
         )
         combiner.visit(tagged.spansList)
@@ -808,6 +830,7 @@ internal class ContentCombiner(
                 icon = icon,
                 title = inner?.let { node -> { RenderNode(node, clicksEnabled = false) } },
                 inQuote = inQuote,
+                fontScale = host.fontScale,
             ) {
                 if (urlString != null) host.open(urlString)
             }
@@ -819,9 +842,9 @@ internal class ContentCombiner(
         val context = diceContext
         appendOther(ContentNode.View {
             if (context != null) {
-                DiceView(DiceRoller.roll(expression, context))
+                DiceView(DiceRoller.roll(expression, context), fontScale = host.fontScale)
             } else {
-                UnresolvedDiceView(expression)
+                UnresolvedDiceView(expression, fontScale = host.fontScale)
             }
         })
     }
@@ -829,7 +852,7 @@ internal class ContentCombiner(
     private fun visitCode(tagged: Span.Tagged) {
         val combiner = ContentCombiner(
             host, parent = this,
-            fontModifier = { StyleSpec(fontSize = FOOTNOTE, monospace = true) },
+            fontModifier = { StyleSpec(fontSize = host.footnoteSize, monospace = true) },
         )
         combiner.visit(tagged.spansList)
         appendBuilt(combiner.build())
@@ -889,7 +912,7 @@ internal class ContentCombiner(
         combiner.visit(tagged.spansList)
         val content = combiner.build()
         appendOther(ContentNode.View {
-            CollapsedContent(title) { RenderNode(content) }
+            CollapsedContent(title, fontScale = host.fontScale) { RenderNode(content) }
         })
     }
 
@@ -1031,7 +1054,7 @@ internal class ContentCombiner(
     private fun visitBaselineShift(tagged: Span.Tagged, shift: BaselineShift) {
         val combiner = ContentCombiner(host, parent = this, fontModifier = { f ->
             val base = f ?: StyleSpec()
-            val shrunk = if (base.fontSize == TextUnit.Unspecified) 11.sp else base.fontSize * 0.75f
+            val shrunk = if (base.fontSize == TextUnit.Unspecified) host.scaledSp(11f) else base.fontSize * 0.75f
             base.copy(fontSize = shrunk, baselineShift = shift)
         })
         combiner.visit(tagged.spansList)
@@ -1156,7 +1179,7 @@ internal class ContentCombiner(
         val ratingBadge = inRatingCard && score != null
         val hasExplicitBg = style.background != null || (getEnv("hasStyleBg") == true)
         val effectiveColor = style.color?.takeIf { hasExplicitBg || !isLowContrastNeutral(it) }
-        val resolvedSize = style.resolvedFontSize(inRatingCard)
+        val resolvedSize = style.resolvedFontSize(inRatingCard, host.fontScale)
 
         val fontMod: (StyleSpec?) -> StyleSpec? = { prev ->
             val base = prev ?: StyleSpec()
@@ -1254,14 +1277,14 @@ internal class ContentCombiner(
         }
         val titleNode = titleSpan?.let {
             ContentCombiner(host, parent = this, fontModifier = { f ->
-                (f ?: StyleSpec()).copy(fontSize = 15.sp, bold = true)
+                (f ?: StyleSpec()).copy(fontSize = host.subheadlineSize, bold = true)
             }).apply { visit(it.spansList) }.build()
         }
         val txtNode = txtSpan?.let {
             ContentCombiner(
                 host,
                 parent = this,
-                fontModifier = { f -> (f ?: StyleSpec()).copy(fontSize = FOOTNOTE, bold = false) },
+                fontModifier = { f -> (f ?: StyleSpec()).copy(fontSize = host.footnoteSize, bold = false) },
                 colorModifier = { host.secondary },
             ).apply { visit(it.spansList) }.build()
         }
@@ -1324,7 +1347,7 @@ internal class ContentCombiner(
         val combiner = ContentCombiner(
             host,
             parent = this,
-            fontModifier = { StyleSpec(fontSize = FOOTNOTE, monospace = true) },
+            fontModifier = { StyleSpec(fontSize = host.footnoteSize, monospace = true) },
             colorModifier = { host.secondary },
         )
         combiner.visit(tagged.spansList)
@@ -1371,6 +1394,7 @@ internal class ContentCombiner(
                 icon = Icons.Outlined.Movie,
                 title = { Text(title, maxLines = 1, overflow = TextOverflow.Ellipsis) },
                 inQuote = inQuote,
+                fontScale = host.fontScale,
                 onClick = { host.open(url) },
             )
         })
@@ -1385,7 +1409,7 @@ internal class ContentCombiner(
         var openTag = tagged.tag
         if (tagged.attributesCount > 0) openTag += "=" + tagged.attributesList.joinToString(",")
         if (tagged.complexAttributesCount > 0) openTag += " " + tagged.complexAttributesList.joinToString(" ")
-        val tagSpec = StyleSpec(fontSize = FOOTNOTE, monospace = true)
+        val tagSpec = StyleSpec(fontSize = host.footnoteSize, monospace = true)
         combiner.appendText(InlinePiece.Text("[" + openTag + "]", tagSpec))
         combiner.visit(tagged.spansList)
         combiner.appendText(InlinePiece.Text("[/" + tagged.tag + "]", tagSpec))
@@ -1485,7 +1509,9 @@ internal fun ParagraphText(
         }
     }
     val iconTintFallback = MaterialTheme.colorScheme.onSurface
-    val inlineContent = remember(paragraph, iconTintFallback) {
+    val postFontScale = LocalPostFontScale.current
+    val inlineIconSize = (18f * postFontScale).coerceIn(14f, 24f)
+    val inlineContent = remember(paragraph, iconTintFallback, inlineIconSize) {
         paragraph.pieces.mapIndexedNotNull { index, piece ->
             when (piece) {
                 is InlinePiece.Sticker -> "stk-$index" to InlineTextContent(
@@ -1496,12 +1522,12 @@ internal fun ParagraphText(
                     )
                 ) { StickerImage(piece.name, size = STICKER_SIZE.dp) }
                 is InlinePiece.Icon -> "ico-$index" to InlineTextContent(
-                    Placeholder(18.sp, 18.sp, PlaceholderVerticalAlign.TextCenter)
+                    Placeholder(inlineIconSize.sp, inlineIconSize.sp, PlaceholderVerticalAlign.TextCenter)
                 ) {
                     Icon(
                         piece.icon,
                         contentDescription = null,
-                        modifier = Modifier.size(18.dp),
+                        modifier = Modifier.size(inlineIconSize.dp),
                         tint = piece.spec.color ?: iconTintFallback,
                     )
                 }
@@ -1516,25 +1542,18 @@ internal fun ParagraphText(
         HAlign.CENTER -> Alignment.CenterHorizontally
         HAlign.END -> Alignment.End
     }
-    // A sticker is much taller than the text, and the typography's fixed
-    // lineHeight clamps the line box, so it would spill onto the neighbouring
-    // lines. The same happens to runs enlarged via [size=…]: their glyphs are
-    // taller than the fixed line box and overlap the next line. Leaving the
-    // line height unspecified lets only the line that actually holds the tall
-    // content grow to fit it (all other lines fall back to font-metric
-    // heights, which are visually equivalent at the base size).
+    // Scale lineHeight with the resolved paragraph font size so enlarged post
+    // text never crowds or overlaps, while leaving lineHeight unspecified for
+    // stickers, display numerals, and mixed enlarged runs so only tall lines
+    // grow to fit.
     val baseStyle = MaterialTheme.typography.bodyMedium
-    val style = remember(paragraph, baseStyle) {
-        val hasTallContent =
-            paragraph.pieces.any { it is InlinePiece.Sticker } ||
-                paragraph.pieces.any {
-                    it.spec.fontSize != TextUnit.Unspecified && it.spec.fontSize > 20.sp
-                }
-        if (hasTallContent) {
-            baseStyle.copy(lineHeight = TextUnit.Unspecified)
-        } else {
-            baseStyle
-        }
+    val style = remember(paragraph, baseStyle, postFontScale) {
+        val lineHeight = FontScale.paragraphLineHeight(
+            pieceFontSizes = paragraph.pieces.map { it.spec.fontSize },
+            hasSticker = paragraph.pieces.any { it is InlinePiece.Sticker },
+            fallbackBaseFontSize = (FontScale.POST_NORMAL_BASE_SP * postFontScale).sp,
+        )
+        baseStyle.copy(lineHeight = lineHeight)
     }
     Column(horizontalAlignment = alignment) {
         Text(
@@ -1679,6 +1698,7 @@ fun ContentButton(
     icon: ImageVector,
     title: (@Composable () -> Unit)?,
     inQuote: Boolean,
+    fontScale: Float = 1f,
     modifier: Modifier = Modifier,
     onClick: () -> Unit,
 ) {
@@ -1702,7 +1722,11 @@ fun ContentButton(
             if (title != null) {
                 androidx.compose.foundation.layout.Box {
                     androidx.compose.material3.ProvideTextStyle(
-                        MaterialTheme.typography.bodySmall.copy(color = accent)
+                        MaterialTheme.typography.bodySmall.copy(
+                            color = accent,
+                            fontSize = (13f * fontScale).sp,
+                            lineHeight = (13f * fontScale * 1.35f).sp,
+                        )
                     ) {
                         Column { title() }
                     }
@@ -1753,15 +1777,18 @@ fun PostContent(
     modifier: Modifier = Modifier,
     lineLimit: Int? = null,
     baseFontSize: TextUnit? = null,
+    fontScale: Float? = null,
 ) {
     val context = LocalContext.current
     val accent = MaterialTheme.colorScheme.primary
     val onSurface = MaterialTheme.colorScheme.onSurface
     val secondary = MaterialTheme.colorScheme.onSurfaceVariant
-    val baseSize = when (fontSize) {
-        PostFontSize.SMALL -> 15f
-        PostFontSize.NORMAL -> 16f
-    }.sp
+    val prefScalePercent by App.prefs.postContentFontScalePercent.flow.collectAsState()
+    val resolvedScale = fontScale ?: FontScale.scaleFactor(prefScalePercent)
+    val baseSize = FontScale.postBaseFontSize(
+        isSmall = fontSize == PostFontSize.SMALL,
+        scale = resolvedScale,
+    )
     val effectiveSize = baseFontSize ?: baseSize
     val resolvedColor = if (defaultColor == Color.Unspecified) onSurface else defaultColor
     val appVersion = remember {
@@ -1770,7 +1797,16 @@ fun PostContent(
     }
     val counter = remember(content) { mutableIntStateOf(0) }
 
-    val host = RenderHost(context, env.actions, accent, onSurface, secondary, appVersion, counter)
+    val host = RenderHost(
+        context = context,
+        actions = env.actions,
+        accent = accent,
+        onSurface = onSurface,
+        secondary = secondary,
+        appVersion = appVersion,
+        diceCounter = counter,
+        fontScale = resolvedScale,
+    )
     val post = env.diceContext
     // 楼层内全部图片（img + album）：点图打开整个相册，可左右滑动浏览。
     val allImages = remember(content) { collectViewerImages(content.spansList) }
@@ -1803,6 +1839,7 @@ fun PostContent(
         CompositionLocalProvider(
             LocalContentActions provides env.actions,
             LocalDiceCollapseCounter provides counter,
+            LocalPostFontScale provides resolvedScale,
         ) {
             // Text is freely selectable by default (long-press to select);
             // taps on links / mentions still work inside the selection scope.
@@ -1823,6 +1860,7 @@ fun PostContent(
     modifier: Modifier = Modifier,
     lineLimit: Int? = null,
     baseFontSize: TextUnit? = null,
+    fontScale: Float? = null,
 ) {
     PostContent(
         content = post.content,
@@ -1832,5 +1870,6 @@ fun PostContent(
         modifier = modifier,
         lineLimit = lineLimit,
         baseFontSize = baseFontSize,
+        fontScale = fontScale,
     )
 }

@@ -62,6 +62,7 @@ internal fun InlineQuotedPost(
                 nameHint = nameHint,
                 onNavigateToPost = showChainAction,
                 onNavigateToUser = { host.actions.navigateToUser(it) },
+                fontScale = host.fontScale,
             )
             val post = posts[postId]
             when {
@@ -77,6 +78,7 @@ internal fun InlineQuotedPost(
                         defaultColor = host.onSurface.copy(alpha = 0.9f),
                         lineLimit = lineLimit,
                         baseFontSize = defaultStyle.fontSize.takeIf { it != TextUnit.Unspecified },
+                        fontScale = host.fontScale,
                     )
                 postId in failed ->
                     Box(Modifier.fillMaxWidth().padding(vertical = 8.dp), contentAlignment = Alignment.Center) {

@@ -429,5 +429,23 @@
     <string name="ok">好</string>
     <string name="source_code">开源仓库</string>
     <string name="an_nga_forum_client">一个 NGA 论坛客户端，移植自 MNGA。</string>
+    <string name="font_size">字体大小</string>
+    <string name="topic_list_font_size">帖子列表字体</string>
+    <string name="post_font_size">帖子内容字体</string>
+    <string name="topic_list_short">列表</string>
+    <string name="post_short">帖子</string>
+    <string name="standard">标准</string>
+    <string name="font_size_small">小</string>
+    <string name="large">大</string>
+    <string name="scale">缩放比例</string>
+    <string name="reset">恢复默认</string>
+    <string name="font_size_footer">与系统字体大小设置叠加生效。</string>
+    <string name="font_preview_topic_subject">这是一条帖子列表标题预览，用于展示不同字号下的换行与层级效果</string>
+    <string name="font_preview_tag">讨论</string>
+    <string name="font_preview_forum">艾泽拉斯议事厅</string>
+    <string name="font_preview_topic_header">帖子详情页标题预览效果</string>
+    <string name="font_preview_post_quote">引用回复内容也会按比例跟随正文字号一起缩放。</string>
+    <string name="font_preview_post_body">帖子正文与行距会根据所选字号自动适配，避免大字号时上下行重叠，让长文阅读更舒适。</string>
+    <string name="font_preview_post_code">代码块与辅助标签字号预览</string>
     <string name="app_name">LumaGA</string>
 </resources>

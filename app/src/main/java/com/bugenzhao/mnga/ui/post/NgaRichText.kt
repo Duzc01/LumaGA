@@ -5,6 +5,7 @@ import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.sp
 import com.bugenzhao.mnga.protos.datamodel.Span
+import com.bugenzhao.mnga.ui.theme.FontScale
 import kotlin.math.max
 import kotlin.math.min
 
@@ -28,13 +29,16 @@ internal data class NgaStyle(
     val widthPercent: Boolean = false,
 ) {
     /** Approximate Compose font size for NGA's `[style font N]` scale. */
-    fun resolvedFontSize(inRatingCard: Boolean = false): TextUnit = when (fontLevel) {
-        null, 0 -> TextUnit.Unspecified
-        1 -> 12.sp
-        2 -> 14.sp
-        3 -> if (inRatingCard) 32.sp else 19.sp
-        4 -> if (inRatingCard) 44.sp else 24.sp
-        else -> 26.sp
+    fun resolvedFontSize(inRatingCard: Boolean = false, fontScale: Float = 1f): TextUnit {
+        val ratingScale = FontScale.ratingCardScale(fontScale)
+        return when (fontLevel) {
+            null, 0 -> TextUnit.Unspecified
+            1 -> (12f * fontScale).sp
+            2 -> (14f * fontScale).sp
+            3 -> if (inRatingCard) (32f * ratingScale).sp else (19f * fontScale).sp
+            4 -> if (inRatingCard) (44f * ratingScale).sp else (24f * fontScale).sp
+            else -> (26f * fontScale).sp
+        }
     }
 
     val isHeadingFont: Boolean

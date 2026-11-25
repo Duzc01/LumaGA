@@ -31,6 +31,7 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.bugenzhao.mnga.util.L
 
 /**
@@ -42,6 +43,7 @@ import com.bugenzhao.mnga.util.L
 fun CollapsedContent(
     title: String,
     initiallyCollapsed: Boolean = true,
+    fontScale: Float = 1f,
     content: @Composable () -> Unit,
 ) {
     var collapsedState by remember(title) { mutableStateOf(initiallyCollapsed) }
@@ -64,7 +66,10 @@ fun CollapsedContent(
             )
             Text(
                 "$title...",
-                style = MaterialTheme.typography.labelLarge,
+                style = MaterialTheme.typography.labelLarge.copy(
+                    fontSize = (15f * fontScale).sp,
+                    lineHeight = (15f * fontScale * 1.35f).sp,
+                ),
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary,
             )
