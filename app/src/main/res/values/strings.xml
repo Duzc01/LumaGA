@@ -431,5 +431,23 @@
     <string name="ok">OK</string>
     <string name="source_code">Source Code</string>
     <string name="an_nga_forum_client">An NGA forum client, ported from MNGA.</string>
+    <string name="font_size">Font Size</string>
+    <string name="topic_list_font_size">Topic List</string>
+    <string name="post_font_size">Post Content</string>
+    <string name="topic_list_short">List</string>
+    <string name="post_short">Post</string>
+    <string name="standard">Standard</string>
+    <string name="font_size_small">Small</string>
+    <string name="large">Large</string>
+    <string name="scale">Scale</string>
+    <string name="reset">Reset</string>
+    <string name="font_size_footer">Stacks with the system font size setting.</string>
+    <string name="font_preview_topic_subject">Sample topic subject for previewing list typography and line wrapping</string>
+    <string name="font_preview_tag">Discussion</string>
+    <string name="font_preview_forum">General Forum</string>
+    <string name="font_preview_topic_header">Topic Header Title Preview</string>
+    <string name="font_preview_post_quote">Quoted replies scale proportionally alongside post body text.</string>
+    <string name="font_preview_post_body">Post body text and line spacing adjust automatically with the selected scale so long threads remain easy to read.</string>
+    <string name="font_preview_post_code">codeBlock(fontScale = 1.0)</string>
     <string name="app_name">LumaGA</string>
 </resources>

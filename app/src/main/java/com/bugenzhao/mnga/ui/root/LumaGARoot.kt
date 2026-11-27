@@ -241,6 +241,9 @@ private fun NavigationHost(
         composable(RouteCodec.ROUTE_SETTINGS) {
             RouteDispatcher(navigator, Route.Settings, editor)
         }
+        composable(RouteCodec.ROUTE_FONT_SIZE_SETTINGS) {
+            RouteDispatcher(navigator, Route.FontSizeSettings, editor)
+        }
         composable(RouteCodec.ROUTE_NOTIFICATIONS) {
             RouteDispatcher(navigator, Route.Notifications, editor)
         }
@@ -311,6 +314,10 @@ fun RouteDispatcher(
             com.bugenzhao.mnga.ui.screens.prefs.PreferencesSheet(
                 onDismiss = { navigator.pop() },
                 navigator = navigator,
+            )
+        is Route.FontSizeSettings ->
+            com.bugenzhao.mnga.ui.screens.prefs.FontSizeSettingsScreen(
+                onDismiss = { navigator.pop() },
             )
         is Route.Notifications ->
             com.bugenzhao.mnga.ui.screens.notifications.NotificationListSheet(

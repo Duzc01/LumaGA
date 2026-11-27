@@ -1568,13 +1568,16 @@ private val TagChipPalette = listOf(
 @Composable
 private fun TopicSubjectHeader(topic: Topic) {
     val context = LocalContext.current
+    val postScalePercent by App.prefs.postContentFontScalePercent.flow.collectAsState()
+    val postScale = com.bugenzhao.mnga.ui.theme.FontScale.scaleFactor(postScalePercent)
     Column(Modifier.padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 12.dp)) {
         // 主题标题：大号加粗，置于头部最上方。
         Text(
             topic.subject.content.ifEmpty { L.str(context, "Untitled") },
             style = MaterialTheme.typography.titleLarge.copy(
+                fontSize = com.bugenzhao.mnga.ui.theme.FontScale.topicHeaderTitleFontSize(postScale),
                 fontWeight = FontWeight.Bold,
-                lineHeight = 34.sp,
+                lineHeight = com.bugenzhao.mnga.ui.theme.FontScale.topicHeaderTitleLineHeight(postScale),
             ),
         )
 

@@ -70,6 +70,7 @@ import com.bugenzhao.mnga.ui.nav.Navigator
 import com.bugenzhao.mnga.ui.nav.Route
 import com.bugenzhao.mnga.ui.screens.misc.CheckForUpdatesRow
 import com.bugenzhao.mnga.ui.screens.misc.UpdateFlowDialogs
+import com.bugenzhao.mnga.ui.theme.FontScale
 import com.bugenzhao.mnga.util.DownloadDestination
 import com.bugenzhao.mnga.util.L
 import kotlinx.coroutines.launch
@@ -112,6 +113,8 @@ fun PreferencesSheet(onDismiss: () -> Unit, navigator: Navigator? = null) {
 
     val colorSchemeRaw by prefs.colorSchemeRaw.flow.collectAsState()
     val themeColorRaw by prefs.themeColorRaw.flow.collectAsState()
+    val topicListFontScalePercent by prefs.topicListFontScalePercent.flow.collectAsState()
+    val postContentFontScalePercent by prefs.postContentFontScalePercent.flow.collectAsState()
     val alwaysPortrait by prefs.alwaysPortraitOnPhone.flow.collectAsState()
     val useInAppSafari by prefs.useInAppSafari.flow.collectAsState()
     val alwaysShareImageAsFile by prefs.alwaysShareImageAsFile.flow.collectAsState()
@@ -233,6 +236,15 @@ fun PreferencesSheet(onDismiss: () -> Unit, navigator: Navigator? = null) {
                         title = L.str(context, "Theme Color"),
                         valueLabel = L.str(context, themeColor.label),
                         onClick = { picker = PickerKind.THEME_COLOR },
+                    )
+                    PickerRow(
+                        title = L.str(context, "Font Size"),
+                        valueLabel = fontSizeSummaryLabel(
+                            context,
+                            topicListPercent = FontScale.normalizePercent(topicListFontScalePercent),
+                            postContentPercent = FontScale.normalizePercent(postContentFontScalePercent),
+                        ),
+                        onClick = { pushScreen(Route.FontSizeSettings) },
                     )
                     SwitchRow(
                         title = L.str(context, "Lock Screen Rotation"),
@@ -730,6 +742,20 @@ private fun colorSchemeLabel(context: android.content.Context, mode: ColorScheme
         ColorSchemeMode.DARK -> L.str(context, "Dark")
         ColorSchemeMode.CLASSIC -> "经典屎黄色"
     }
+
+private fun fontSizeSummaryLabel(
+    context: android.content.Context,
+    topicListPercent: Int,
+    postContentPercent: Int,
+): String = when {
+    topicListPercent == FontScale.DEFAULT_PERCENT &&
+        postContentPercent == FontScale.DEFAULT_PERCENT ->
+        L.str(context, "Standard")
+    topicListPercent == postContentPercent ->
+        "$topicListPercent%"
+    else ->
+        "${L.str(context, "Topic List Short")} $topicListPercent% · ${L.str(context, "Post Short")} $postContentPercent%"
+}
 
 private fun orderLabel(context: android.content.Context, order: TopicListOrder): String =
     when (order) {

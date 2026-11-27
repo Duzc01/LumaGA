@@ -92,4 +92,15 @@ class NgaRichTextTest {
         assertEquals(score, findNgaScorePlaceholder(voteBadge))
         assertNull(findNgaScorePlaceholder(voteBadge.toBuilder().clearSpans().build()))
     }
+
+    @Test
+    fun scalesNgaStyleFontLevelsWithRatingCardCap() {
+        val heading = parseNgaStyle(listOf("font", "3"))
+        assertEquals(23.75f, heading.resolvedFontSize(inRatingCard = false, fontScale = 1.25f).value, 0.01f)
+
+        // Rating card scores clamp scale to 1.15x so fixed-width score badges don't overflow.
+        val vote = parseNgaStyle(listOf("font", "4"))
+        assertEquals(44f * 1.15f, vote.resolvedFontSize(inRatingCard = true, fontScale = 1.5f).value, 0.01f)
+        assertEquals(44f * 0.85f, vote.resolvedFontSize(inRatingCard = true, fontScale = 0.8f).value, 0.01f)
+    }
 }

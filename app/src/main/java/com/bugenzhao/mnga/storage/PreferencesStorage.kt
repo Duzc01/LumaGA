@@ -9,6 +9,7 @@ import com.bugenzhao.mnga.protos.datamodel.Device
 import com.bugenzhao.mnga.protos.datamodel.RequestOption
 import com.bugenzhao.mnga.protos.service.SetRequestOptionRequest
 import com.bugenzhao.mnga.protos.service.SyncRequest
+import com.bugenzhao.mnga.ui.theme.FontScale
 import com.bugenzhao.mnga.util.PbJson
 import com.bugenzhao.mnga.util.URLs
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -169,6 +170,8 @@ class PreferencesStorage(private val prefs: SharedPreferences) {
     val defaultTopicListOrderRaw = intPref("defaultTopicListOrder", 0)
     val themeColorRaw = intPref("themeColorNew", 0)
     val colorSchemeRaw = intPref("colorScheme", 0)
+    val topicListFontScalePercent = intPref("topicListFontScalePercent", FontScale.DEFAULT_PERCENT)
+    val postContentFontScalePercent = intPref("postContentFontScalePercent", FontScale.DEFAULT_PERCENT)
     val postRowDateTimeStrategyRaw = intPref("postRowDateTimeStrategy", 0)
     val topicDetailsWebApiStrategyRaw = intPref("topicDetailsWebApiStrategyNew", 1)
 
@@ -179,6 +182,10 @@ class PreferencesStorage(private val prefs: SharedPreferences) {
         get() = ThemeColor.fromRaw(themeColorRaw.value)
     val colorScheme: ColorSchemeMode
         get() = ColorSchemeMode.fromRaw(colorSchemeRaw.value)
+    val topicListFontScale: Float
+        get() = FontScale.scaleFactor(topicListFontScalePercent.value)
+    val postContentFontScale: Float
+        get() = FontScale.scaleFactor(postContentFontScalePercent.value)
     val postRowDateTimeStrategy: DateTimeStrategy
         get() = DateTimeStrategy.fromRaw(postRowDateTimeStrategyRaw.value)
     val resumeTopicFrom: TopicResumeFrom

@@ -809,6 +809,8 @@ private fun BlockedContent(
     val blocked = App.blockWords.blocked(blockContent)
     var revealed by remember(post.id) { mutableStateOf(false) }
 
+    val postScalePercent by App.prefs.postContentFontScalePercent.flow.collectAsState()
+    val postScale = com.bugenzhao.mnga.ui.theme.FontScale.scaleFactor(postScalePercent)
     val overlayColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f)
 
     Box(
@@ -828,11 +830,11 @@ private fun BlockedContent(
                 }
             },
     ) {
-        // 正文最小高度：两行正文（16sp × 行高 1.5），避免单行内容显得局促。
+        // 正文最小高度：随正文字号缩放（默认 48dp），避免单行内容显得局促。
         PostContent(
             post = post,
             env = ContentEnv(actions = contentActions),
-            modifier = Modifier.heightIn(min = 48.dp),
+            modifier = Modifier.heightIn(min = (48f * postScale).coerceAtLeast(36f).dp),
         )
     }
 }

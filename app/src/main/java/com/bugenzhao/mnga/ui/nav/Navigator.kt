@@ -135,6 +135,7 @@ sealed class Route {
     data object BlockedUsers : Route()
     data object About : Route()
     data object Settings : Route()
+    data object FontSizeSettings : Route()
     data object Notifications : Route()
     data object ClockIn : Route()
     data object PersonalCenter : Route()
