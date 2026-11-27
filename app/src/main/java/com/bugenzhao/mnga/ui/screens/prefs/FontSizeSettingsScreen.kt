@@ -1,5 +1,6 @@
 package com.bugenzhao.mnga.ui.screens.prefs
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -29,6 +30,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -273,26 +276,84 @@ private fun FontScaleSliderCard(
                 valueRange = FontScale.MIN_PERCENT.toFloat()..FontScale.MAX_PERCENT.toFloat(),
                 steps = FontScale.SLIDER_STEPS,
             )
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
-                Text(
-                    "${L.str(context, "Small")} ${FontScale.MIN_PERCENT}%",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Text(
-                    L.str(context, "Standard"),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Text(
-                    "${L.str(context, "Large")} ${FontScale.MAX_PERCENT}%",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
+            SliderTickLabels(
+                leftText = "${L.str(context, "Small")} ${FontScale.MIN_PERCENT}%",
+                standardText = L.str(context, "Standard"),
+                rightText = "${L.str(context, "Large")} ${FontScale.MAX_PERCENT}%",
+                isStandardSelected = percent == FontScale.DEFAULT_PERCENT,
+                onSelectStandard = {
+                    if (percent != FontScale.DEFAULT_PERCENT) {
+                        onPercentChange(FontScale.DEFAULT_PERCENT)
+                    }
+                },
+            )
+        }
+    }
+}
+
+/**
+ * Places the "Standard" (100%) label at its actual position along the asymmetric
+ * 80%..150% slider track instead of the visual 50% midpoint (115%).
+ */
+@Composable
+private fun SliderTickLabels(
+    leftText: String,
+    standardText: String,
+    rightText: String,
+    isStandardSelected: Boolean,
+    onSelectStandard: () -> Unit,
+) {
+    Layout(
+        modifier = Modifier.fillMaxWidth(),
+        content = {
+            Text(
+                leftText,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text(
+                standardText,
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = if (isStandardSelected) FontWeight.SemiBold else FontWeight.Medium,
+                color = if (isStandardSelected) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                },
+                modifier = Modifier
+                    .clip(RoundedCornerShape(4.dp))
+                    .clickable(onClick = onSelectStandard)
+                    .padding(horizontal = 4.dp),
+            )
+            Text(
+                rightText,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        },
+    ) { measurables, constraints ->
+        val childConstraints = constraints.copy(minWidth = 0, minHeight = 0)
+        val left = measurables[0].measure(childConstraints)
+        val standard = measurables[1].measure(childConstraints)
+        val right = measurables[2].measure(childConstraints)
+
+        val totalWidth = constraints.maxWidth
+        val totalHeight = maxOf(left.height, standard.height, right.height)
+        val thumbWidthPx = 4.dp.roundToPx()
+        val minGapPx = 6.dp.roundToPx()
+        val standardX = FontScale.sliderAnchorLabelX(
+            totalWidthPx = totalWidth,
+            thumbWidthPx = thumbWidthPx,
+            labelWidthPx = standard.width,
+            leftLabelWidthPx = left.width,
+            rightLabelWidthPx = right.width,
+            minGapPx = minGapPx,
+        )
+
+        layout(totalWidth, totalHeight) {
+            left.placeRelative(0, (totalHeight - left.height) / 2)
+            standard.placeRelative(standardX, (totalHeight - standard.height) / 2)
+            right.placeRelative((totalWidth - right.width).coerceAtLeast(0), (totalHeight - right.height) / 2)
         }
     }
 }

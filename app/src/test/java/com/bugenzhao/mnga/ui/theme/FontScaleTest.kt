@@ -87,4 +87,35 @@ class FontScaleTest {
         )
         assertEquals(TextUnit.Unspecified, displayScore)
     }
+
+    @Test
+    fun sliderAnchorLabelAlignsWithDefaultPercentNotMidpoint() {
+        // 100% within [80%, 150%] sits at 20/70 (~28.6%), not 50% (115%).
+        assertEquals(20f / 70f, FontScale.DEFAULT_FRACTION, 0.0001f)
+
+        val totalWidth = 704
+        val thumbWidth = 4
+        val labelWidth = 60
+        // Track runs [2, 702], 2/7 along 700px span is center x = 202 => label left = 172.
+        val x = FontScale.sliderAnchorLabelX(
+            totalWidthPx = totalWidth,
+            thumbWidthPx = thumbWidth,
+            labelWidthPx = labelWidth,
+            leftLabelWidthPx = 90,
+            rightLabelWidthPx = 100,
+            minGapPx = 12,
+        )
+        assertEquals(172, x)
+
+        // Clamps safely to avoid overlapping the left label on very narrow widths.
+        val clampedX = FontScale.sliderAnchorLabelX(
+            totalWidthPx = 300,
+            thumbWidthPx = 4,
+            labelWidthPx = 60,
+            leftLabelWidthPx = 100,
+            rightLabelWidthPx = 100,
+            minGapPx = 12,
+        )
+        assertEquals(112, clampedX)
+    }
 }

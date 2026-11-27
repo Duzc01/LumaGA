@@ -20,6 +20,33 @@ object FontScale {
     /** Intermediate tick count for Compose [androidx.compose.material3.Slider]. */
     const val SLIDER_STEPS = (MAX_PERCENT - MIN_PERCENT) / STEP_PERCENT - 1
 
+    /** Exact normalized slider position of [DEFAULT_PERCENT] within `[MIN_PERCENT, MAX_PERCENT]`. */
+    const val DEFAULT_FRACTION =
+        (DEFAULT_PERCENT - MIN_PERCENT).toFloat() / (MAX_PERCENT - MIN_PERCENT).toFloat()
+
+    /**
+     * Compute the left X coordinate for an anchor label (e.g. "Standard" at 100%)
+     * so its center lines up with the slider thumb at [fraction] while never
+     * colliding with the leading or trailing edge labels.
+     */
+    fun sliderAnchorLabelX(
+        totalWidthPx: Int,
+        thumbWidthPx: Int,
+        labelWidthPx: Int,
+        leftLabelWidthPx: Int,
+        rightLabelWidthPx: Int,
+        minGapPx: Int,
+        fraction: Float = DEFAULT_FRACTION,
+    ): Int {
+        val trackStart = thumbWidthPx / 2f
+        val trackSpan = (totalWidthPx - thumbWidthPx).coerceAtLeast(0).toFloat()
+        val anchorCenter = trackStart + trackSpan * fraction.coerceIn(0f, 1f)
+        val rawX = (anchorCenter - labelWidthPx / 2f).roundToInt()
+        val minX = leftLabelWidthPx + minGapPx
+        val maxX = (totalWidthPx - rightLabelWidthPx - minGapPx - labelWidthPx).coerceAtLeast(minX)
+        return rawX.coerceIn(minX, maxX)
+    }
+
     const val TOPIC_TITLE_BASE_SP = 16f
     const val TOPIC_META_BASE_SP = 12f
     const val TOPIC_HEADER_BASE_SP = 22f
